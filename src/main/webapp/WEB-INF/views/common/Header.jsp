@@ -7,7 +7,7 @@ pageEncoding="UTF-8"%>
 <head>
 <meta charset="UTF-8">
 <title>header</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <header class="main-header">
     <div class="header-left">

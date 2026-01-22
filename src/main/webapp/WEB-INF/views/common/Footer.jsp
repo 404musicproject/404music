@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <title>FOOTER</title>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/footer.css">
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Footer.css">
 </head>
 <body>
     <footer class="neon-footer">

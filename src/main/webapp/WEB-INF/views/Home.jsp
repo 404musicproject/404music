@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <title>404Music Main Home</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/header.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/footer.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Home.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Footer.css">
 </head>
 <body style="background-color: #050505;"> 
 <%@ include file="/WEB-INF/views/common/Header.jsp" %>
