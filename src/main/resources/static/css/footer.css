@@ -1,0 +1,54 @@
+/* footer.css */
+.neon-footer {
+    width: 100%;
+    background-color: #050505;
+    border-top: 2px solid #ff0055; /* 원본의 핫핑크 라인 */
+    padding: 30px 0;
+    margin-top: auto; /* 페이지 하단 고정 도움 */
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center; /* 모든 요소 중앙 정렬 */
+}
+
+/* 저작권 문구 */
+.footer-copyright {
+    margin-bottom: 15px;
+}
+
+.footer-copyright p {
+    color: #00f2ff; /* 사이언 블루 */
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* 네비게이션 링크 영역 */
+.footer-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.neon-link {
+    color: #00f2ff;
+    text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.neon-link:hover {
+    color: #ff0055; /* 호버 시 핑크색으로 변경 */
+    text-shadow: 0 0 8px #ff0055;
+}
+
+/* 구분선 | */
+.sep {
+    color: #ff0055;
+    font-weight: bold;
+}

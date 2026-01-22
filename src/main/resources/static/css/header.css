@@ -1,0 +1,175 @@
+/* header.css */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 50px; /* 상하 0, 좌우 50px로 여백 확보 */
+    height: 80px;    /* 높이 고정으로 안정성 확보 */
+    background-color: #000;
+    border-bottom: 2px solid #ff0055;
+    box-sizing: border-box; /* 패딩이 너비 안으로 포함되게 강제 */
+    width: 100%;
+}
+.header-logo {
+    height: 60px; /* 로고 크기 조정 */
+}
+
+.search-form {
+    display: flex;
+    border: 1px solid #00f2ff; /* 사이언 테두리 */
+}
+
+.search-form input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    padding: 8px 15px;
+    width: 350px;
+    outline: none;
+}
+
+.search-form button {
+    background-color: #ff0055; /* 핑크 버튼 */
+    border: none;
+    color: #fff;
+    padding: 8px 20px;
+    cursor: pointer;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-greeting{
+	color: #00f2ff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.login-text-btn {
+    color: #00f2ff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* 프로필 및 드롭다운 */
+.profile-container { position: relative; }
+.header-profile-img {
+    width: 35px;
+    height: 35px;
+    border: 1px solid #00f2ff;
+    cursor: pointer;
+}
+
+.dropdown-table-menu {
+    display: none; /* 기본 숨김 */
+    position: absolute;
+    right: 0;
+    top: 45px;
+    background: #000;
+    border: 1px solid #ff0055;
+    z-index: 100;
+}
+
+.dropdown-table-menu.show { display: block; } /* 클릭 시 노출 */
+
+/* 프로필 드롭다운 메뉴 스타일 */
+.dropdown-table-menu {
+    display: none; 
+    position: absolute;
+    right: 0;
+    top: 55px; /* 헤더 높이에 맞춰 조정 */
+    background-color: #111; /* 완전 검은색보다 살짝 밝은 블랙 */
+    border: 2px solid #ff0055; /* 핑크색 테두리 강화 */
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.5); /* 핑크색 네온 광채 추가 */
+    min-width: 150px;
+    z-index: 1000;
+}
+
+.dropdown-table-menu table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dropdown-table-menu td {
+    padding: 12px 20px;
+    color: #00f2ff; /* 사이언 색상 글자 */
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+    border-bottom: 1px solid #333; /* 메뉴 구분선 */
+    transition: 0.2s;
+}
+
+/* 마지막 메뉴의 하단 선 제거 */
+.dropdown-table-menu tr:last-child td {
+    border-bottom: none;
+}
+
+/* 마우스 올렸을 때 효과 (강조) */
+.dropdown-table-menu td:hover {
+    background-color: #ff0055; /* 배경이 핑크로 변함 */
+    color: #fff; /* 글자는 흰색으로 */
+}
+
+/* 로그아웃 버튼 전용 스타일 */
+.menu-logout {
+    color: #ff0055 !important; /* 로그아웃은 기본적으로 핑크색 */
+}
+
+.dropdown-table-menu td.menu-logout:hover {
+    background-color: #ff0055;
+    color: #000 !important;
+}
+
+/* 오른쪽 그룹 전체 정렬 */
+/* 1. 오른쪽 그룹 전체 컨테이너 */
+.header-right {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end; /* 오른쪽 정렬 */
+    padding-right: 20px;       /* 화면 끝에서 살짝 띄우기 */
+    min-width: 300px;          /* 영역이 좁아지지 않도록 최소 너비 확보 */
+}
+
+/* 2. 유저 정보 + 프로필 이미지 그룹 */
+.user-status-group {
+    display: flex !important;
+    flex-direction: row !important; /* 가로 정렬 강제 */
+    align-items: center !important;
+    gap: 15px;                 /* 요소 사이 간격 */
+}
+
+/* 3. 텍스트 정보 (유저님 | LOGOUT) */
+.auth-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;       /* 줄바꿈 금지 */
+    flex-shrink: 0;            /* 텍스트가 이미지를 밀어내지 않게 고정 */
+}
+
+/* 4. 프로필 이미지 컨테이너 */
+.profile-container {
+    position: relative;
+    flex-shrink: 0;            /* ★매우 중요: 공간이 좁아도 이미지가 사라지지 않게 함 */
+    width: 40px;
+    height: 40px;
+}
+
+.profile-img-box {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #00f2ff;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #111;
+}
+
+.header-profile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
