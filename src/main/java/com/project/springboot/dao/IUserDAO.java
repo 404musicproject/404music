@@ -13,4 +13,6 @@ public interface IUserDAO {
     int updateEmailVerification(String uId);
     int updateUserStep2(UserDTO userDTO);
     int countByNick(@Param("uNick") String uNick); //닉네임 중복확인
+    int updatePassword(@Param("uId") String uId, @Param("uPassword") String uPassword);
+    int deleteUser(@Param("uId") String uId);
 }

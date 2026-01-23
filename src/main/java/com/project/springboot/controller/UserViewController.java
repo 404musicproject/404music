@@ -20,11 +20,11 @@ public class UserViewController {
 	        return "guest/SignupFormStep1"; // JSP 파일 경로를 반환
 	    }
 	  
-	  @GetMapping("/signup/step2")
-	  public String step2Page(@RequestParam String email, Model model) {
-	      model.addAttribute("email", email);
-	      return "guest/SignupFormStep2"; // WEB-INF/views/signup/step2.jsp 를 찾아감
-	  }
+	   @GetMapping("/signup/step2")
+	    public String step2Page(@RequestParam("email") String email, Model model) {
+	        model.addAttribute("email", email);
+	        return "guest/SignupFormStep2";
+	    }
 	  
 	  // UserRestController.java 또는 별도의 Controller 클래스
 	    @GetMapping("/logout")
@@ -43,4 +43,5 @@ public class UserViewController {
 	        }
 	        return "/user/MyPage"; // mypage.jsp를 호출
 	    }
+	 
 }

@@ -18,7 +18,7 @@
             #{uPassword, jdbcType=VARCHAR},
             #{uSignupStep, jdbcType=INTEGER},
             #{uSocialType, jdbcType=VARCHAR},
-            'N', SYSDATE,
+            'Y', SYSDATE,
             'user'
         )
     </insert>
@@ -36,9 +36,20 @@
         UPDATE "USER" SET u_email_verified = 'Y' WHERE u_id = #{uId, jdbcType=VARCHAR}
     </update>
     
-<!--닉네임 중복확인-->
-<select id="countByNick" resultType="int">
-	SELECT COUNT(*) FROM "USER" WHERE u_nick = #{uNick, jdbcType=VARCHAR}
-</select>
+	<!--닉네임 중복확인-->
+	<select id="countByNick" resultType="int">
+		SELECT COUNT(*) FROM "USER" WHERE u_nick = #{uNick, jdbcType=VARCHAR}
+	</select>
+	
+		<!-- 비밀번호 변경 SQL -->
+	<update id="updatePassword">
+	    UPDATE "USER"
+	    SET u_password = #{uPassword}
+	    WHERE u_id = #{uId}
+	</update>
+	
+	<delete id="deleteUser">
+    DELETE FROM "USER" WHERE u_id = #{uId, jdbcType=VARCHAR}
+</delete>
 
 </mapper>
