@@ -5,6 +5,7 @@
 <head>
     <title>회원가입 2단계</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="/css/SignupFormStep2.css">
     <style>
         .gender-group { margin: 10px 0; }
         .btn-group { margin-top: 20px; }
@@ -12,7 +13,7 @@
     </style>
 </head>
 <body>
-    <h2>회원가입 2단계 (선택 정보)</h2>
+    <h2>회원가입 2단계</h2>
     <p>나머지 정보를 입력해 주세요. 입력하지 않고 건너뛰셔도 됩니다.</p>
     
     <form id="signupFormStep2">

@@ -1,0 +1,120 @@
+/* 404Music Cyberpunk Neon Theme - Step 1 */
+body {
+    background-color: #000000; /* 블랙 배경 */
+    color: #00ffff; /* 네온 시안 */
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column; /* 요소를 수직으로 나열 */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* [핵심 수정] '회원가입' 타이틀을 폼 박스 바로 위 중앙에 배치 */
+h2 {
+    color: #00ffff;
+    text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 20px; /* 폼 박스와의 간격 */
+    font-size: 32px;
+    letter-spacing: 5px;
+    width: 400px; /* 폼 박스 너비와 동일하게 설정하여 중앙 정렬 유지 */
+}
+
+#signupForm {
+    background-color: #000000;
+    border: 2px solid #ff007f; /* 핫핑크 네온 보더 */
+    padding: 40px;
+    width: 400px;
+    box-shadow: 0 0 20px rgba(255, 0, 127, 0.5); /* 핑크 글로우 */
+    box-sizing: border-box; /* 패딩 포함 너비 계산 */
+}
+
+/* 입력 필드 (uId, uPassword, inputCode) */
+input[type="email"], 
+input[type="text"], 
+input[type="password"] {
+    background: transparent;
+    border: 1px solid #00ffff; /* 시안색 테두리 */
+    color: #ffffff;
+    padding: 12px;
+    margin-bottom: 12px;
+    width: 100%; /* 너비 100% */
+    box-sizing: border-box;
+    outline: none;
+    font-family: 'Courier New', monospace;
+}
+
+input:focus {
+    box-shadow: 0 0 10px #00ffff;
+    border-color: #ffffff;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* 인증번호 받기 / 확인 버튼 */
+#btnSendMail, 
+#authDiv button {
+    background: transparent;
+    border: 1px solid #ff007f;
+    color: #ff007f;
+    padding: 10px;
+    margin-bottom: 15px;
+    width: 100%;
+    cursor: pointer;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: 0.3s;
+}
+
+#btnSendMail:hover, 
+#authDiv button:hover {
+    background: #ff007f;
+    color: #ffffff;
+    box-shadow: 0 0 15px #ff007f;
+}
+
+/* 가입하기 버튼 (ACCESS START 스타일) */
+#btnSubmit {
+    background-color: #ff007f; /* 핑크색 채우기 */
+    color: #ffffff;
+    border: none;
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    margin-top: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+#btnSubmit:hover:not(:disabled) {
+    box-shadow: 0 0 25px #ff007f;
+}
+
+#btnSubmit:disabled {
+    background-color: #222;
+    color: #444;
+    cursor: not-allowed;
+    border: 1px solid #333;
+}
+
+/* 하단 안내 문구 */
+p {
+    font-size: 11px;
+    color: #00ffff !important;
+    text-shadow: 0 0 5px #00ffff;
+    margin: 10px 0 20px 0;
+    line-height: 1.4;
+}
+
+/* 인증 메시지 */
+#authMsg {
+    display: block;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 12px;
+}

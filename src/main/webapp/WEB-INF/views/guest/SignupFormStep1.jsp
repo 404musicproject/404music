@@ -5,6 +5,7 @@
 <head>
     <title>회원가입</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="/css/SignupFormStep1.css">
 </head>
 <body>
 <h2>회원가입</h2>
