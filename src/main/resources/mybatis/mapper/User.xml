@@ -5,17 +5,18 @@
 
 <mapper namespace="com.project.springboot.dao.IUserDAO">
 
-    <select id="findById" resultType="com.project.springboot.dto.UserDTO">
-        SELECT * FROM "USER" WHERE u_id = #{uId, jdbcType=VARCHAR}
-    </select>
+<select id="findById" resultType="com.project.springboot.dto.UserDTO">
+    SELECT u_no, u_id, u_password, u_nick, u_gender, u_birth, u_region, u_signup_step, u_social_type, u_email_verified, u_create_at, u_auth FROM "USER" WHERE u_id = #{uId, jdbcType=VARCHAR}
+</select>
 
     <insert id="insertUser" parameterType="com.project.springboot.dto.UserDTO">
         INSERT INTO "USER" (
-            u_no, u_id, u_password, u_signup_step, u_social_type, u_email_verified, u_create_at, u_auth
+            u_no, u_id, u_password, u_nick, u_signup_step, u_social_type, u_email_verified, u_create_at, u_auth
         ) VALUES (
             USER_SEQ.NEXTVAL,
             #{uId, jdbcType=VARCHAR},
             #{uPassword, jdbcType=VARCHAR},
+            #{uNick, jdbcType=VARCHAR},
             #{uSignupStep, jdbcType=INTEGER},
             #{uSocialType, jdbcType=VARCHAR},
             'Y', SYSDATE,

@@ -28,35 +28,31 @@ public class UserRestController {
      * 1. 일반 회원가입 (이메일 아이디 사용)
      */
     @PostMapping("/guest/signup/step1")
-    public ResponseEntity<?> signUp(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<?> signUp(@RequestBody UserDTO userDTO, HttpSession session) { // HttpSession 추가
         if (userDAO.findById(userDTO.getUId()) != null) {
             return ResponseEntity.badRequest().body("이미 사용 중인 이메일입니다.");
         }
+        
+        // 1. 임의 닉네임 부여
+        String tempNick = "USER_" + (System.currentTimeMillis() % 10000);
+        userDTO.setUNick(tempNick);
+        
         userDTO.setUSignupStep(1); 
         userDTO.setUSocialType("LOCAL");
         userDTO.setUEmailVerified(true); 
+        
         int result = userDAO.insertUser(userDTO);
+        
         if (result > 0) {
+            // 2. 가입 직후 세션에 유저 정보 저장 (자동 로그인 효과)
+            // password 등 민감 정보가 포함된 userDTO를 다시 조회해서 넣는 것이 안전합니다.
+            UserDTO loginUser = userDAO.findById(userDTO.getUId());
+            session.setAttribute("loginUser", loginUser);
+            
             String nextUrl = "/signup/step2?email=" + userDTO.getUId();
             return ResponseEntity.ok(nextUrl);
         }
         return ResponseEntity.internalServerError().body("가입 처리 중 오류가 발생했습니다.");
-    }
-    
-    @PutMapping("/guest/signup/step2")
-    public ResponseEntity<?> signUpStep2(@RequestBody UserDTO userDTO, jakarta.servlet.http.HttpSession session) {
-        // 기존 사용자를 찾아 닉네임, 성별, 생년월일, 지역 등을 업데이트
-        int result = userDAO.updateUserStep2(userDTO);
-
-        if (result > 0) {
-            // 💡 중요: DB 업데이트 후 최신 정보를 다시 읽어와서 세션에 담아줘야 합니다.
-            UserDTO updatedUser = userDAO.findById(userDTO.getUId());
-            if (updatedUser != null) {
-                session.setAttribute("loginUser", updatedUser);
-            }
-            return ResponseEntity.ok("가입 완료 및 로그인 처리 완료");
-        }
-        return ResponseEntity.badRequest().body("사용자를 찾을 수 없거나 업데이트 실패");
     }
 
     /**
@@ -78,6 +74,31 @@ public class UserRestController {
         return ResponseEntity.ok(count == 0);
     }
 
+    @PutMapping("/guest/signup/step2")
+    public ResponseEntity<?> signUpStep2(@RequestBody UserDTO userDTO, HttpSession session) {
+        // 1. 현재 DB에 저장된 원본 데이터를 가져옵니다.
+        UserDTO existingUser = userDAO.findById(userDTO.getUId());
+        
+        if (existingUser != null) {
+            // 2. 클라이언트에서 보낸 값이 비어있다면(null or ""), 기존 DB 값을 그대로 유지합니다.
+            if (userDTO.getUNick() == null || userDTO.getUNick().trim().isEmpty()) {
+                userDTO.setUNick(existingUser.getUNick());
+            }
+            // 다른 필드들도 선택 사항이라면 동일하게 처리 가능
+        }
+
+        // 3. 업데이트 실행
+        int result = userDAO.updateUserStep2(userDTO);
+
+        if (result > 0) {
+            // 4. 최신 정보를 다시 세션에 저장
+            UserDTO updatedUser = userDAO.findById(userDTO.getUId());
+            session.setAttribute("loginUser", updatedUser);
+            return ResponseEntity.ok("가입 완료");
+        }
+        return ResponseEntity.badRequest().body("업데이트 실패");
+    }
+    
     /**
      * 4. 로그인
      */
@@ -91,42 +112,11 @@ public class UserRestController {
             session.setAttribute("loginUser", user);
             return ResponseEntity.ok(user); 
         }
+        
         return ResponseEntity.status(401).body("비밀번호 불일치");
     }
 
-    /**
-     * 5. 프로필 업데이트 (AJAX 대응을 위해 @RequestBody 또는 @RequestParam 이름 명시)
-     */
-    @PostMapping("/update")
-    // 반환 타입을 ResponseEntity<?> 에서 String 으로 변경합니다.
-    public String updateProfile(@RequestParam Map<String, String> params, HttpSession session) {
-        UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
-        if (loginUser == null) {
-            // 로그인이 필요한 경우 로그인 페이지로 리다이렉트
-            return "redirect:/"; 
-        }
-
-        // 세션 객체 업데이트 (데이터 유실 방지를 위해 DTO에 다시 담습니다)
-        loginUser.setUNick(params.get("uNick"));
-        loginUser.setURegion(params.get("uRegion"));
-        loginUser.setUGender(params.get("uGender"));
-        loginUser.setUPreferredGenre(params.get("uPreferredGenre"));
-
-        // DB 업데이트 수행
-        int result = userDAO.updateUserStep2(loginUser); 
-        
-        if (result > 0) {
-            // DB 업데이트 성공 시 세션 갱신
-            session.setAttribute("loginUser", loginUser);
-            
-            // 성공 후 마이페이지로 이동 (서버 측 리다이렉트)
-            return "redirect:/mypage";
-        }
-        
-        // 업데이트 실패 시 에러 페이지 또는 메시지 반환
-        // 여기서는 간단히 마이페이지로 돌려보내거나 에러 처리 로직 추가
-        return "redirect:/mypage?error=updateFailed";
-    }
+   
 
     /**
      * 6. 비밀번호 변경 (이름 명시 완료)
@@ -168,4 +158,6 @@ public class UserRestController {
         }
         return ResponseEntity.internalServerError().body("탈퇴 실패");
     }
+    
+   
 }

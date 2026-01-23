@@ -9,7 +9,9 @@ pageEncoding="UTF-8"%>
 <title>header</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<header class="main-header">
+</head>
+<body>
+<div class="main-header">
     <div class="header-left">
         <a href="${pageContext.request.contextPath}/" class="logo-link">
             <img src="${pageContext.request.contextPath}/img/Logo.png" alt="404Music Logo" class="header-logo">
@@ -47,11 +49,11 @@ pageEncoding="UTF-8"%>
                     <%-- 드롭다운 메뉴가 여기에 있어야 relative 기준점에 맞춰서 뜹니다 --%>
                     <div id="profileDropdown" class="dropdown-table-menu">
                         <table>
-                            <tr onclick="location.href='/mypage'">
+                            <tr onclick="location.href='/user/mypage'">
                                 <td>내 정보 보기</td>
                             </tr>
-                            <tr onclick="location.href='/settings'">
-                                <td>프로필 변경</td>
+                            <tr onclick="location.href='/user/subscription'">
+                                <td>구독</td>
                             </tr>
                             <tr onclick="location.href='/logout'">
                                 <td class="menu-logout">로그아웃</td>
@@ -64,7 +66,7 @@ pageEncoding="UTF-8"%>
     </div>
 </div>
 <jsp:include page="/WEB-INF/views/common/Login.jsp" />
-</header>
+</div>
 </body>
 <script>
 //검색창 토글

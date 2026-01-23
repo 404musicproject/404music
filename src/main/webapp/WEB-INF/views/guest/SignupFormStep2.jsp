@@ -5,6 +5,7 @@
 <head>
     <title>회원가입 2단계</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <link rel="stylesheet" href="/css/SignupFormStep2.css">
     <style>
         .gender-group { margin: 10px 0; }
         .btn-group { margin-top: 20px; }
@@ -13,14 +14,15 @@
 </head>
 <body>
     <h2>회원가입 2단계 (선택 정보)</h2>
-    <p>나머지 정보를 입력해 주세요. 입력하지 않고 건너뛰셔도 됩니다.</p>
     
     <form id="signupFormStep2">
         <input type="hidden" name="uId" value="${param.email}">
         
-        <label>닉네임:</label>
-		<input type="text" id="uNick" name="uNick" placeholder="닉네임 입력" required>
-		<div id="nickMsg" style="font-size: 12px; margin-top: 5px;"></div>
+			<label>닉네임:</label>
+			<input type="text" id="uNick" name="uNick" 
+			       value="${loginUser.UNick}" 
+			       placeholder="닉네임 입력">
+			<div id="nickMsg" style="font-size: 12px; margin-top: 5px;"></div>
         
         <div class="gender-group">
             <label>성별: </label>
@@ -37,19 +39,26 @@
         
         <div class="btn-group">
             <button type="button" onclick="submitStep2()">가입 완료하기</button>
-            <a href="/" class="skip-link">나중에 입력하기 (건너뛰기)</a>
+            <button type="button" onclick="location.href='/mypage'">나중에 설정하기</button>
         </div>
     </form>
 
     <script>
-    let nickChecked = false; // 최종 가입 가능 여부 변수
-    let timer; // 디바운싱용 타이머
+    let nickChecked = true; 
+    let timer;
+    const originalNick = "${sessionScope.loginUser.UNick}"; // 세션에서 가져온 초기 닉네임
 
     $('#uNick').on('input', function() {
         const nick = $(this).val();
-        nickChecked = false; // 글자가 바뀔 때마다 다시 체크해야 함
-        
-        // 이전 타이머 취소 (연타 시 마지막 한 번만 실행되게)
+
+        // 2. 입력값이 처음 부여받은 임시 닉네임과 같다면 체크 통과 처리
+        if (nick === originalNick || nick.trim() === "") {
+            $('#nickMsg').text("기존 임시 닉네임을 사용합니다.").css("color", "blue");
+            nickChecked = true;
+            return;
+        }
+
+        nickChecked = false; // 새로운 값을 입력하기 시작하면 다시 체크 필요
         clearTimeout(timer);
         
         if (nick.length < 2) {
@@ -57,7 +66,6 @@
             return;
         }
 
-        // 0.3초 동안 입력이 없으면 서버에 확인 요청
         timer = setTimeout(function() {
             $.get("/api/user/guest/check-nick", { uNick: nick }, function(isAvailable) {
                 if (isAvailable) {
@@ -68,27 +76,25 @@
                     nickChecked = false;
                 }
             });
-        }, 300); // 300ms 대기
+        }, 300);
     });
-    
+
     
     function submitStep2() {
-    	
-    	if(!nickChecked) {
-            alert("닉네임 중복 확인을 해주세요.");
-            return;
-        }
         const formData = $('#signupFormStep2').serializeArray();
         const data = {};
         
-        // 필드가 비어있지 않은 것만 데이터에 담기
         formData.forEach(item => {
             if(item.value.trim() !== "") {
                 data[item.name] = item.value;
             }
         });
 
-        console.log("전송할 2단계 데이터:", JSON.stringify(data));
+        // [중요] 만약 사용자가 닉네임을 입력하지 않았다면 
+        // 전송 데이터에 닉네임을 포함시키지 않거나, 기존 값을 다시 세팅합니다.
+        if(!data.uNick) {
+            data.uNick = "${loginUser.UNick}"; // 기존 임시 닉네임 유지
+        }
 
         $.ajax({
             url: '/api/user/guest/signup/step2', 
@@ -96,12 +102,8 @@
             contentType: 'application/json; charset=UTF-8',
             data: JSON.stringify(data),
             success: function(res) {
-                alert("정보가 저장되었습니다! 홈으로 이동합니다.");
-                location.href = "/"; // 홈으로 이동
-            },
-            error: function(err) {
-                // 400 에러 등이 날 경우 처리
-                alert("저장 실패: " + (err.responseText || "서버 오류"));
+                alert("가입이 완료되었습니다!");
+                location.href = "/"; 
             }
         });
     }

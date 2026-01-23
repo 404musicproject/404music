@@ -5,6 +5,7 @@
 <head>
     <title>회원가입</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="/css/SignupFormStep1.css">
 </head>
 <body>
 <h2>회원가입</h2>
@@ -22,7 +23,6 @@
 
         <input type="password" name="uPassword" placeholder="비밀번호" required><br>
         
-        <p style="font-size: 12px; color: gray;">* 전화번호는 가입 후 마이페이지에서 인증 가능합니다.</p>
 
         <button type="button" id="btnSubmit" onclick="submitSignup()" disabled>가입하기</button>
     </form>

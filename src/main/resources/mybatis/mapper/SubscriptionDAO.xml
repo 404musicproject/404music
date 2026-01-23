@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.project.springboot.dao.ISubscriptionDAO">
+
+    <!-- 1. 구독 정보 저장 (subscriptions 테이블명 확인!) -->
+    <insert id="insertSubscription" parameterType="com.project.springboot.dto.SubscriptionDTO">
+        <!-- INSERT 전에 시퀀스 값을 먼저 가져와서 sNo 필드에 세팅 -->
+        <selectKey keyProperty="sNo" resultType="int" order="BEFORE">
+            SELECT subscriptions_SEQ.NEXTVAL FROM DUAL
+        </selectKey>
+        
+        INSERT INTO subscriptions (
+            s_no, u_no, s_sub, s_status, s_next_sub, s_cancel_reserved, s_start_date, s_end_date
+        ) VALUES (
+            #{sNo}, #{uNo}, #{sSub}, #{sStatus}, #{sNextSub}, #{sCancelReserved}, #{sStartDate}, #{sEndDate}
+        )
+    </insert>
+
+    <!-- 2. 결제 로그 저장 (payment_logs 테이블명 확인!) -->
+    <insert id="insertPaymentLog" parameterType="com.project.springboot.dto.PaymentLogDTO">
+        INSERT INTO payment_logs (
+            p_no, s_no, merchant_uid, p_amount, p_paid_at
+        ) VALUES (
+            payment_logs_SEQ.NEXTVAL, #{sNo}, #{merchantUid}, #{pAmount}, #{pPaidAt}
+        )
+    </insert>
+
+    <!-- 3. 마이페이지용 조회 -->
+    <select id="findActiveSubscriptionByUNo" resultType="com.project.springboot.dto.SubscriptionDTO">
+        SELECT 
+            s_no as sNo, u_no as uNo, s_sub as sSub, s_status as sStatus,
+            s_next_sub as sNextSub, s_cancel_reserved as sCancelReserved,
+            s_start_date as sStartDate, s_end_date as sEndDate
+        FROM subscriptions 
+        WHERE u_no = #{uNo} 
+          AND s_end_date >= SYSDATE
+        ORDER BY s_start_date DESC
+        FETCH FIRST 1 ROWS ONLY
+    </select>   
+    
+	<update id="updateCancelStatus" parameterType="int">
+	    UPDATE subscriptions
+	    SET 
+	        s_cancel_reserved = 'T',
+	        s_status = 'PENDING_CANCEL'  <!-- 상태를 '취소 예정'으로 변경 -->
+	    WHERE u_no = #{param1}
+	      AND s_status = 'ACTIVE'
+	</update>
+
+    <!-- 5. 구독 해지 예약 철회 SQL -->
+    <update id="updateCancelStatusReverse" parameterType="int">
+        UPDATE subscriptions
+        SET 
+            s_cancel_reserved = 'F',
+            s_status = 'ACTIVE'
+        WHERE u_no = #{param1}
+          AND s_cancel_reserved = 'T'
+    </update>
+</mapper>

@@ -37,6 +37,104 @@
         .save-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .save-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 15px #00f2ff; }
     </style>
+    
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+    // [보완] 탭 함수 (evt가 null이어도 작동하도록 수정)
+    function openTab(evt, tabName) {
+            // 모든 컨텐츠 숨기기
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 모든 버튼 비활성화
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 해당 탭 및 버튼 활성화
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // 클릭 이벤트가 있는 경우(버튼 클릭)와 없는 경우(URL 파라미터 호출) 대응
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('active');
+            } else {
+                // tabName을 포함하는 onclick 속성을 가진 버튼을 찾아서 active 추가
+                const targetBtn = document.querySelector(`.tab-btn[onclick*='${tabName}']`);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+        }
+
+        $(document).ready(function() {
+            // URL에 ?tab=sub 등이 있는지 확인하여 해당 탭을 바로 띄움
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+
+            if (tabParam === 'sub') {
+                openTab(null, 'sub-container');
+            } else {
+                // 기본값: 첫 번째 탭 활성화
+                openTab(null, 'general');
+            }
+        });
+        
+        let nickChecked = true; // 처음엔 본인 닉네임이므로 true
+        const originalNick = "${sessionScope.loginUser.UNick}"; // 기존 닉네임 저장
+        let timer; 
+
+        $('#uNick').on('input', function() {
+            const nick = $(this).val();
+            
+            // 1. 기존 닉네임과 동일할 경우 (본인 확인)
+            if (nick === originalNick) {
+                $('#nickMsg').text("현재 사용 중인 닉네임입니다.").css("color", "gray");
+                nickChecked = true;
+                $('#save-btn').prop('disabled', false); // 저장 버튼 활성화
+                return;
+            }
+
+            nickChecked = false; // 글자가 바뀌면 일단 false
+            $('#save-btn').prop('disabled', true); // 중복 확인 전까지 저장 버튼 비활성화
+            
+            clearTimeout(timer);
+            
+            if (nick.length < 2) {
+                $('#nickMsg').text("닉네임은 2자 이상 입력해주세요.").css("color", "orange");
+                return;
+            }
+
+            // 0.3초 대기 후 서버 통신
+            timer = setTimeout(function() {
+                $.get("/api/user/guest/check-nick", { uNick: nick }, function(isAvailable) {
+                    if (isAvailable) {
+                        $('#nickMsg').text("✅ 사용 가능한 닉네임입니다.").css("color", "cyan");
+                        nickChecked = true;
+                        $('#save-btn').prop('disabled', false); // 중복 없으면 저장 버튼 활성화
+                    } else {
+                        $('#nickMsg').text("❌ 이미 사용 중인 닉네임입니다.").css("color", "red");
+                        nickChecked = false;
+                        $('#save-btn').prop('disabled', true); // 중복이면 저장 버튼 비활성화
+                    }
+                });
+            }, 300);
+        });
+
+        // 폼 제출 시 최종 확인 (엔터 키 등으로 제출 방지)
+        $('form').on('submit', function(e) {
+            if (!nickChecked) {
+                alert("닉네임을 확인해주세요.");
+                e.preventDefault(); // 전송 중단
+                return false;
+            }
+        });
+    </script>
+
+    
 </head>
 <body>
     <jsp:include page="/WEB-INF/views/common/Header.jsp" />
@@ -50,12 +148,12 @@
                 <button class="tab-btn active" onclick="openTab(event, 'general')">GENERAL</button>
                 <button class="tab-btn" onclick="openTab(event, 'security')">SECURITY</button>
                 <button class="tab-btn" onclick="openTab(event, 'notification')">NOTI</button>
+                <button class="tab-btn" onclick="openTab(event, 'sub-container')">SUBSCRIPTION</button>
             </div>
 
             <form action="/api/user/update" method="POST">
                 <!-- [1] 일반 정보 탭 -->
 					<div id="general" class="tab-content active">
-					    <form action="/api/user/update" method="POST">
 					        <!-- 아이디 (고정) -->
 					        <div class="info-row">
 					            <span class="label">ID / EMAIL</span>
@@ -64,11 +162,17 @@
 					        </div>
 					
 					        <!-- 닉네임 (조회/수정 공용) -->
-					        <div class="info-row">
-					            <span class="label">NICKNAME</span>
-					            <span class="view-mode">${sessionScope.loginUser.UNick}</span>
-					            <input type="text" name="uNick" class="neon-input edit-mode" value="${sessionScope.loginUser.UNick}" style="display:none;">
-					        </div>
+							<div class="info-row">
+							    <span class="label">NICKNAME</span>
+							    <!-- 조회 모드 -->
+							    <span class="view-mode">${sessionScope.loginUser.UNick}</span>
+							    
+							    <!-- 수정 모드 -->
+							    <div class="edit-mode"style="display:none;" >
+							        <input type="text" name="uNick" id="uNick" class="neon-input" value="${sessionScope.loginUser.UNick}">
+							        <div id="nickMsg""></div>
+							    </div>
+							</div>
 					
 					        <!-- 지역 (조회/수정 공용) -->
 					        <div class="info-row">
@@ -107,9 +211,9 @@
 					            <button type="submit" id="save-btn" class="save-btn edit-mode" style="display:none;">SAVE CHANGES</button>
 					            <button type="button" id="cancel-btn" class="withdraw-btn edit-mode" style="display:none; margin-top:10px;" onclick="toggleEditMode(false)">CANCEL</button>
 					        </div>
-					    </form>
+					  
 					</div>
-					
+			</form>
                 <!-- [2] 계정 보안 탭 -->
 					<div id="security" class="tab-content">
 					    <c:choose>
@@ -160,22 +264,114 @@
                     </div>
                     <button type="submit" class="save-btn">SAVE PREFERENCES</button>
                 </div>
-            </form>
+                <!-- [4] 구독 정보 탭 -->
+                <div id="sub-container" class="tab-content">
+				    <h2>나의 구독 관리</h2>
+				    <c:choose>
+				        <c:when test="${not empty subscription}">
+							<div class="card active">
+							    <h3>이용 중인 상품: ${subscription.SSub}</h3>
+							    
+							    <!-- 결제 상태에 따라 텍스트 및 다음 결제일 표시 제어 -->
+							    <p>결제 상태: 
+							        <c:choose>
+							            <c:when test="${subscription.SStatus eq 'PENDING_CANCEL'}">
+							                <strong style="color:#ff0055;">취소 예정</strong>
+							            </c:when>
+							            <c:otherwise>
+							                <strong>${subscription.SStatus}</strong>
+							            </c:otherwise>
+							        </c:choose>
+							    </p>
+							
+							    <p>이용 기간: ${subscription.SStartDate} ~ ${subscription.SEndDate}</p>
+							
+							    <!-- '취소 예정' 상태가 아닐 때만 다음 결제 예정일을 표시 -->
+							    <c:if test="${subscription.SStatus ne 'PENDING_CANCEL'}">
+							        <p>다음 결제 예정일: <strong>${subscription.SNextSub}</strong></p>
+							    </c:if>
+							    
+							    <!-- 해지 상태에 따른 버튼/메시지 제어 -->
+							    <c:choose>
+							        <c:when test="${subscription.SCancelReserved == 'F'}">
+							             <!-- 해지 예약 안 됨: 해지 예약 버튼 표시 -->
+							             <button class="save-btn" onclick="cancelSubscription()">정기 결제 해지 예약</button>
+							        </c:when>
+							        <c:otherwise>
+							            <!-- 해지 예약 됨 (T): 예약 철회 버튼 표시 -->
+							            <p class="text-danger" style="margin-top:15px;">
+							                [해지 예약 완료] ${subscription.SEndDate}에 자동 종료됩니다.
+							            </p>
+							            <button class="save-btn" onclick="reverseCancelSubscription()">
+							                해지 예약 철회 및 구독 유지
+							            </button>
+							        </c:otherwise>
+							    </c:choose>
+							</div>
+				        </c:when>
+				     	<c:otherwise>
+				            <div class="card empty">
+				                <p>구독 중인 상품이 없습니다.</p>
+				                <button onclick="location.href='/user/subscription'">이용권 구매</button>
+				            </div>
+				    	</c:otherwise>
+				    </c:choose>
+				</div>
         </div>
     </div>
 
     <script>
-    	//탭 함수
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) { tabcontent[i].classList.remove("active"); }
-            tablinks = document.getElementsByClassName("tab-btn");
-            for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
+    $(document).ready(function() {
+        // 1. URL 파라미터 확인 (?tab=sub 확인)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+
+        // 2. 파라미터가 'sub'이면 구독 탭 강제 활성화
+        if (tabParam === 'sub') {
+            openTab(null, 'sub-container');
+        }
+    });
+
+
+    
+    function cancelSubscription() {
+        if (confirm("정기 결제를 해지하시겠습니까? 해지 후에도 이용 기간까지는 계속 사용 가능합니다.")) {
+            $.ajax({
+                url: '/api/subscription/cancel',
+                type: 'POST',
+                success: function(res) {
+                    alert("해지 예약이 완료되었습니다.");
+                    location.reload(); // 상태 업데이트를 위해 새로고침
+                },
+                error: function(xhr) {
+                    alert("해지 처리 중 오류가 발생했습니다: " + xhr.responseText);
+                }
+            });
+        }
+    }
+    
+    function reverseCancelSubscription() {
+        // 1. 사용자 확인창
+        if (!confirm("정기 결제 해지 예약을 철회하고 구독을 유지하시겠습니까?")) {
+            return; // 사용자가 취소를 누르면 함수 종료
         }
 
+        // 2. 서버로 예약 철회 요청 전송 (jQuery 사용)
+        $.ajax({
+            url: '/api/subscription/reverseCancel', // 컨트롤러에 만든 새로운 URL
+            type: 'POST',
+            success: function(res) {
+                alert("구독이 유지됩니다.");
+                location.reload(); // 화면 새로고침하여 '취소 예정' 문구 제거
+            },
+            error: function(xhr) {
+                alert("오류가 발생했습니다: " + xhr.responseText);
+            }
+        });
+    }
+    
+    
+    
         // 수정 모드 토글 함수
         function toggleEditMode(isEdit) {
             const viewElements = document.querySelectorAll('.view-mode');
