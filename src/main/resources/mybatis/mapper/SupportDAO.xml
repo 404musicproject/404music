@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.project.springboot.dao.ISupportDAO">
+
+    <!-- 1. 공지사항 목록 조회 (필드명 매핑 확인) -->
+    <select id="getNoticeList" resultType="com.project.springboot.dto.InquiryDTO">
+        SELECT 
+            n_no AS iNo, 
+            n_title AS iTitle, 
+            n_content AS iContent, 
+            n_date AS iDate 
+        FROM notifications 
+        WHERE n_type = 'NOTICE' 
+        ORDER BY n_no DESC
+    </select>
+
+    <!-- 2. 공지 삭제 (테이블명 notifications로 통일) -->
+<delete id="deleteNotice" parameterType="int">
+    DELETE FROM notifications 
+    WHERE n_no = #{noticeNo}
+</delete>
+
+    <!-- 3. 공지 수정 (n_content가 길 경우 대비 jdbcType=CLOB 추가) -->
+<update id="updateNotice" parameterType="com.project.springboot.dto.NotificationDTO">
+    UPDATE notifications 
+    SET n_title = #{nTitle}, 
+        n_content = #{nContent, jdbcType=CLOB}, 
+        n_date = SYSDATE 
+    WHERE n_no = #{noticeNo}
+</update>
+
+<!-- 4. 상세 조회 (NotificationDTO 매핑) -->
+<select id="getNoticeDetail" resultType="com.project.springboot.dto.NotificationDTO">
+    SELECT 
+        n_no AS noticeNo,     
+        n_title AS nTitle, 
+        n_content AS nContent, 
+        n_date AS nDate,
+        u_no AS userNo        <!-- uNo -> userNo -->
+    FROM notifications 
+    WHERE n_no = #{noticeNo}
+</select>
+
+    <!-- 5. 내 1:1 문의 내역 조회 -->
+<select id="getMyInquiryList" resultType="com.project.springboot.dto.InquiryDTO">
+    SELECT 
+        i_no AS iNo, 
+        u_no AS userNo,     <!-- uNo를 userNo로 변경 -->
+        i_title AS iTitle, 
+        i_content AS iContent, 
+        i_date AS iDate, 
+        i_answer AS iAnswer, 
+        i_answered_at AS iAnsweredAt, 
+        i_status AS iStatus, 
+        i_is_secret AS iIsSecret
+    FROM inquiries 
+    ORDER BY i_no DESC
+</select>
+    <!-- 6. 1:1 문의 답변 등록 -->
+    <update id="updateAnswer">
+        UPDATE inquiries 
+        SET i_answer = #{iAnswer},
+            i_answered_at = SYSDATE, 
+            i_status = '답변완료' 
+        WHERE i_no = #{iNo}
+    </update>
+
+<!-- 7. 알림 등록 (가장 에러가 많이 났던 부분) -->
+<insert id="insertNotification" parameterType="com.project.springboot.dto.NotificationDTO">
+    INSERT INTO notifications (
+        n_no, u_no, n_title, n_content, n_type, n_ref_no, n_is_read, n_date
+    ) VALUES (
+        not_no_seq.NEXTVAL, 
+        #{userNo},            <!-- 이제 NotificationDTO에 userNo가 있으므로 성공함 -->
+        #{nTitle}, 
+        #{nContent, jdbcType=CLOB}, 
+        #{nType}, 
+        #{nRefNo}, 
+        'N', 
+        SYSDATE
+    )
+</insert>
+
+<!-- 8. 1:1 문의 등록 (InquiryDTO 기반) -->
+<insert id="insertInquiry" parameterType="com.project.springboot.dto.InquiryDTO">
+    INSERT INTO inquiries (
+        i_no, u_no, i_title, i_content, i_date, i_status, i_is_secret
+    ) VALUES (
+        inquiry_no_seq.NEXTVAL, 
+        #{userNo},            <!-- uNo -> userNo (InquiryDTO 필드명) -->
+        #{iTitle}, 
+        #{iContent, jdbcType=CLOB}, 
+        SYSDATE, 
+        '답변대기', 
+        #{iIsSecret, jdbcType=VARCHAR}
+    )
+</insert>
+    
+        <!-- 1:1 문의 삭제 -->
+    <delete id="deleteInquiry">
+        DELETE FROM inquiries 
+        WHERE i_no = #{iNo}
+    </delete>
+
+    <!-- 1:1 문의 수정 -->
+    <update id="updateInquiry">
+        UPDATE inquiries 
+        SET i_title = #{iTitle}, 
+            i_content = #{iContent, jdbcType=CLOB}, 
+            i_is_secret = #{iIsSecret, jdbcType=VARCHAR},
+            i_date = SYSDATE 
+        WHERE i_no = #{iNo}
+    </update>
+
+<select id="getInquiryDetail" resultType="com.project.springboot.dto.InquiryDTO">
+    SELECT 
+        i_no AS iNo, 
+        u_no AS userNo,     <!-- uNo를 userNo로 변경 -->
+        i_title AS iTitle, 
+        i_content AS iContent, 
+        i_is_secret AS iIsSecret,
+        i_status AS iStatus
+    FROM inquiries 
+    WHERE i_no = #{iNo}
+</select>
+
+</mapper>

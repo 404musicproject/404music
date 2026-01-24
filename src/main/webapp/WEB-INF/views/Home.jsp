@@ -3,7 +3,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>404Music Main Home</title>
+    <title>404Music</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Home.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Footer.css">
@@ -35,6 +35,21 @@ document.addEventListener("DOMContentLoaded", function() {
             sec.style.borderColor = '#00ffff';
         });
     });
+    // --- [수정된 코드] ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const showLogin = urlParams.get('showLogin');
+
+    if (showLogin === 'true' && typeof openLoginModal === 'function') {
+        openLoginModal();
+        
+        // 팝업을 띄운 후 URL에서 ?showLogin=true 파라미터 제거
+        // 사용자가 새로고침해도 팝업이 다시 뜨지 않게 합니다.
+        if (window.history.replaceState) {
+            // 현재 URL에서 쿼리 파라미터만 제거한 새 URL 생성
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+        }
+    }
 });
 </script>
 </body>

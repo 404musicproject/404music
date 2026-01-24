@@ -8,6 +8,7 @@ pageEncoding="UTF-8"%>
 <meta charset="UTF-8">
 <title>header</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ToastMessage.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
@@ -50,10 +51,7 @@ pageEncoding="UTF-8"%>
                     <div id="profileDropdown" class="dropdown-table-menu">
                         <table>
                             <tr onclick="location.href='/user/mypage'">
-                                <td>내 정보 보기</td>
-                            </tr>
-                            <tr onclick="location.href='/user/subscription'">
-                                <td>구독</td>
+                                <td>Mypage</td>
                             </tr>
                             <tr onclick="location.href='/logout'">
                                 <td class="menu-logout">로그아웃</td>
