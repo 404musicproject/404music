@@ -43,12 +43,15 @@ dependencies {
 	implementation 'org.glassfish:jakarta.el:4.0.2'
 	implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
 	implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16'
-	 // Elasticsearch 7.10.1
-    implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.10.1'
-    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+	 // 이메일인증
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    
+	implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.10.1'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
 }
 
+
+ext['elasticsearch.version'] = '7.10.1'
 eclipse.wtp.facet {
 	facet name: 'jst.web', version: '5.0'
 }

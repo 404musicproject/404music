@@ -1,0 +1,26 @@
+/* Header.jsp에 추가 */
+.neon-toast-web {
+    position: fixed;
+    top: 30px;
+    right: -400px; /* 평소엔 숨김 */
+    width: 320px;
+    background: rgba(5, 5, 5, 0.95);
+    border: 2px solid #ff0055;
+    color: #00f2ff;
+    padding: 20px;
+    z-index: 10000;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+    transition: all 0.5s ease-in-out;
+}
+
+.neon-toast-web.active {
+    right: 30px; /* 알림 발생 시 등장 */
+}
+
+.toast-header {
+    font-size: 0.7em;
+    color: #ff0055;
+    margin-bottom: 5px;
+    letter-spacing: 2px;
+}
