@@ -35,7 +35,6 @@ public class UserDTO {
     private LocalDateTime uCreateAt; 
     private String uAuth;           // 권한 (ROLE_USER 등)
     private boolean uEmailVerified; // 이메일 인증 여부 (2026 표준: boolean 처리)
-    
     private String uProfileImg = "/img/default-profile.png";
     
  // JSP EL (${loginUser.uProfileImg})이 확실하게 인식할 수 있도록 수동 Getter 추가
@@ -43,8 +42,21 @@ public class UserDTO {
         return uProfileImg;
     }
 
-    // uNick도 같은 이유로 에러가 날 수 있으니 미리 추가해둡니다.
+    public int getUNo() {
+        return uNo;
+    }
+
+    // 2. JSP EL용 (PropertyNotFoundException 해결사)
+    // JSP의 ${loginUser.uNo}가 찾는 소문자 버전입니다.
+    public int getuNo() {
+        return uNo;
+    }
+
+    // 3. 닉네임도 마찬가지로 두 버전 모두 제공
     public String getUNick() {
+        return uNick;
+    }
+    public String getuNick() {
         return uNick;
     }
 }
