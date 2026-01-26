@@ -11,7 +11,7 @@
             n_content AS iContent, 
             n_date AS iDate 
         FROM notifications 
-        WHERE n_type = 'NOTICE' 
+        WHERE n_type IN ('NOTICE', 'POPUP')
         ORDER BY n_no DESC
     </select>
 
@@ -69,16 +69,17 @@
 <!-- 7. 알림 등록 (가장 에러가 많이 났던 부분) -->
 <insert id="insertNotification" parameterType="com.project.springboot.dto.NotificationDTO">
     INSERT INTO notifications (
-        n_no, u_no, n_title, n_content, n_type, n_ref_no, n_is_read, n_date
+        n_no, u_no, n_title, n_content, n_type, n_ref_no, n_is_read, n_date, n_end_date
     ) VALUES (
         not_no_seq.NEXTVAL, 
-        #{userNo},            <!-- 이제 NotificationDTO에 userNo가 있으므로 성공함 -->
+        #{userNo}, 
         #{nTitle}, 
         #{nContent, jdbcType=CLOB}, 
         #{nType}, 
-        #{nRefNo}, 
+        #{nRefNo, jdbcType=NUMERIC}, 
         'N', 
-        SYSDATE
+        SYSDATE,
+        #{nEndDate, jdbcType=DATE} <!-- 팝업 종료일 추가 -->
     )
 </insert>
 
@@ -96,6 +97,20 @@
         #{iIsSecret, jdbcType=VARCHAR}
     )
 </insert>
+
+<!-- 9. 메인 팝업용: 현재 노출 기간인 데이터 조회 -->
+<select id="getActivePopupList" resultType="com.project.springboot.dto.NotificationDTO">
+    SELECT 
+        n_no AS noticeNo,     
+        n_title AS nTitle, 
+        n_content AS nContent, 
+        n_date AS nDate,
+        n_end_date AS nEndDate  <!-- 추가된 컬럼 -->
+    FROM notifications 
+    WHERE n_type = 'POPUP' 
+      AND SYSDATE BETWEEN n_date AND n_end_date
+    ORDER BY n_no DESC
+</select>
     
         <!-- 1:1 문의 삭제 -->
     <delete id="deleteInquiry">

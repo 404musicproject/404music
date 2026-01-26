@@ -13,4 +13,5 @@ public class NotificationDTO {
     private String nType;      // n_type -> nType
     private int nRefNo;        // n_ref_no -> nRefNo
     private Date nDate;        // n_date -> nDate
+    private String nEndDate; 
 }

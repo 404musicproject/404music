@@ -53,6 +53,38 @@
             color: #fff; 
             box-shadow: 0 0 15px #ff0055;
         }
+        
+        /* 팝업 옵션 컨테이너 */
+.popup-options {
+    background: #1a1a1a;
+    padding: 20px;
+    border: 1px dashed #00f2ff;
+    margin-bottom: 25px;
+}
+
+.checkbox-label {
+    color: #00f2ff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* 날짜 입력창 스타일 */
+input[type="date"] {
+    background: #111;
+    border: 1px solid #ff0055;
+    color: #ff0055;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    outline: none;
+}
+
+.date-group {
+    display: none; /* 기본적으로 숨김 */
+    margin-top: 10px;
+}
     </style>
 <link rel="stylesheet" href="/ckeditor5/style.css">
 <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/47.4.0/ckeditor5.css" crossorigin>
@@ -64,6 +96,22 @@
     <form action="${pageContext.request.contextPath}/support/insertNotice.do" method="post" id="noticeForm">
         <label class="label-text">NOTICE_TITLE</label>
         <input type="text" name="nTitle" placeholder="Enter title here..." required>
+        
+            <!-- 팝업 설정 영역 추가 -->
+    <div class="popup-options">
+        <label class="checkbox-label">
+            <input type="checkbox" name="isPopup" value="Y" id="isPopupCheckbox"> 
+            SET_AS_POPUP (메인 팝업으로 게시)
+        </label>
+        
+        <div id="dateGroup" class="date-group">
+            <label class="label-text" style="font-size: 0.8em;">POPUP_EXPIRATION_DATE</label>
+            <input type="date" name="nEndDate" id="nEndDate">
+            <span style="color: #666; font-size: 12px; margin-left: 10px;">* 해당 날짜 자정까지 노출됩니다.</span>
+        </div>
+    </div>
+        
+        
         
         <label class="label-text">NOTICE_CONTENT</label>
         
@@ -96,6 +144,45 @@
             }
             // hidden input에 에디터 내용 주입
             document.getElementById('nContent').value = data;
+        }
+    });
+    
+    // 1. 체크박스 상태에 따라 날짜 입력창 보이기/숨기기
+    document.getElementById('isPopupCheckbox').addEventListener('change', function() {
+        const dateGroup = document.getElementById('dateGroup');
+        const nEndDate = document.getElementById('nEndDate');
+        
+        if(this.checked) {
+            dateGroup.style.display = 'block';
+            nEndDate.required = true;
+        } else {
+            dateGroup.style.display = 'none';
+            nEndDate.required = false;
+            nEndDate.value = '';
+        }
+    });
+
+    // 2. 폼 제출 시 기존 에디터 처리 로직과 결합
+    document.getElementById('noticeForm').addEventListener('submit', function(e) {
+        // 에디터 데이터 처리 (기존 코드)
+        if (window.editor) {
+            const data = window.editor.getData();
+            if (data.trim() === "") {
+                alert("내용을 입력하세요.");
+                e.preventDefault();
+                return;
+            }
+            document.getElementById('nContent').value = data;
+        }
+
+        // 팝업 선택 시 날짜 유효성 추가 검사
+        const isPopup = document.getElementById('isPopupCheckbox').checked;
+        const nEndDate = document.getElementById('nEndDate').value;
+        
+        if (isPopup && !nEndDate) {
+            alert("팝업 종료 날짜를 선택해주세요.");
+            e.preventDefault();
+            return;
         }
     });
 </script>		

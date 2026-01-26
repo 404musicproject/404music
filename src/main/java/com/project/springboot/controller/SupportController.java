@@ -1,6 +1,5 @@
 package com.project.springboot.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.project.springboot.dao.ISupportDAO;
 import com.project.springboot.dto.InquiryDTO;
@@ -60,14 +60,31 @@ public class SupportController {
 
     // 공지사항 DB 저장 처리
     @PostMapping("/support/insertNotice.do")
-    public String insertNotice(NotificationDTO notice, HttpSession session) {
+    public String insertNotice(NotificationDTO notice, 
+                               @RequestParam(value="isPopup", defaultValue="N") String isPopup,
+                               HttpSession session) {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         if (loginUser != null && "ADMIN".equals(loginUser.getUAuth())) {
-            notice.setUserNo(loginUser.getUNo());
-            notice.setNType("NOTICE"); // 타입을 NOTICE로 고정
-            supportDao.insertNotification(notice); // 기존에 만든 알림 insert 메서드 활용
+            
+            if("Y".equals(isPopup)) {
+                notice.setUserNo(0); // 팝업은 특정 회원이 아닌 전체(0) 대상
+                notice.setNType("POPUP"); 
+                // nEndDate는 JSP에서 <input type="date">로 받아온다고 가정
+            } else {
+                notice.setUserNo(loginUser.getUNo());
+                notice.setNType("NOTICE");
+            }
+            
+            supportDao.insertNotification(notice);
         }
         return "redirect:/support?mode=notice";
+    }
+    
+    @GetMapping("/api/getPopups")
+    @ResponseBody // JSON 데이터를 반환
+    public List<NotificationDTO> getActivePopups() {
+        // DAO에서 "u_no=0 AND n_type='POPUP' AND SYSDATE <= n_end_date" 조건으로 조회
+        return supportDao.getActivePopupList(); 
     }
     
  // 공지 삭제

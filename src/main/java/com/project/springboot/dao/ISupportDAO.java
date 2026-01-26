@@ -25,8 +25,14 @@ public interface ISupportDAO {
     // --- [알림 관련] ---
     int insertNotification(NotificationDTO notification);
     
+    // 1. 메인 페이지용: 현재 게시 기간 내에 있고 타입이 POPUP인 알림 조회
+    List<NotificationDTO> getActivePopupList();
+
+    // 2. 공지사항 리스트: N_TYPE이 'NOTICE'인 것들만 조회하도록 수정 권장
+    // (기존 InquiryDTO 리턴 타입을 NotificationDTO로 맞추는 것이 좋습니다)
+    List<NotificationDTO> getNoticeList(); 
+    
     // --- [공지사항] ---
-    List<InquiryDTO> getNoticeList(); 
     
     void deleteNotice(@Param("noticeNo") int noticeNo);
     void updateNotice(NotificationDTO dto);

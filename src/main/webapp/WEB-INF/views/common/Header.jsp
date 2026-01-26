@@ -10,6 +10,7 @@ pageEncoding="UTF-8"%>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Header.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/ToastMessage.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 <div class="main-header">
@@ -22,7 +23,10 @@ pageEncoding="UTF-8"%>
     <div class="header-center">
         <form action="/productSearchfh" method="get" class="search-form">
             <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
-            <button type="submit">검색</button>
+              <%-- 텍스트 '검색' 대신 돋보기 아이콘 적용 --%>
+		    <button type="submit" class="search-button">
+		    <i class="fa-solid fa-magnifying-glass"></i>
+			</button>
         </form>
     </div>
 <div class="header-right">
