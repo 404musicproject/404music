@@ -46,6 +46,7 @@ public class UserViewController {
 	      
 	      return "guest/SignupFormStep2";
 	  }
+	 
 	  
 	  // UserRestController.java 또는 별도의 Controller 클래스
 	    @GetMapping("/logout")

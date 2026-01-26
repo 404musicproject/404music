@@ -43,13 +43,19 @@
             VALUES (#{b_no}, #{a_no}, #{b_title}, #{b_image})
     </insert>
     
-    <insert id="insertMusic" parameterType="com.project.springboot.dto.MusicDTO">
-        MERGE INTO music m
-        USING DUAL ON (m.isrc_code = #{isrc_code})
-        WHEN NOT MATCHED THEN
-            INSERT (m_no, m_title, a_no, b_no, isrc_code, m_youtube_id, m_preview_url)
-            VALUES (music_no_seq.NEXTVAL, #{m_title}, #{a_no}, #{b_no}, #{isrc_code}, #{m_youtube_id}, #{m_preview_url})
-    </insert>
+	<insert id="insertMusic" parameterType="com.project.springboot.dto.MusicDTO">
+	    <selectKey keyProperty="m_no" resultType="int" order="BEFORE">
+	        SELECT COALESCE(
+	            (SELECT m_no FROM music WHERE isrc_code = #{isrc_code} AND ROWNUM = 1),
+	            music_no_seq.NEXTVAL
+	        ) FROM DUAL
+	    </selectKey>
+	    MERGE INTO music m
+	    USING DUAL ON (m.isrc_code = #{isrc_code})
+	    WHEN NOT MATCHED THEN
+	        INSERT (m_no, m_title, a_no, b_no, isrc_code, m_youtube_id, m_preview_url)
+	        VALUES (#{m_no}, #{m_title}, #{a_no}, #{b_no}, #{isrc_code}, #{m_youtube_id}, #{m_preview_url})
+	</insert>
 
     <update id="updateYoutubeId">
         UPDATE music 

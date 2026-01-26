@@ -18,27 +18,38 @@ public class EmailAuthController {
 	@Autowired
     private JavaMailSender mailSender;
 
-    // 1. 인증번호 발송
-    @PostMapping("/send-email")
+	@PostMapping("/send-email")
     public String sendEmail(@RequestParam("email") String email, HttpSession session) {
-        // 6자리 난수 생성
-        String authCode = String.valueOf(new Random().nextInt(899999) + 100000);
-        
-        // 세션에 인증번호와 이메일 저장 (3분 동안만 유효하게 설정 가능)
-        session.setAttribute("authCode", authCode);
-        session.setAttribute("authEmail", email);
-        session.setMaxInactiveInterval(180); // 3분 제한
+		System.setProperty("com.sun.net.ssl.checkRevocation", "false");
+	    
+	    // 이 부분이 핵심입니다 (인증서 신뢰 설정 강제 주입)
+	    java.security.Security.setProperty("jdk.tls.disabledAlgorithms", "");
+		
+        try {
+            // 6자리 난수 생성
+            String authCode = String.valueOf(new Random().nextInt(899999) + 100000);
+            
+            // 세션에 저장
+            session.setAttribute("authCode", authCode);
+            session.setAttribute("authEmail", email);
+            session.setMaxInactiveInterval(180);
 
-        // 메일 발송 로직
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("[서비스명] 회원가입 인증번호입니다.");
-        message.setText("인증번호: " + authCode);
-        mailSender.send(message);
-
-        return "success";
+            // 메일 발송 로직
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[404Music] 회원가입 인증번호입니다.");
+            message.setText("인증번호: " + authCode);
+            
+            mailSender.send(message);
+            System.out.println(">>> 메일 발송 성공: " + email);
+            
+            return "success";
+        } catch (Exception e) {
+            System.err.println("!!! 메일 발송 에러 발생 !!!");
+            e.printStackTrace(); // 콘솔에 상세 에러 출력
+            return "error: " + e.getMessage();
+        }
     }
-
     // 2. 인증번호 검증
     @PostMapping("/verify-code")
     public String verifyCode(@RequestParam("code") String code, HttpSession session) {

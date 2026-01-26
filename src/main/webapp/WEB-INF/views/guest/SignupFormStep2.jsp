@@ -39,7 +39,7 @@
         
         <div class="btn-group">
             <button type="button" onclick="submitStep2()">가입 완료하기</button>
-            <button type="button" onclick="location.href='/mypage'">나중에 설정하기</button>
+            <button type="button" onclick="location.href='${pageContext.request.contextPath}/user/mypage'">나중에 설정하기</button>
         </div>
     </form>
 
