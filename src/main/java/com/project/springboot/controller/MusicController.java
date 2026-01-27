@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.HistoryDTO;
@@ -58,18 +59,50 @@ public class MusicController {
         List<Map<String, Object>> top100 = musicDAO.selectTop100Music(u_no);
         return ResponseEntity.ok(top100);
     }
+    @GetMapping("/weekly")
+    public ResponseEntity<List<Map<String, Object>>> getWeekly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectWeeklyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectWeeklyMusic(u_no));
+    }
 
+    // 2. 월간 데이터 통로
+    @GetMapping("/monthly")
+    public ResponseEntity<List<Map<String, Object>>> getMonthly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectMonthlyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectMonthlyMusic(u_no));
+    }
+
+    // 3. 연간 데이터 통로
+    @GetMapping("/yearly")
+    public ResponseEntity<List<Map<String, Object>>> getYearly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectYearlyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectYearlyMusic(u_no));
+    }
+    
+    @GetMapping("/regional")
+    public ResponseEntity<List<Map<String, Object>>> getRegionalChart(
+            @RequestParam(value="u_no", defaultValue="0") int u_no,
+            @RequestParam(value="city", required=false) String city) {
+        
+        // DAO에 city를 파라미터로 넘겨 해당 지역의 1~100위까지 가져오는 메서드 필요
+        List<Map<String, Object>> list = musicDAO.selectRegionalMusic(u_no, city);
+        return ResponseEntity.ok(list);
+    }
+    
     // 4. 재생 로그 저장 (기존 @RequestBody 방식에서 일반 폼 전송 방식으로도 가능하게 보강)
     @PostMapping("/history")
     public ResponseEntity<String> saveHistory(HistoryDTO history) {
         try {
-            // u_no가 없거나 null이면 비회원(0번)으로 강제 설정
             if (history.getU_no() == 0) {
                 history.setU_no(0); 
             }
             
+            // [수정] 데이터가 잘 들어오는지 콘솔에서 확인하기 위한 로그
+            System.out.println("[차트 반영] 곡:" + history.getM_no() + 
+                               " | 지역:" + history.getH_location() + 
+                               " | 좌표:(" + history.getH_lat() + ", " + history.getH_lon() + ")");
+
             musicDAO.insertHistory(history);
-            System.out.println("[차트 반영] 곡 번호 " + history.getM_no() + " 재생 기록됨");
             return ResponseEntity.ok("success");
         } catch (Exception e) {
             e.printStackTrace();
@@ -124,4 +157,53 @@ public class MusicController {
         }
         return result;
     }
+    @GetMapping("/rss/most-played")
+    public ResponseEntity<List<Map<String, Object>>> getRssMostPlayed(
+            @RequestParam(value="storefront", defaultValue="kr") String storefront,
+            @RequestParam(value="limit", defaultValue="10") int limit
+    ) {
+        try {
+            String url =
+                "https://rss.applemarketingtools.com/api/v2/"
+                + storefront.toLowerCase()
+                + "/music/most-played/"
+                + limit
+                + "/songs.json";
+
+            RestTemplate rt = new RestTemplate();
+            Map<String, Object> root = rt.getForObject(url, Map.class);
+
+            if (root == null || root.get("feed") == null) {
+                return ResponseEntity.ok(List.of());
+            }
+
+            Map<String, Object> feed = (Map<String, Object>) root.get("feed");
+            List<Map<String, Object>> results = (List<Map<String, Object>>) feed.get("results");
+
+            if (results == null) return ResponseEntity.ok(List.of());
+
+            // home.jsp가 바로 쓰기 쉽도록 기존 키 형태(TITLE/ARTIST/ALBUM_IMG)로 변환
+            List<Map<String, Object>> out = results.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("MNO", 0); // 클릭 시 title로 검색 이동만 할 거라 의미없음
+                m.put("TITLE", r.get("name"));
+                m.put("ARTIST", r.get("artistName"));
+                m.put("ALBUM_IMG", r.get("artworkUrl100"));
+                m.put("URL", r.get("url"));
+                return m;
+            }).toList();
+
+            return ResponseEntity.ok(out);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(List.of());
+        }
+    }
+    @GetMapping("/youtube-search")
+    public ResponseEntity<String> youtubeSearch(@RequestParam("q") String q) {
+        String videoId = youtubeService.searchYouTube(q);
+        return ResponseEntity.ok(videoId != null ? videoId : "fail");
+    }
+
 }

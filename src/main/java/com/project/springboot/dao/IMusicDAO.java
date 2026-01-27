@@ -27,7 +27,9 @@ public interface IMusicDAO {
     
     // 4. TOP 100 차트 조회 (로그인한 유저의 좋아요 여부 포함)
     List<Map<String, Object>> selectTop100Music(@Param("u_no") int u_no);
-
+    List<Map<String, Object>> selectWeeklyMusic(int u_no);  // 주간
+    List<Map<String, Object>> selectMonthlyMusic(int u_no); // 월간
+    List<Map<String, Object>> selectYearlyMusic(int u_no);  // 연간
     // 5. 좋아요(Likes) 기능
     int checkLike(@Param("u_no") int u_no, @Param("m_no") int m_no);
     void insertLike(@Param("u_no") int u_no, @Param("m_no") int m_no);
@@ -37,4 +39,6 @@ public interface IMusicDAO {
     void updateMusicPreview(Map<String, Object> params);
     void updateAlbumImage(Map<String, Object> params);
     void updateArtistGenre(Map<String, Object> params);
+    
+    List<Map<String, Object>> selectRegionalMusic(@Param("u_no") int u_no, @Param("city") String city);
 }

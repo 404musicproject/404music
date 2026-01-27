@@ -13,6 +13,7 @@
         <result property="m_preview_url" column="m_preview_url" />
         <result property="a_name" column="a_name" />
         <result property="b_title" column="b_title" />
+        <result property="b_image" column="b_image" />
     </resultMap>
 
     <insert id="insertArtist" parameterType="com.project.springboot.dto.ArtistDTO">
@@ -64,24 +65,27 @@
     </update>
 
     <select id="selectMusicByKeyword" resultMap="MusicMap">
-        SELECT 
-            m.m_no, m.m_title, m.a_no, m.b_no, 
-            m.isrc_code, m.m_youtube_id, m.m_preview_url,
-            a.a_name, b.b_title
-        FROM music m
-        LEFT JOIN artists a ON m.a_no = a.a_no
-        LEFT JOIN album b ON m.b_no = b.b_no
-        WHERE (
-            UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%')
-            OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
-            OR UPPER(b.b_title) LIKE UPPER('%' || #{keyword} || '%')
-        )
-    </select>
+	  SELECT 
+	      m.m_no, m.m_title, m.a_no, m.b_no,
+	      m.isrc_code, m.m_youtube_id, m.m_preview_url,
+	      a.a_name, b.b_title, b.b_image
+	  FROM music m
+	  LEFT JOIN artists a ON m.a_no = a.a_no
+	  LEFT JOIN album b ON m.b_no = b.b_no
+	  WHERE (
+	      UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%')
+	      OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
+	      OR UPPER(b.b_title) LIKE UPPER('%' || #{keyword} || '%')
+	  )
+	</select>
     
-    <insert id="insertHistory" parameterType="com.project.springboot.dto.HistoryDTO">
-        INSERT INTO history (h_no, u_no, m_no, h_location, h_weather, h_played_at)
-        VALUES (HISTORY_NO_SEQ.NEXTVAL, #{u_no}, #{m_no}, #{h_location}, #{h_weather}, SYSDATE)
-    </insert>
+   <insert id="insertHistory">
+	    INSERT INTO history (
+	        h_no, u_no, m_no, h_location, h_weather, h_lat, h_lon, h_played_at
+	    ) VALUES (
+	        history_no_seq.NEXTVAL, #{u_no}, #{m_no}, #{h_location}, #{h_weather}, #{h_lat}, #{h_lon}, SYSDATE
+	    )
+	</insert>
 
     <select id="selectTop100Music" resultType="map">
 	    SELECT * FROM (
@@ -116,6 +120,78 @@
 	    ) WHERE ROWNUM &lt;= 100
 	</select>
 	
+	<select id="selectWeeklyMusic" resultType="map">
+        SELECT * FROM (
+            SELECT 
+                m.m_no          AS "MNO",
+                m.m_title       AS "TITLE", 
+                a.a_name        AS "ARTIST",
+                b.b_image       AS "ALBUM_IMG",
+                m.m_youtube_id  AS "YOUTUBE_ID",
+                m.m_preview_url AS "PREVIEW_URL",
+                COUNT(h.h_no)   AS "CNT",
+                (SELECT COUNT(*) FROM likes l 
+                 WHERE l.l_target_type = 'MUSIC' 
+                   AND l.l_target_no = m.m_no 
+                   AND l.u_no = #{u_no}) AS "MY_LIKE"
+            FROM history h
+            JOIN music m ON h.m_no = m.m_no
+            JOIN artists a ON m.a_no = a.a_no
+            LEFT JOIN album b ON m.b_no = b.b_no
+            WHERE h.h_played_at >= SYSDATE - 7 
+            GROUP BY m.m_no, m.m_title, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url
+            ORDER BY "CNT" DESC, m.m_title ASC
+        ) WHERE ROWNUM &lt;= 100
+    </select>
+
+    <select id="selectMonthlyMusic" resultType="map">
+        SELECT * FROM (
+            SELECT 
+                m.m_no          AS "MNO",
+                m.m_title       AS "TITLE", 
+                a.a_name        AS "ARTIST",
+                b.b_image       AS "ALBUM_IMG",
+                m.m_youtube_id  AS "YOUTUBE_ID",
+                m.m_preview_url AS "PREVIEW_URL",
+                COUNT(h.h_no)   AS "CNT",
+                (SELECT COUNT(*) FROM likes l 
+                 WHERE l.l_target_type = 'MUSIC' 
+                   AND l.l_target_no = m.m_no 
+                   AND l.u_no = #{u_no}) AS "MY_LIKE"
+            FROM history h
+            JOIN music m ON h.m_no = m.m_no
+            JOIN artists a ON m.a_no = a.a_no
+            LEFT JOIN album b ON m.b_no = b.b_no
+            WHERE h.h_played_at >= TRUNC(SYSDATE, 'MM') 
+            GROUP BY m.m_no, m.m_title, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url
+            ORDER BY "CNT" DESC, m.m_title ASC
+        ) WHERE ROWNUM &lt;= 100
+    </select>
+
+    <select id="selectYearlyMusic" resultType="map">
+        SELECT * FROM (
+            SELECT 
+                m.m_no          AS "MNO",
+                m.m_title       AS "TITLE", 
+                a.a_name        AS "ARTIST",
+                b.b_image       AS "ALBUM_IMG",
+                m.m_youtube_id  AS "YOUTUBE_ID",
+                m.m_preview_url AS "PREVIEW_URL",
+                COUNT(h.h_no)   AS "CNT",
+                (SELECT COUNT(*) FROM likes l 
+                 WHERE l.l_target_type = 'MUSIC' 
+                   AND l.l_target_no = m.m_no 
+                   AND l.u_no = #{u_no}) AS "MY_LIKE"
+            FROM history h
+            JOIN music m ON h.m_no = m.m_no
+            JOIN artists a ON m.a_no = a.a_no
+            LEFT JOIN album b ON m.b_no = b.b_no
+            WHERE h.h_played_at >= TRUNC(SYSDATE, 'YYYY') 
+            GROUP BY m.m_no, m.m_title, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url
+            ORDER BY "CNT" DESC, m.m_title ASC
+        ) WHERE ROWNUM &lt;= 100
+    </select>
+	
 	<select id="checkLike" resultType="int">
 	    SELECT COUNT(*) FROM likes 
 	    WHERE u_no = #{u_no} 
@@ -148,5 +224,26 @@
         UPDATE artists SET a_genres = #{a_genres} 
         WHERE a_no = (SELECT a_no FROM music WHERE m_no = #{m_no})
     </update>
+    
+    <select id="selectRegionalMusic" resultType="map">
+	    SELECT 
+	        m.m_no AS "MNO", 
+	        m.m_title AS "TITLE", 
+	        art.a_name AS "ARTIST", 
+	        alb.b_image AS "ALBUM_IMG", 
+	        m.m_youtube_id AS "YOUTUBE_ID",
+	        m.m_preview_url AS "PREVIEW_URL",
+	        COUNT(h.h_no) AS "CNT",
+	        (SELECT COUNT(*) FROM LIKES l WHERE l.u_no = #{u_no} AND l.l_target_no = m.m_no) AS "MY_LIKE"
+	    FROM history h
+	    JOIN music m ON h.m_no = m.m_no
+	    JOIN album alb ON m.b_no = alb.b_no
+	    JOIN artists art ON m.a_no = art.a_no
+	    WHERE h.h_location = #{city}
+	    GROUP BY 
+	        m.m_no, m.m_title, art.a_name, alb.b_image, 
+	        m.m_youtube_id, m.m_preview_url
+	    ORDER BY "CNT" DESC
+	</select>
 
 </mapper>

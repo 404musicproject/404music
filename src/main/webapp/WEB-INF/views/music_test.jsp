@@ -7,65 +7,103 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-        body { font-family: 'Pretendard', sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+        /* 기본 배경 및 텍스트 설정 */
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+            background-color: #121212; /* 아주 어두운 블랙 */
+            color: #e0e0e0; /* 연한 그레이 텍스트 */
+            margin: 0; 
+            padding: 20px; 
+        }
+
         .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
         
-        /* 대시보드 스타일 */
-        .dashboard-section { grid-column: span 2; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; }
+        /* 섹션 공통 스타일 */
+        .dashboard-section, .section { 
+            background: #1e1e1e; /* 카드 배경 */
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3); 
+            border: 1px solid #2c2c2c;
+        }
+
+        .dashboard-section { grid-column: span 2; margin-bottom: 10px; }
+        h2 { font-size: 1.3rem; margin-top: 0; color: #1db954; border-bottom: 1px solid #333; padding-bottom: 15px; }
+
+        /* 신곡 리스트 가로 스크롤 */
         .new-release-wrapper {
             display: flex;
             gap: 15px;
             overflow-x: auto;
             padding: 10px 5px;
             min-height: 180px;
-            scrollbar-width: thin;
         }
-        .new-song-card { min-width: 130px; max-width: 130px; text-align: center; cursor: pointer; transition: 0.3s; flex-shrink: 0; }
-        .new-song-card:hover { transform: translateY(-5px); }
+        /* 스크롤바 커스텀 */
+        .new-release-wrapper::-webkit-scrollbar { height: 6px; }
+        .new-release-wrapper::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        .new-song-card { min-width: 130px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .new-song-card:hover { transform: translateY(-8px); }
         .new-song-card img { 
-            width: 120px; 
-            height: 120px; 
-            border-radius: 15px; 
-            object-fit: cover; 
-            display: block; 
-            margin: 0 auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 120px; height: 120px; border-radius: 12px; object-fit: cover; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .new-song-info { margin-top: 8px; font-size: 0.85rem; width: 120px; margin: 8px auto 0; }
-        .new-song-title { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .new-song-artist { color: #888; font-size: 0.75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .new-song-info { margin-top: 10px; font-size: 0.85rem; }
+        .new-song-title { font-weight: bold; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .new-song-artist { color: #a7a7a7; font-size: 0.75rem; margin-top: 4px; }
 
-        /* 공통 섹션 스타일 */
-        .section { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h2 { font-size: 1.2rem; margin-top: 0; color: #1db954; border-bottom: 2px solid #f1f1f1; padding-bottom: 10px; }
-
+        /* 검색창 스타일 */
         .search-box { margin-bottom: 20px; display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button.btn-search { background: #1db954; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        input[type="text"] { 
+            flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; 
+            background: #2a2a2a; color: #fff; outline: none;
+        }
+        input[type="text"]:focus { border-color: #1db954; }
+        button.btn-search { 
+            background: #1db954; color: white; border: none; padding: 10px 25px; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; 
+        }
 
+        /* 리스트 및 테이블 */
         #musicList { max-height: 500px; overflow-y: auto; }
-        .music-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
-        .music-item:hover { background: #f9f9f9; transform: translateX(5px); }
-        .music-item b { flex: 1; }
+        .music-item { 
+            display: flex; align-items: center; padding: 14px; border-bottom: 1px solid #2a2a2a; 
+            cursor: pointer; transition: 0.2s; 
+        }
+        .music-item:hover { background: #2a2a2a; border-radius: 8px; }
 
-        .chart-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .chart-table th { font-size: 0.85rem; color: #888; padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
-        .chart-table td { padding: 12px 10px; border-bottom: 1px solid #f9f9f9; font-size: 0.9rem; }
-        .rank { font-weight: bold; width: 30px; color: #1db954; font-style: italic; }
-        .album-art { width: 45px; height: 45px; border-radius: 4px; margin-right: 12px; border: 1px solid #eee; }
-        .play-cnt { color: #ff3d00; font-weight: bold; font-size: 0.8rem; background: #fff5f2; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .chart-table { width: 100%; border-collapse: collapse; }
+        .chart-table th { font-size: 0.8rem; color: #a7a7a7; padding: 12px; border-bottom: 1px solid #333; text-align: left; }
+        .chart-table td { padding: 14px 10px; border-bottom: 1px solid #252525; font-size: 0.9rem; }
         
-        #player-container { position: fixed; bottom: 20px; right: 20px; background: #000; padding: 10px; border-radius: 12px; display: none; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        #player-container h3 { color: #fff; font-size: 0.8rem; margin: 0 0 10px 0; font-weight: 400; }
+        .rank { font-weight: bold; width: 30px; color: #1db954; font-size: 1.1rem; }
+        .album-art { width: 48px; height: 48px; border-radius: 6px; margin-right: 15px; }
+        
+        .play-cnt { color: #ff5722; font-weight: bold; font-size: 0.75rem; background: #2a1510; padding: 3px 8px; border-radius: 4px; margin-left: 8px; }
+        
+        /* 플레이어 팝업 */
+        #player-container { 
+            position: fixed; bottom: 30px; right: 30px; background: #181818; 
+            padding: 15px; border-radius: 16px; display: none; z-index: 1000; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 1px solid #333; 
+        }
+        #player-container h3 { color: #1db954; font-size: 0.85rem; margin: 0 0 12px 0; }
 
-        .btn-play { background: #1db954; color: white; border: none; padding: 6px 10px; border-radius: 50%; cursor: pointer; width: 30px; height: 30px; line-height: 1; transition: 0.2s; }
-        .btn-play:hover { background: #18a34a; transform: scale(1.1); }
+        /* 버튼 및 배지 */
+        .btn-play { 
+            background: #1db954; color: white; border: none; border-radius: 50%; 
+            width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-play:hover { transform: scale(1.1); background: #1ed760; }
         
-        .preview-badge { font-size: 0.6rem; background: #ff1493; color: white; padding: 2px 5px; border-radius: 3px; margin-left: 5px; cursor: pointer; vertical-align: middle; }
-        .preview-badge.playing { background: #333; font-weight: bold; }
+        .preview-badge { 
+            font-size: 0.65rem; background: #333; color: #1db954; border: 1px solid #1db954;
+            padding: 2px 6px; border-radius: 4px; margin-left: 8px; cursor: pointer; 
+        }
+        .preview-badge.playing { background: #1db954; color: #fff; }
         
-        .btn-like { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #ccc; transition: 0.2s; padding: 0 5px; vertical-align: middle; outline: none; }
-        .btn-like.active { color: #ff1493; }
+        .btn-like { background: none; border: none; cursor: pointer; font-size: 1.3rem; color: #444; transition: 0.2s; }
+        .btn-like.active { color: #ff1493; text-shadow: 0 0 10px rgba(255, 20, 147, 0.5); }
     </style>
 </head>
 <body>
