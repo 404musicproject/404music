@@ -43,39 +43,30 @@
             VALUES (#{b_no}, #{a_no}, #{b_title}, #{b_image})
     </insert>
     
-	<insert id="insertMusic" parameterType="com.project.springboot.dto.MusicDTO">
-	    <selectKey keyProperty="m_no" resultType="int" order="BEFORE">
-	        SELECT COALESCE(
-	            (SELECT m_no FROM music WHERE isrc_code = #{isrc_code} AND ROWNUM = 1),
-	            music_no_seq.NEXTVAL
-	        ) FROM DUAL
-	    </selectKey>
-	    MERGE INTO music m
-	    USING DUAL ON (m.isrc_code = #{isrc_code})
-	    WHEN NOT MATCHED THEN
-	        INSERT (m_no, m_title, a_no, b_no, isrc_code, m_youtube_id, m_preview_url)
-	        VALUES (#{m_no}, #{m_title}, #{a_no}, #{b_no}, #{isrc_code}, #{m_youtube_id}, #{m_preview_url})
-	</insert>
+    <insert id="insertMusic" parameterType="com.project.springboot.dto.MusicDTO">
+        <selectKey keyProperty="m_no" resultType="int" order="BEFORE">
+            SELECT COALESCE(
+                (SELECT m_no FROM music WHERE isrc_code = #{isrc_code} AND ROWNUM = 1),
+                music_no_seq.NEXTVAL
+            ) FROM DUAL
+        </selectKey>
+        MERGE INTO music m
+        USING DUAL ON (m.isrc_code = #{isrc_code})
+        WHEN NOT MATCHED THEN
+            INSERT (m_no, m_title, a_no, b_no, isrc_code, m_youtube_id, m_preview_url)
+            VALUES (#{m_no}, #{m_title}, #{a_no}, #{b_no}, #{isrc_code}, #{m_youtube_id}, #{m_preview_url})
+    </insert>
 
     <update id="updateYoutubeId">
-        UPDATE music 
-        SET m_youtube_id = #{m_youtube_id} 
-        WHERE m_no = #{m_no}
+        UPDATE music SET m_youtube_id = #{m_youtube_id} WHERE m_no = #{m_no}
     </update>
 
     <select id="selectMusicByKeyword" resultMap="MusicMap">
-        SELECT 
-            m.m_no, m.m_title, m.a_no, m.b_no, 
-            m.isrc_code, m.m_youtube_id, m.m_preview_url,
-            a.a_name, b.b_title
+        SELECT m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title
         FROM music m
         LEFT JOIN artists a ON m.a_no = a.a_no
         LEFT JOIN album b ON m.b_no = b.b_no
-        WHERE (
-            UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%')
-            OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
-            OR UPPER(b.b_title) LIKE UPPER('%' || #{keyword} || '%')
-        )
+        WHERE (UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%') OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%') OR UPPER(b.b_title) LIKE UPPER('%' || #{keyword} || '%'))
     </select>
     
     <insert id="insertHistory" parameterType="com.project.springboot.dto.HistoryDTO">
@@ -84,69 +75,93 @@
     </insert>
 
     <select id="selectTop100Music" resultType="map">
-	    SELECT * FROM (
-	        SELECT 
-	            m.m_no          AS "MNO",
-	            m.m_title       AS "TITLE", 
-	            a.a_name        AS "ARTIST",
-	            b.b_image       AS "ALBUM_IMG",
-	            m.m_youtube_id  AS "YOUTUBE_ID",
-	            m.m_preview_url AS "PREVIEW_URL",
-	            COUNT(h.h_no)   AS "CNT",
-	            /* 현재 테이블 구조에 맞게 수정: 
-	               타입이 'MUSIC'이고, 타겟 번호가 곡 번호(m.m_no)와 일치하는지 확인 
-	            */
-	            (SELECT COUNT(*) FROM likes l 
-	             WHERE l.l_target_type = 'MUSIC' 
-	               AND l.l_target_no = m.m_no 
-	               AND l.u_no = #{u_no}) AS "MY_LIKE"
-	        FROM history h
-	        JOIN music m ON h.m_no = m.m_no
-	        JOIN artists a ON m.a_no = a.a_no
-	        LEFT JOIN album b ON m.b_no = b.b_no
-	        WHERE h.h_played_at >= SYSDATE - 1 
-	        GROUP BY 
-	            m.m_no, 
-	            m.m_title, 
-	            a.a_name, 
-	            b.b_image, 
-	            m.m_youtube_id, 
-	            m.m_preview_url
-	        ORDER BY "CNT" DESC, m.m_title ASC
-	    ) WHERE ROWNUM &lt;= 100
-	</select>
-	
-	<select id="checkLike" resultType="int">
-	    SELECT COUNT(*) FROM likes 
-	    WHERE u_no = #{u_no} 
-	      AND l_target_type = 'MUSIC' 
-	      AND l_target_no = #{m_no}
-	</select>
-	
-	<insert id="insertLike">
-	    INSERT INTO likes (l_no, u_no, l_target_type, l_target_no) 
-	    VALUES (likes_seq.NEXTVAL, #{u_no}, 'MUSIC', #{m_no})
-	</insert>
-	
-	<delete id="deleteLike">
-	    DELETE FROM likes 
-	    WHERE u_no = #{u_no} 
-	      AND l_target_type = 'MUSIC' 
-	      AND l_target_no = #{m_no}
-	</delete>
-
-    <update id="updateMusicPreview">
-        UPDATE music SET m_preview_url = #{m_preview_url} WHERE m_no = #{m_no}
-    </update>
+        SELECT * FROM (
+            SELECT m.m_no AS "MNO", m.m_title AS "TITLE", a.a_name AS "ARTIST", b.b_image AS "ALBUM_IMG", m.m_youtube_id AS "YOUTUBE_ID", m.m_preview_url AS "PREVIEW_URL", COUNT(h.h_no) AS "CNT",
+            (SELECT COUNT(*) FROM likes l WHERE l.l_target_type = 'MUSIC' AND l.l_target_no = m.m_no AND l.u_no = #{u_no}) AS "MY_LIKE"
+            FROM history h
+            JOIN music m ON h.m_no = m.m_no
+            JOIN artists a ON m.a_no = a.a_no
+            LEFT JOIN album b ON m.b_no = b.b_no
+            WHERE h.h_played_at >= SYSDATE - 1 
+            GROUP BY m.m_no, m.m_title, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url
+            ORDER BY "CNT" DESC, m.m_title ASC
+        ) WHERE ROWNUM &lt;= 100
+    </select>
     
-    <update id="updateAlbumImage">
-        UPDATE album SET b_image = #{b_image} 
-        WHERE b_no = (SELECT b_no FROM music WHERE m_no = #{m_no})
-    </update>
+    <select id="checkLike" resultType="int">
+        SELECT COUNT(*) FROM likes WHERE u_no = #{u_no} AND l_target_type = 'MUSIC' AND l_target_no = #{m_no}
+    </select>
     
-    <update id="updateArtistGenre">
-        UPDATE artists SET a_genres = #{a_genres} 
-        WHERE a_no = (SELECT a_no FROM music WHERE m_no = #{m_no})
-    </update>
+    <insert id="insertLike">
+        INSERT INTO likes (l_no, u_no, l_target_type, l_target_no) VALUES (likes_seq.NEXTVAL, #{u_no}, 'MUSIC', #{m_no})
+    </insert>
+    
+    <delete id="deleteLike">
+        DELETE FROM likes WHERE u_no = #{u_no} AND l_target_type = 'MUSIC' AND l_target_no = #{m_no}
+    </delete>
 
+    <insert id="insertMusicFeature" parameterType="map">
+        MERGE INTO music_feature f
+        USING DUAL ON (f.music_id = #{m_no})
+        WHEN NOT MATCHED THEN
+            INSERT (music_id, danceability, energy, valence, acousticness, instrumentalness, liveness, speechiness, tempo)
+            VALUES (#{m_no}, #{danceability}, #{energy}, #{valence}, #{acousticness}, #{instrumentalness}, #{liveness}, #{speechiness}, #{tempo})
+        WHEN MATCHED THEN
+            UPDATE SET danceability = #{danceability}, energy = #{energy}, valence = #{valence}, tempo = #{tempo}
+    </insert>
+
+    <insert id="insertTag" parameterType="map">
+        <selectKey keyProperty="g_no" resultType="int" order="BEFORE">
+            SELECT COALESCE((SELECT g_no FROM tags WHERE g_name = #{g_name} AND ROWNUM = 1), tags_no_seq.NEXTVAL) FROM DUAL
+        </selectKey>
+        MERGE INTO tags t
+        USING DUAL ON (t.g_name = #{g_name})
+        WHEN NOT MATCHED THEN
+            INSERT (g_no, g_name, g_type) VALUES (#{g_no}, #{g_name}, #{g_type})
+    </insert>
+
+    <insert id="insertMusicTagMap">
+        MERGE INTO music_tag_map m
+        USING DUAL ON (m.m_no = #{m_no} AND m.g_no = #{g_no})
+        WHEN NOT MATCHED THEN
+            INSERT (mapping_no, m_no, g_no) VALUES (mapping_no_seq.NEXTVAL, #{m_no}, #{g_no})
+    </insert>
+
+    <select id="selectMusicByNo" resultMap="MusicMap">
+        SELECT m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title
+        FROM music m
+        JOIN artists a ON m.a_no = a.a_no
+        JOIN album b ON m.b_no = b.b_no
+        WHERE m.m_no = #{m_no}
+    </select>
+
+    <select id="selectMusicFeature" resultType="map">
+        SELECT music_id as "m_no", danceability, energy, valence, acousticness, instrumentalness, liveness, speechiness, tempo
+        FROM music_feature 
+        WHERE music_id = #{m_no}
+    </select>
+
+    <insert id="insertLyrics" parameterType="map">
+        MERGE INTO music_lyrics l
+        USING DUAL ON (l.m_no = #{m_no})
+        WHEN NOT MATCHED THEN
+            INSERT (m_no, lyrics_text, lyricist)
+            VALUES (#{m_no}, #{lyrics_text}, #{lyricist})
+        WHEN MATCHED THEN
+            UPDATE SET lyrics_text = #{lyrics_text}, lyricist = #{lyricist}
+    </insert>
+
+    <select id="selectLyrics" resultType="map">
+        SELECT m_no, lyrics_text, lyrics_trans, lyricist, lyrics_sync
+        FROM music_lyrics
+        WHERE m_no = #{m_no}
+    </select>
+
+<select id="selectMNoByTitleAndArtist" resultType="Integer">
+    SELECT m.m_no 
+    FROM music m
+    JOIN artists a ON m.a_no = a.a_no
+    WHERE m.m_title = #{title} 
+      AND a.a_name = #{artist}
+</select>
 </mapper>

@@ -20,15 +20,16 @@ pageEncoding="UTF-8"%>
         </a>
     </div>
 
-    <div class="header-center">
-        <form action="/productSearchfh" method="get" class="search-form">
-            <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
-              <%-- 텍스트 '검색' 대신 돋보기 아이콘 적용 --%>
-		    <button type="submit" class="search-button">
-		    <i class="fa-solid fa-magnifying-glass"></i>
-			</button>
-        </form>
-    </div>
+<!-- 검색차아아아아아아아아아아아앙 -->
+		<div class="header-center">
+		    <form action="/productSearchfh" method="get" class="search-form">
+		        <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
+		        <button type="submit" class="search-button">
+		            <i class="fa-solid fa-magnifying-glass"></i>
+		        </button>
+		    </form>
+		</div>
+		
 <div class="header-right">
     <div class="user-status-group">
         <c:choose>

@@ -37,4 +37,30 @@ public interface IMusicDAO {
     void updateMusicPreview(Map<String, Object> params);
     void updateAlbumImage(Map<String, Object> params);
     void updateArtistGenre(Map<String, Object> params);
+    
+ // 7. Spotify 음악 특징(Feature) 저장
+    int insertMusicFeature(Map<String, Object> featureMap);
+
+    // 8. 태그 저장 (g_no를 반환받기 위해 Map 사용)
+    int insertTag(Map<String, Object> tagParams);
+
+    // 9. 음악-태그 매핑 저장
+    int insertMusicTagMap(@Param("m_no") int m_no, @Param("g_no") int g_no);
+    
+    MusicDTO selectMusicByNo(@Param("m_no") int m_no);
+
+    Map<String, Object> selectMusicFeature(@Param("m_no") int m_no);
+
+    /**
+     * 가사 정보 저장 및 수정 (MERGE INTO 사용)
+     * params: m_no, lyrics_text, lyricist 등
+     */
+    int insertLyrics(Map<String, Object> lyricsParams);
+
+    /**
+     * 특정 곡의 가사 정보 가져오기
+     */
+    Map<String, Object> selectLyrics(@Param("m_no") int m_no);
+    
+    Integer selectMNoByTitleAndArtist(@Param("title") String title, @Param("artist") String artist);
 }
