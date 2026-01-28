@@ -106,40 +106,53 @@ main { padding: 40px 20px; min-height: 85vh; position: relative; z-index: 10; }
     border-radius: 4px; background: rgba(0, 242, 255, 0.05); 
 }
 
-/* --- 5. 하단 고정 플레이어 (Global Player) --- */
+/* --- 5. 하단 고정 플레이어 (수정됨) --- */
 #player-container { 
     position: fixed; 
-    bottom: 30px; 
-    right: 30px; 
+    bottom: 90px;      /* 1. 하단 바(Footer)와 겹치지 않게 높임 */
+    left: 30px;        /* 2. 우측의 챗봇 기능을 피해 왼쪽으로 이동 */
+    right: auto;       /* 기존 우측 고정 해제 */
     width: 320px; 
-    background: #000; 
-    padding: 12px; 
+    background: rgba(0, 0, 0, 0.9); 
+    padding: 15px; 
     border-radius: 12px; 
     z-index: 9999; 
     border: 2px solid #ff0055; 
     box-shadow: 0 0 25px rgba(255, 0, 85, 0.5);
-    display: none; /* JS에서 fadeIn으로 제어 */
+    display: none; 
 }
+
+/* 3. 유튜브 영상이 잘리지 않도록 높이 명시 */
+#player {
+    width: 100% !important;
+    height: 180px !important; 
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
 #now-playing-title {
-    font-size: 0.75rem; 
+    font-size: 0.8rem; 
     color: #00f2ff; 
     margin: 0; 
     max-width: 250px; 
     overflow: hidden; 
     text-overflow: ellipsis; 
     white-space: nowrap;
+    font-weight: bold;
 }
+
+/* 추가 스타일 */
 .itunes-card:hover {
     transform: translateY(-5px);
     border-color: #ff0055 !important;
     box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
     background: #1a1a1a !important;
 }
+.itunes-card img { transition: 0.3s; }
+.itunes-card:hover img { filter: brightness(1.2); }
 
-.itunes-card img {
-    transition: 0.3s;
-}
-
-.itunes-card:hover img {
-    filter: brightness(1.2);
+/* 하단 푸터 재생바가 플레이어보다 위에 오게 설정 */
+footer {
+    position: relative;
+    z-index: 10000;
 }

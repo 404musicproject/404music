@@ -1,27 +1,13 @@
 /* footer.css */
+
 .main-footer {
     width: 100%;
-    background-color: #050505;
-    padding: 140px 0 30px 0; 
-    
+    background-color: #050505; /* 배경은 아주 깊은 블랙 */
+    padding: 100px 0 40px 0; 
     margin-top: auto;
-    position: relative; 
-    
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 8px; 
-}
-.main-footer::before {
-    content: "";
-    position: absolute;
-    top: 130px;                
-    left: 0;
-    width: 100%;
-    height: 1px;              
-    background-color: #ff0055;
-    opacity: 0.9;
 }
 
 .footer-container {
@@ -29,39 +15,61 @@
     max-width: 1200px;
     margin: 0 auto;
     text-align: center;
+    /* 상단 구분선: 평소에는 차분한 어두운 색 */
+    border-top: 1px solid #222; 
+    padding-top: 30px; 
+    transition: all 0.3s ease;
 }
 
-/* 저작권 및 링크 폰트 (작고 깔끔하게 유지) */
-.footer-copyright p {
-    color: #00f2ff;
+/* 푸터 영역 전체에 마우스를 올리면 선 색상도 살짝 반응 (선택 사항) */
+.main-footer:hover .footer-container {
+    border-top-color: #333;
+}
+
+/* 저작권 문구 스타일 */
+.footer-copyright {
+    color: #00f2ff; /* 평상시: Cyan */
     font-size: 0.75rem; 
     letter-spacing: 0.5px;
-    margin: 0;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+/* 저작권 문구 호버 시 핑크 */
+.footer-copyright:hover {
+    color: #ff0055;
+    text-shadow: 0 0 10px rgba(255, 0, 85, 0.8);
 }
 
 .footer-nav {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
 }
 
+/* 링크 기본 스타일: Cyan */
 .neon-link {
-    color: #00f2ff;
-    text-shadow: 0 0 5px rgba(0, 242, 255, 0.5);
+    color: #00f2ff; 
     text-decoration: none;
     font-weight: bold;
-    font-size: 0.8rem; 
-    transition: all 0.3s ease;
+    font-size: 0.85rem; 
+    transition: all 0.25s ease;
+    /* 평소에도 아주 은은한 푸른 광채가 있게 하려면 아래 주석 해제 */
+    /* text-shadow: 0 0 5px rgba(0, 242, 255, 0.3); */
 }
 
+/* ★ 핵심 호버 효과: 핑크-레드 네온 ★ */
 .neon-link:hover {
-    color: #ff0055;
-    text-shadow: 0 0 8px #ff0055;
+    color: #ff0055 !important; /* 마우스 올리면 즉시 핑크레드 */
+    text-shadow: 0 0 15px rgba(255, 0, 85, 1), 0 0 5px rgba(255, 0, 85, 0.8);
+    transform: scale(1.05); /* 살짝 커지는 효과로 강조 */
 }
 
+/* 구분자 스타일 (|) */
 .sep {
-    color: #ff0055;
-    font-weight: bold;
-    font-size: 0.75rem;
+    color: #00f2ff;
+    font-size: 0.7rem;
+    opacity: 0.5;
+    margin: 0 5px;
 }

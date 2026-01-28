@@ -20,11 +20,7 @@ public class UserViewController {
 
 	@Autowired
     private IUserDAO userDAO;
-	
-	@GetMapping("/")
-	public String root() {
-		return "/Home";
-	}
+
 	
 	  @GetMapping("/signup")
 	    public String showSignupForm() {

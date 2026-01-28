@@ -245,5 +245,69 @@
 	        m.m_youtube_id, m.m_preview_url
 	    ORDER BY "CNT" DESC
 	</select>
+	 <insert id="insertMusicFeature" parameterType="map">
+        MERGE INTO music_feature f
+        USING DUAL ON (f.music_id = #{m_no})
+        WHEN NOT MATCHED THEN
+            INSERT (music_id, danceability, energy, valence, acousticness, instrumentalness, liveness, speechiness, tempo)
+            VALUES (#{m_no}, #{danceability}, #{energy}, #{valence}, #{acousticness}, #{instrumentalness}, #{liveness}, #{speechiness}, #{tempo})
+        WHEN MATCHED THEN
+            UPDATE SET danceability = #{danceability}, energy = #{energy}, valence = #{valence}, tempo = #{tempo}
+    </insert>
 
+    <insert id="insertTag" parameterType="map">
+        <selectKey keyProperty="g_no" resultType="int" order="BEFORE">
+            SELECT COALESCE((SELECT g_no FROM tags WHERE g_name = #{g_name} AND ROWNUM = 1), tags_no_seq.NEXTVAL) FROM DUAL
+        </selectKey>
+        MERGE INTO tags t
+        USING DUAL ON (t.g_name = #{g_name})
+        WHEN NOT MATCHED THEN
+            INSERT (g_no, g_name, g_type) VALUES (#{g_no}, #{g_name}, #{g_type})
+    </insert>
+
+    <insert id="insertMusicTagMap">
+        MERGE INTO music_tag_map m
+        USING DUAL ON (m.m_no = #{m_no} AND m.g_no = #{g_no})
+        WHEN NOT MATCHED THEN
+            INSERT (mapping_no, m_no, g_no) VALUES (mapping_no_seq.NEXTVAL, #{m_no}, #{g_no})
+    </insert>
+
+    <select id="selectMusicByNo" resultMap="MusicMap">
+        SELECT m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title
+        FROM music m
+        JOIN artists a ON m.a_no = a.a_no
+        JOIN album b ON m.b_no = b.b_no
+        WHERE m.m_no = #{m_no}
+    </select>
+
+    <select id="selectMusicFeature" resultType="map">
+        SELECT music_id as "m_no", danceability, energy, valence, acousticness, instrumentalness, liveness, speechiness, tempo
+        FROM music_feature 
+        WHERE music_id = #{m_no}
+    </select>
+
+    <insert id="insertLyrics" parameterType="map">
+        MERGE INTO music_lyrics l
+        USING DUAL ON (l.m_no = #{m_no})
+        WHEN NOT MATCHED THEN
+            INSERT (m_no, lyrics_text, lyricist)
+            VALUES (#{m_no}, #{lyrics_text}, #{lyricist})
+        WHEN MATCHED THEN
+            UPDATE SET lyrics_text = #{lyrics_text}, lyricist = #{lyricist}
+    </insert>
+
+    <select id="selectLyrics" resultType="map">
+        SELECT m_no, lyrics_text, lyrics_trans, lyricist, lyrics_sync
+        FROM music_lyrics
+        WHERE m_no = #{m_no}
+    </select>
+
+<select id="selectMNoByTitleAndArtist" resultType="Integer">
+    SELECT m.m_no 
+    FROM music m
+    JOIN artists a ON m.a_no = a.a_no
+    WHERE m.m_title = #{title} 
+      AND a.a_name = #{artist}
+</select>
 </mapper>
+	

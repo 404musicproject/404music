@@ -15,10 +15,38 @@ pageEncoding="UTF-8"%>
 <body>
 <div class="main-header">
     <div class="header-left">
-        <a href="${pageContext.request.contextPath}/" class="logo-link">
-            <img src="${pageContext.request.contextPath}/img/Logo.png" alt="404Music Logo" class="header-logo">
+    <a href="/" style="text-decoration: none; display: inline-block;">
+        <svg class="header-logo" viewBox="0 0 340 80" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+            <defs>
+                <filter id="cyanGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="pinkGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+
+            <g transform="translate(10, 10)">
+                <path d="M10 40 Q10 10 40 10 Q70 10 70 40" fill="none" stroke="#00f2ff" stroke-width="5" filter="url(#cyanGlow)" />
+                <rect x="5" y="40" width="12" height="20" rx="2" fill="#ff0055" filter="url(#pinkGlow)" />
+                <rect x="63" y="40" width="12" height="20" rx="2" fill="#ff0055" filter="url(#pinkGlow)" />
+            </g>
+
+            <text x="90" y="52" font-family="Verdana, sans-serif" font-weight="900" font-size="40" fill="#ff0055" filter="url(#pinkGlow)">
+                404
+            </text>
+
+            <text x="175" y="52" font-family="Verdana, sans-serif" font-weight="900" font-size="40" fill="#00f2ff" filter="url(#cyanGlow)">
+                MUSIC
+            </text>
+            
+            <line x1="90" y1="65" x2="320" y2="65" stroke="#00f2ff" stroke-width="2" stroke-dasharray="100 5 20 5" filter="url(#cyanGlow)" />
+            <line x1="90" y1="68" x2="250" y2="68" stroke="#ff0055" stroke-width="1" filter="url(#pinkGlow)" />
+        </svg>
         </a>
-    </div>
+</div>
 
     <div class="header-center">
         <form action="/productSearchfh" method="get" class="search-form">
@@ -29,6 +57,7 @@ pageEncoding="UTF-8"%>
 			</button>
         </form>
     </div>
+    
 <div class="header-right">
     <div class="user-status-group">
         <c:choose>

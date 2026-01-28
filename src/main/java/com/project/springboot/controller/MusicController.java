@@ -38,7 +38,20 @@ public class MusicController {
         return ResponseEntity.ok(list);
     }
 
-    // 2. 유튜브 ID 업데이트 (클릭 시 실행)
+    // 2. 노래 상세 조회 (중요: 여기서 가사, 수치, ES 업데이트가 처리됨)
+    @GetMapping("/detail")
+    public ResponseEntity<Map<String, Object>> getMusicDetail(@RequestParam("m_no") int m_no) {
+        // [로직] DB에 데이터가 없으면 Spotify에서 즉시 수집하여 채워주는 지연 로딩 로직
+        Map<String, Object> detail = musicService.getOrFetchMusicDetail(m_no);
+        
+        if (detail == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(detail);
+    }
+
+    
+    // 3. 유튜브 ID 업데이트 (클릭 시 실행)
     @GetMapping("/update-youtube")
     public ResponseEntity<String> updateYoutube(
         @RequestParam("m_no") int m_no, 
@@ -52,7 +65,7 @@ public class MusicController {
         return ResponseEntity.ok("fail");
     }
 
-    // 3. 실시간 TOP 100 조회 (신규 추가)
+    // 4. 실시간 TOP 100 조회 (신규 추가)
     @GetMapping("/top100")
     public ResponseEntity<List<Map<String, Object>>> getTop100(@RequestParam(value="u_no", defaultValue="0") int u_no) {
         // JSP에서 던져준 u_no를 DAO의 selectTop100Music(u_no)에 전달합니다.
@@ -79,6 +92,8 @@ public class MusicController {
         return ResponseEntity.ok(musicDAO.selectYearlyMusic(u_no));
     }
     
+    
+    //5.지역별 순위
     @GetMapping("/regional")
     public ResponseEntity<List<Map<String, Object>>> getRegionalChart(
             @RequestParam(value="u_no", defaultValue="0") int u_no,
@@ -89,7 +104,7 @@ public class MusicController {
         return ResponseEntity.ok(list);
     }
     
-    // 4. 재생 로그 저장 (기존 @RequestBody 방식에서 일반 폼 전송 방식으로도 가능하게 보강)
+    // 6. 재생 로그 저장 (기존 @RequestBody 방식에서 일반 폼 전송 방식으로도 가능하게 보강)
     @PostMapping("/history")
     public ResponseEntity<String> saveHistory(HistoryDTO history) {
         try {
@@ -109,24 +124,8 @@ public class MusicController {
             return ResponseEntity.internalServerError().body("fail: " + e.getMessage());
         }
     }
-    // [신규 추가] 5. iTunes 추가 정보 업데이트 (미리듣기, 앨범아트, 장르)
-    @PostMapping("/update-extra")
-    public ResponseEntity<String> updateExtraInfo(@RequestParam Map<String, Object> params) {
-        try {
-            // JavaScript에서 m_no를 보낼 때 String으로 올 수 있으므로 처리
-            int m_no = Integer.parseInt(String.valueOf(params.get("m_no")));
-            
-            // 서비스 호출하여 여러 테이블(music, album, artists) 동시 업데이트
-            musicService.updateMusicExtraInfo(params);
-            
-            System.out.println("[데이터 보정] 곡 번호 " + m_no + " iTunes 정보 업데이트 완료");
-            return ResponseEntity.ok("success");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("fail: " + e.getMessage());
-        }
-    }
     
+   
     @PostMapping("/toggle-like")
     @ResponseBody
     public Map<String, Object> toggleLike(
@@ -157,6 +156,8 @@ public class MusicController {
         }
         return result;
     }
+    
+    
     @GetMapping("/rss/most-played")
     public ResponseEntity<List<Map<String, Object>>> getRssMostPlayed(
             @RequestParam(value="storefront", defaultValue="kr") String storefront,

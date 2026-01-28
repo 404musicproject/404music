@@ -30,6 +30,8 @@ public interface IMusicDAO {
     List<Map<String, Object>> selectWeeklyMusic(int u_no);  // 주간
     List<Map<String, Object>> selectMonthlyMusic(int u_no); // 월간
     List<Map<String, Object>> selectYearlyMusic(int u_no);  // 연간
+    
+    
     // 5. 좋아요(Likes) 기능
     int checkLike(@Param("u_no") int u_no, @Param("m_no") int m_no);
     void insertLike(@Param("u_no") int u_no, @Param("m_no") int m_no);
@@ -40,5 +42,27 @@ public interface IMusicDAO {
     void updateAlbumImage(Map<String, Object> params);
     void updateArtistGenre(Map<String, Object> params);
     
+    // 7. 지역별 순위 차트
     List<Map<String, Object>> selectRegionalMusic(@Param("u_no") int u_no, @Param("city") String city);
+    
+    // 8. Spotify 음악 특징(Feature) 저장
+    int insertMusicFeature(Map<String, Object> featureMap);
+
+    // 9. 태그 저장 (g_no를 반환받기 위해 Map 사용)
+    int insertTag(Map<String, Object> tagParams);
+
+    // 10. 음악-태그 매핑 저장
+    int insertMusicTagMap(@Param("m_no") int m_no, @Param("g_no") int g_no);
+    
+    MusicDTO selectMusicByNo(@Param("m_no") int m_no);
+
+    Map<String, Object> selectMusicFeature(@Param("m_no") int m_no);
+
+    //가사 정보 저장 및 수정
+    int insertLyrics(Map<String, Object> lyricsParams);
+
+    //특정 곡의 가사 정보 가져오기
+    Map<String, Object> selectLyrics(@Param("m_no") int m_no);
+    Integer selectMNoByTitleAndArtist(@Param("title") String title, @Param("artist") String artist);
+   
 }
