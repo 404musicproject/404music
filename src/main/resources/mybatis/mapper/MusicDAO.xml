@@ -302,12 +302,43 @@
         WHERE m_no = #{m_no}
     </select>
 
-<select id="selectMNoByTitleAndArtist" resultType="Integer">
-    SELECT m.m_no 
-    FROM music m
-    JOIN artists a ON m.a_no = a.a_no
-    WHERE m.m_title = #{title} 
-      AND a.a_name = #{artist}
-</select>
+	<select id="selectMNoByTitleAndArtist" resultType="Integer">
+	    SELECT m.m_no 
+	    FROM music m
+	    JOIN artists a ON m.a_no = a.a_no
+	    WHERE m.m_title = #{title} 
+	      AND a.a_name = #{artist}
+	</select>
+	
+	<insert id="insertLibraryTrack">
+	    MERGE INTO playlists p
+	    USING DUAL ON (p.u_no = #{u_no} AND p.m_no = #{m_no} AND p.t_title = 'MY_LIBRARY')
+	    WHEN NOT MATCHED THEN
+	        INSERT (t_no, u_no, m_no, t_title, t_private, t_saved)
+	        VALUES (playists_seq.NEXTVAL, #{u_no}, #{m_no}, 'MY_LIBRARY', 'Y', TO_CHAR(SYSDATE, 'YYYY-MM-DD'))
+	</insert>
+	
+	<select id="selectMusicByLibrary" resultMap="MusicMap">
+	    SELECT 
+	        m.m_no, 
+	        m.m_title, 
+	        a.a_name, 
+	        b.b_image, 
+	        m.m_youtube_id,
+	        m.m_preview_url
+	    FROM playlists p
+	    JOIN music m ON p.m_no = m.m_no
+	    JOIN artists a ON m.a_no = a.a_no
+	    LEFT JOIN album b ON m.b_no = b.b_no
+	    WHERE p.u_no = #{u_no} 
+	      AND p.t_title = 'MY_LIBRARY'  ORDER BY p.t_no DESC
+	</select>
+	
+	<delete id="deleteLibraryTrack">
+	    DELETE FROM playlists 
+	    WHERE u_no = #{u_no} 
+	      AND m_no = #{m_no} 
+	      AND t_title = 'MY_LIBRARY'
+	</delete>
 </mapper>
 	

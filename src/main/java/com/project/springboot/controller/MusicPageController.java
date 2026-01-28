@@ -6,17 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.project.springboot.dto.LibrarySongDTO;
+import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.MusicDTO;
-import com.project.springboot.dto.PlaylistDTO;
-import com.project.springboot.dto.PlaylistTrackViewDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
-import com.project.springboot.service.PlaylistService;
 
 // 스프링 부트 버전에 따라 아래 import 중 맞는 것을 사용하세요.
 // import javax.servlet.http.HttpSession; // 구버전 (Spring Boot 2.x)
@@ -26,31 +21,27 @@ import jakarta.servlet.http.HttpSession; // 신버전 (Spring Boot 3.x)
 public class MusicPageController {
 
     @Autowired
-    private PlaylistService playlistService;
-    
-    @Autowired
     private MusicService musicService;
-    
+    @Autowired
+    private IMusicDAO musicDAO;
     // =====================================================
     // 0. 검색
     // =====================================================
     		
-    @GetMapping("/productSearchfh")
+    @GetMapping("/musicSearch") // 소문자로 시작
     public String searchPage(@RequestParam(value = "searchKeyword", required = false) String keyword, Model model) {
         
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // 1. 실시간 수집 및 DB 저장 (Last.fm + iTunes + Spotify)
             musicService.searchAndSave(keyword);
-            
-            // 2. 방금 수집/업데이트된 데이터를 DB에서 다시 읽어옴
             List<MusicDTO> searchResults = musicService.getMusicListByKeyword(keyword);
             
-            // 3. 결과를 JSP로 전달
             model.addAttribute("musicList", searchResults);
             model.addAttribute("keyword", keyword);
         }
         
-        return "SearchResult"; // 이 JSP로 이동하면서 musicList 데이터를 들고 감
+        // 이 파일이 views/guest/ 폴더 안에 있는게 확실하다면 이대로 둡니다.
+        // 만약 views/ 폴더 바로 아래에 있다면 "SearchResult"로 고쳐야 합니다.
+        return "guest/SearchResult"; 
     }
     
     // =====================================================
@@ -62,12 +53,7 @@ public class MusicPageController {
     @GetMapping({"/", "/home"}) 
     public String home(HttpSession session, Model model) {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        Long uNo = (user != null) ? (long)user.getUNo() : 0L;
-
-        // 우측 사이드바 초기 데이터
-        List<PlaylistDTO> myPlaylists = playlistService.getMyPlaylists(uNo);
-        model.addAttribute("myPlaylists", myPlaylists);
-        
+        Long uNo = (user != null) ? (long)user.getUNo() : 0L;      
         return "Home"; // src/main/webapp/WEB-INF/views/Home.jsp
     }
 
@@ -83,106 +69,26 @@ public class MusicPageController {
         model.addAttribute("city", city.toUpperCase());
         return "guest/RegionalIndex"; 
     }
-
-    // 테스트 페이지 (필요 없으면 삭제 가능)
-    @GetMapping("/music/test")
-    public String musicTest() {
-        return "music_test";
-    }
-
-    // =====================================================
-    // 2. 데이터 처리 API (AJAX / JSON)
-    // =====================================================
-
-    // 찜한 노래 가져오기 (좌측 사이드바)
-    @GetMapping("/api/user/library")
-    @ResponseBody
-    public List<LibrarySongDTO> getMyLibrary(HttpSession session) {
+    
+    @GetMapping("/music/myLibrary")
+    public String myLibrary(HttpSession session, Model model) {
+        // 1. 세션 확인
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        Long uNo = (user != null) ? (long)user.getUNo() : 0L;
-        return playlistService.getLikedSongs(uNo);
-    }
-
-    // 플레이리스트 상세 곡 목록
-    @GetMapping("/api/playlist/tracks")
-    @ResponseBody
-    public List<PlaylistTrackViewDTO> getPlaylistTracks(@RequestParam("tNo") Long tNo) {
-        return playlistService.getPlaylistTracks(tNo);
-    }
-
-    // [핵심] 플레이리스트 생성 API
-    @PostMapping("/api/playlist/create")
-    @ResponseBody
-    public String createPlaylist(@RequestParam("title") String title, HttpSession session) {
-        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        
+        // 2. 로그인 안되어 있을 때 (프로젝트의 실제 로그인 페이지 경로로 수정하세요)
         if (user == null) {
-            return "fail"; // 로그인 안 했으면 fail
+            // 만약 로그인 페이지가 /user/login 이라면 아래처럼 수정
+            return "redirect:/user/login"; 
         }
 
-        Long uNo = (long) user.getUNo();
-        // 기본 커버이미지 ID는 1번으로 고정 (필요시 수정)
-        playlistService.createPlaylist(uNo, title, 1L); 
+        // 3. 데이터 조회 (반드시 u_no를 넘겨야 함)
+        // 여기서 musicDAO.selectMusicByLibrary를 호출해야 보관함 곡이 나옵니다.
+        // 만약 musicService.getTop100() 등을 호출하고 있다면 인덱스 곡이 나옵니다.
+        List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(user.getUNo());
         
-        return "success";
-    }
-
-    // [핵심] 우측 사이드바용 플레이리스트 목록 갱신 API
-    @GetMapping("/api/playlist/my")
-    @ResponseBody
-    public List<PlaylistDTO> getMyPlaylistsAPI(HttpSession session) {
-        UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        if (user == null) return null;
+        model.addAttribute("libraryList", libraryList);
+        model.addAttribute("keyword", "MY LIBRARY"); // 제목 표시용
         
-        return playlistService.getMyPlaylists((long)user.getUNo());
-    }
- // 기존 MusicPageController 클래스 안에 이 메서드를 추가해주세요.
-
-    // [추가] 플레이리스트 상세 페이지 이동
-    @GetMapping("/user/playlists/detail")
-    public String playlistDetail(@RequestParam("tNo") Long tNo, Model model, HttpSession session) {
-        
-        // 1. 플레이리스트 정보 가져오기 (제목, 커버 등)
-        // (주의: PlaylistService에 getPlaylistInfo 메서드가 있어야 함. 없으면 아래 단계 참고)
-        PlaylistDTO playlist = playlistService.getPlaylistInfo(tNo);
-        model.addAttribute("playlist", playlist);
-        
-        // 2. JSP 파일 위치 지정 [여기가 틀렸었음!]
-        // 실제 경로: /WEB-INF/views/playlist/PlaylistDetail.jsp
-        return "playlist/PlaylistDetail"; 
-    }
-    @PostMapping("/user/playlists/tracks/add")
-    @ResponseBody
-    public String addTrackToPlaylist(
-            @RequestParam("tNo") Long tNo, 
-            @RequestParam("mNo") Long mNo, 
-            HttpSession session) {
-        
-        // 1. 로그인 체크
-        UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        if (user == null) return "fail";
-
-        // 2. 서비스 호출 (곡 담기)
-        try {
-            playlistService.addTrackToPlaylist(tNo, mNo);
-            return "success";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "error";
-        }
-    }
- // 기존 Controller 클래스 안에 아래 메서드를 추가해주세요.
-
-    // [추가] 플레이리스트 삭제 기능
-    @PostMapping("/user/playlist/delete")
-    @ResponseBody
-    public String deletePlaylist(@RequestParam("tNo") Long tNo) {
-        try {
-            // 서비스에 deletePlaylist 메서드가 있어야 합니다.
-            playlistService.deletePlaylist(tNo); 
-            return "success";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "fail";
-        }
+        return "user/MyLibrary"; 
     }
 }

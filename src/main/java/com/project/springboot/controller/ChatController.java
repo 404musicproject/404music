@@ -12,7 +12,7 @@ import java.util.*;
 public class ChatController {
 
     // [중요] 선생님이 curl 명령어에 적어주신 그 키입니다.
-    private static final String GOOGLE_API_KEY = ""; 
+    private static final String GOOGLE_API_KEY = "AIzaSyBWYajiovFZD7b0E3wXTYqFoEa74440pwc"; 
 
     @PostMapping("/send")
     public String handleChat(@RequestParam("msg") String msg) {
