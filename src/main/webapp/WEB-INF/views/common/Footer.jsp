@@ -55,8 +55,14 @@
 <footer class="neon-footer">
     <div class="footer-nav">
         <a href="#" class="neon-link">개인정보처리방침</a> <span style="color:#333">|</span>
-        <a href="#" class="neon-link">공지사항</a> <span style="color:#333">|</span>
-        <a href="#" class="neon-link">1:1 문의</a>
+        <a href="${pageContext.request.contextPath}/support?mode=notice" class="neon-link">공지사항</a>
+                <span class="sep">|</span>
+        <!-- [수정] 통합 고객 센터의 INQUIRY 탭으로 연결 -->
+                <a href="${pageContext.request.contextPath}/support?mode=inquiry" class="neon-link">1:1 문의</a>
+                <span class="sep">|</span>
+        <!-- [추가] 통합 고객 센터의 FAQ 탭으로 연결 -->
+                <a href="${pageContext.request.contextPath}/support?mode=faq" class="neon-link">FAQ</a>
+        </div>
     </div>
     <p style="font-size:0.8rem;">Copyright © 2026 404Music Inc. All Rights Reserved.</p>
 </footer>

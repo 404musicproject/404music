@@ -57,13 +57,6 @@ public class MusicController {
         @RequestParam("m_no") int m_no, 
         @RequestParam("title") String title
     ) {
-        // 1. 먼저 DB에서 기존 ID가 있는지 조회
-        String existingId = musicDAO.selectYoutubeIdByNo(m_no);
-        if (existingId != null && !existingId.isEmpty()) {
-            return ResponseEntity.ok(existingId); // DB에 있으면 API 안 쓰고 바로 리턴
-        }
-
-        // 2. DB에 없을 때만 API 호출
         String videoId = youtubeService.searchYouTube(title);
         if (videoId != null) {
             musicDAO.updateYoutubeId(m_no, videoId); 
@@ -71,7 +64,7 @@ public class MusicController {
         }
         return ResponseEntity.ok("fail");
     }
-
+    
     // 4. 실시간 TOP 100 조회 (신규 추가)
     @GetMapping("/top100")
     public ResponseEntity<List<Map<String, Object>>> getTop100(@RequestParam(value="u_no", defaultValue="0") int u_no) {

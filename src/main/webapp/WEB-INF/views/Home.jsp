@@ -1,4 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" buffer="16kb" autoFlush="true" %>
+<%@ taglib prefix="c" uri = "jakarta.tags.core"%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -96,6 +98,7 @@
             <div>
                 <h2 style="color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); margin:0;">NEW RELEASES</h2>
                 <p style="margin: 4px 0 0 0; color: #888; font-size: 0.8rem;">글로벌 트렌드 차트</p>
+                
             </div>
             <button onclick="loadItunesMusic()" style="background: none; border: 1px solid #333; color: #888; cursor: pointer; padding: 5px 10px; border-radius: 4px;">REFRESH</button>
         </div>
@@ -132,6 +135,26 @@
             </div>
         </div>
     </section>
+    
+    
+<section class="tag-recommend-section">
+    <div class="section-title">For You: My Mood Tags</div>
+    <div> <a href="${pageContext.request.contextPath}/recommendationCategories" style="padding: 10px 20px; background-color: #00f2ff; color: black; text-decoration: none; border-radius: 5px; font-weight: bold;">
+					    상황별 &amp; 날씨별 음악 추천 보기
+					</a></div>
+    <div class="location-grid">
+        <c:forEach var="tag" items="${topTags}" varStatus="status">
+            <!-- 태그별로 색상을 다르게 주기 위해 tag-color-${status.index} 클래스 활용 -->
+            <div class="location-card tag-color-${status.index}" onclick="goTag('${tag}')">
+                <span class="city-name">${tag}</span>
+                <div class="city-top-song">나만을 위한 추천</div>
+                <div class="city-top-artist">#${tag} #추천곡</div>
+            </div>
+        </c:forEach>
+    </div>
+</section>
+
+
 </main>
 
 <footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
@@ -216,6 +239,11 @@ $(document).ready(function() {
         loadItunesMusic();
     }, 100);
 });
+
+function goTag(tagName) {
+    // 기존에 만드신 추천 리스트 페이지로 이동
+    location.href = "${pageContext.request.contextPath}/music/recommendationList?tagName=" + encodeURIComponent(tagName);
+}
 </script>
 </body>
 </html>

@@ -9,7 +9,7 @@ import java.util.List;
 public class YouTubeApiService {
 
     // 보내주신 API 키를 직접 변수에 할당 (보안상 properties 권장이나 우선 확실한 동작을 위해)
-    private final String apiKey = "AIzaSyDwDl6o0-7jQkkmk3pKNuxoUPoXPM5dKLU"; // 여기에 보내주신 키가 들어있다고 가정합니다.
+    private final String apiKey = "AIzaSyBWYajiovFZD7b0E3wXTYqFoEa74440pwc"; // 여기에 보내주신 키가 들어있다고 가정합니다.
 
     public String searchYouTube(String query) {
         try {

@@ -1,5 +1,6 @@
 package com.project.springboot.controller;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import com.project.springboot.dto.PlaylistTrackViewDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
 import com.project.springboot.service.PlaylistService;
+import com.project.springboot.service.RecommendationService;
 
 // 스프링 부트 버전에 따라 아래 import 중 맞는 것을 사용하세요.
 // import javax.servlet.http.HttpSession; // 구버전 (Spring Boot 2.x)
@@ -57,6 +59,9 @@ public class MusicPageController {
     // 1. 페이지 이동 관련 (View Rendering)
     // =====================================================
 
+    @Autowired
+    private RecommendationService recommendationService;
+    
     // 메인 홈 화면 (3단 레이아웃)
     // 주의: 다른 컨트롤러(UserViewController 등)에 @GetMapping("/")이 있다면 지워야 충돌이 안 납니다.
     @GetMapping({"/", "/home"}) 
@@ -64,13 +69,28 @@ public class MusicPageController {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         Long uNo = (user != null) ? (long)user.getUNo() : 0L;
 
-        // 우측 사이드바 초기 데이터
+        // 1. 우측 사이드바 데이터
         List<PlaylistDTO> myPlaylists = playlistService.getMyPlaylists(uNo);
         model.addAttribute("myPlaylists", myPlaylists);
         
-        return "Home"; // src/main/webapp/WEB-INF/views/Home.jsp
+        // 2. [추가] 사용자 맞춤 태그 TOP 5 가져오기
+        List<String> topTags;
+        if (uNo > 0) {
+            topTags = recommendationService.getUserTopTags(uNo.intValue());
+        } else {
+            // 비로그인 시 보여줄 기본 태그 5개
+            topTags = Arrays.asList("운동", "휴식", "잠잘 때", "행복한 기분", "로맨스");
+        }
+        
+        // 만약 로그인 유저인데 감상 기록이 없어 빈 리스트가 왔을 때를 대비
+        if (topTags == null || topTags.isEmpty()) {
+            topTags = Arrays.asList("운동", "휴식", "잠잘 때", "행복한 기분", "로맨스");
+        }
+        
+        model.addAttribute("topTags", topTags);
+        
+        return "Home"; 
     }
-
     // 음악 메인 인덱스 (실시간 차트 등)
     @GetMapping("/music/Index")
     public String mainIndex() {
