@@ -15,5 +15,6 @@ public class MusicDTO {
     // ★ 이 두 개가 없어서 500 에러가 났을 확률이 매우 높습니다!
     private String a_name;  
     private String b_title;
+    private String b_image;
     
 }

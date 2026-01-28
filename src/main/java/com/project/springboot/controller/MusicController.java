@@ -6,13 +6,13 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.HistoryDTO;
@@ -28,13 +28,12 @@ public class MusicController {
     @Autowired private IMusicDAO musicDAO;
     @Autowired private YouTubeApiService youtubeService;
 
-    // 1. 검색 및 수집 (Spotify 기반으로 변경됨)
+    // 1. 검색 및 수집
     @GetMapping("/search")
     public ResponseEntity<List<MusicDTO>> searchMusic(@RequestParam("keyword") String keyword) {
-        // [수정] 이제 내부에서 Spotify 검색 -> 중복체크 -> iTunes 보완 -> DB/ES 저장이 일어납니다.
+        // iTunes에서 수집 및 저장
         musicService.searchAndSave(keyword);
-        
-        // 검색된 키워드로 DB에서 최신 목록 반환
+        // DB에서 조회된 결과 반환
         List<MusicDTO> list = musicService.getMusicListByKeyword(keyword);
         return ResponseEntity.ok(list);
     }
@@ -51,12 +50,20 @@ public class MusicController {
         return ResponseEntity.ok(detail);
     }
 
+    
     // 3. 유튜브 ID 업데이트 (클릭 시 실행)
     @GetMapping("/update-youtube")
     public ResponseEntity<String> updateYoutube(
         @RequestParam("m_no") int m_no, 
         @RequestParam("title") String title
     ) {
+        // 1. 먼저 DB에서 기존 ID가 있는지 조회
+        String existingId = musicDAO.selectYoutubeIdByNo(m_no);
+        if (existingId != null && !existingId.isEmpty()) {
+            return ResponseEntity.ok(existingId); // DB에 있으면 API 안 쓰고 바로 리턴
+        }
+
+        // 2. DB에 없을 때만 API 호출
         String videoId = youtubeService.searchYouTube(title);
         if (videoId != null) {
             musicDAO.updateYoutubeId(m_no, videoId); 
@@ -65,26 +72,67 @@ public class MusicController {
         return ResponseEntity.ok("fail");
     }
 
-    // 4. 실시간 TOP 100 조회
+    // 4. 실시간 TOP 100 조회 (신규 추가)
     @GetMapping("/top100")
     public ResponseEntity<List<Map<String, Object>>> getTop100(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // JSP에서 던져준 u_no를 DAO의 selectTop100Music(u_no)에 전달합니다.
         List<Map<String, Object>> top100 = musicDAO.selectTop100Music(u_no);
         return ResponseEntity.ok(top100);
     }
+    @GetMapping("/weekly")
+    public ResponseEntity<List<Map<String, Object>>> getWeekly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectWeeklyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectWeeklyMusic(u_no));
+    }
 
-    // 5. 재생 로그 저장
+    // 2. 월간 데이터 통로
+    @GetMapping("/monthly")
+    public ResponseEntity<List<Map<String, Object>>> getMonthly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectMonthlyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectMonthlyMusic(u_no));
+    }
+
+    // 3. 연간 데이터 통로
+    @GetMapping("/yearly")
+    public ResponseEntity<List<Map<String, Object>>> getYearly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
+        // DAO에 selectYearlyMusic 메서드가 있어야 합니다.
+        return ResponseEntity.ok(musicDAO.selectYearlyMusic(u_no));
+    }
+    
+    
+    //5.지역별 순위
+    @GetMapping("/regional")
+    public ResponseEntity<List<Map<String, Object>>> getRegionalChart(
+            @RequestParam(value="u_no", defaultValue="0") int u_no,
+            @RequestParam(value="city", required=false) String city) {
+        
+        // DAO에 city를 파라미터로 넘겨 해당 지역의 1~100위까지 가져오는 메서드 필요
+        List<Map<String, Object>> list = musicDAO.selectRegionalMusic(u_no, city);
+        return ResponseEntity.ok(list);
+    }
+    
+    // 6. 재생 로그 저장 (기존 @RequestBody 방식에서 일반 폼 전송 방식으로도 가능하게 보강)
     @PostMapping("/history")
     public ResponseEntity<String> saveHistory(HistoryDTO history) {
         try {
-            if (history.getU_no() == 0) history.setU_no(0); 
+            if (history.getU_no() == 0) {
+                history.setU_no(0); 
+            }
+            
+            // [수정] 데이터가 잘 들어오는지 콘솔에서 확인하기 위한 로그
+            System.out.println("[차트 반영] 곡:" + history.getM_no() + 
+                               " | 지역:" + history.getH_location() + 
+                               " | 좌표:(" + history.getH_lat() + ", " + history.getH_lon() + ")");
+
             musicDAO.insertHistory(history);
             return ResponseEntity.ok("success");
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("fail");
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("fail: " + e.getMessage());
         }
     }
-
-    // 6. 좋아요 토글
+    
+   
     @PostMapping("/toggle-like")
     @ResponseBody
     public Map<String, Object> toggleLike(
@@ -93,12 +141,15 @@ public class MusicController {
         
         Map<String, Object> result = new HashMap<>();
         try {
+            // 1. 유저 존재 여부 및 유효성 체크
             if (u_no <= 0) {
                 result.put("status", "error");
                 return result;
             }
 
+            // 2. 좋아요 여부 확인 (l_target_type='MUSIC', l_target_no=m_no)
             int count = musicDAO.checkLike(u_no, m_no);
+            
             if (count > 0) {
                 musicDAO.deleteLike(u_no, m_no);
                 result.put("status", "unliked");
@@ -107,13 +158,60 @@ public class MusicController {
                 result.put("status", "liked");
             }
         } catch (Exception e) {
+            e.printStackTrace(); // ★ 서버 콘솔에 빨간 글씨로 에러 원인이 찍힙니다. 꼭 확인하세요!
             result.put("status", "error");
         }
         return result;
     }
+    
+    
+    @GetMapping("/rss/most-played")
+    public ResponseEntity<List<Map<String, Object>>> getRssMostPlayed(
+            @RequestParam(value="storefront", defaultValue="kr") String storefront,
+            @RequestParam(value="limit", defaultValue="10") int limit
+    ) {
+        try {
+            String url =
+                "https://rss.applemarketingtools.com/api/v2/"
+                + storefront.toLowerCase()
+                + "/music/most-played/"
+                + limit
+                + "/songs.json";
 
-    /* [삭제 제안] /update-extra 
-       이유: 이제 searchAndSave 단계에서 iTunes 정보를 함께 수집하므로 
-       프론트엔드에서 별도로 이 API를 호출할 필요가 없어졌습니다. 
-    */
+            RestTemplate rt = new RestTemplate();
+            Map<String, Object> root = rt.getForObject(url, Map.class);
+
+            if (root == null || root.get("feed") == null) {
+                return ResponseEntity.ok(List.of());
+            }
+
+            Map<String, Object> feed = (Map<String, Object>) root.get("feed");
+            List<Map<String, Object>> results = (List<Map<String, Object>>) feed.get("results");
+
+            if (results == null) return ResponseEntity.ok(List.of());
+
+            // home.jsp가 바로 쓰기 쉽도록 기존 키 형태(TITLE/ARTIST/ALBUM_IMG)로 변환
+            List<Map<String, Object>> out = results.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("MNO", 0); // 클릭 시 title로 검색 이동만 할 거라 의미없음
+                m.put("TITLE", r.get("name"));
+                m.put("ARTIST", r.get("artistName"));
+                m.put("ALBUM_IMG", r.get("artworkUrl100"));
+                m.put("URL", r.get("url"));
+                return m;
+            }).toList();
+
+            return ResponseEntity.ok(out);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(List.of());
+        }
+    }
+    @GetMapping("/youtube-search")
+    public ResponseEntity<String> youtubeSearch(@RequestParam("q") String q) {
+        String videoId = youtubeService.searchYouTube(q);
+        return ResponseEntity.ok(videoId != null ? videoId : "fail");
+    }
+
 }

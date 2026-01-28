@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
+import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
 
 @Service
@@ -90,6 +91,8 @@ public class MusicService {
         music.setIsrc_code(spotifyId); 
         music.setM_preview_url(itunes != null ? (String) itunes.get("previewUrl") : null);
         musicDAO.insertMusic(music);
+        
+        System.out.println(">>> 오라클에 저장된 곡 번호: " + music.getM_no());
 
         // 4. 초기 Elasticsearch 색인 (평면 구조로 시작)
         try {
@@ -115,15 +118,42 @@ public class MusicService {
         MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
         if (musicInfo == null) return null;
 
+        String spotifyId = musicInfo.getIsrc_code();
+
+        // ★ [수정] ID가 null이면 여기서 다시 한번 검색해서 채워넣기
+        if (spotifyId == null || spotifyId.isEmpty()) {
+            System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
+            spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
+            
+            if (spotifyId != null) {
+                // DB에 ID 업데이트 (다음에 또 검색 안 하게)
+                // (MusicDTO에 spotifyId 필드가 isrc_code에 매핑되어 있다면)
+                musicInfo.setIsrc_code(spotifyId);
+               // musicDAO.updateSpotifyId(mNo, spotifyId); // 이 쿼리를 만들어서 실행하면 더 좋음
+            }
+        }
+
+        if (spotifyId == null) {
+            System.err.println("[FAIL] Spotify ID를 찾을 수 없어 상세정보 수집 불가");
+            return null; 
+        }
         Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
         Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
 
         // 데이터가 없으면 Spotify에서 가져오기
         if (feature == null || lyrics == null) {
-            String spotifyId = musicInfo.getIsrc_code(); // 저장해둔 Spotify ID 사용
+        	System.out.println("[DEBUG] Spotify에서 특징 가져오기 시도 ID: " + spotifyId);
+            Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
+            if (raw == null) {
+                System.err.println("[DEBUG] Spotify API가 null을 반환함 - ID 확인 필요");
+            } else {
+                System.out.println("[DEBUG] Spotify 데이터 수신 성공: " + raw.toString());
+                feature = prepareFeatureParams(mNo, raw);
+                musicDAO.insertMusicFeature(feature);
+            }
+            
             
             if (feature == null) {
-                Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
                 if (raw != null) {
                     feature = prepareFeatureParams(mNo, raw);
                     musicDAO.insertMusicFeature(feature);
@@ -156,51 +186,79 @@ public class MusicService {
     
     private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics) {
         try {
+            // 0. 기본 정보를 가져오기 위해 DB 재조회 (이미 musicInfo가 있다면 활용 가능)
+            MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
+            
             Map<String, Object> esUpdateDoc = new HashMap<>();
             
+            // 1. [핵심] 기본 정보 추가 (이게 있어야 검색이 됨!)
+            if (musicInfo != null) {
+                esUpdateDoc.put("m_no", musicInfo.getM_no());
+                esUpdateDoc.put("m_title", musicInfo.getM_title());
+                esUpdateDoc.put("a_name", musicInfo.getA_name());
+                // 필요한 경우 앨범 제목 등도 추가
+            }
+
+            // 2. Feature 데이터 추가 (기존 로직)
             if (feature != null) {
-                String[] fields = {"ENERGY", "VALENCE", "TEMPO", "DANCEABILITY", "ACOUSTICNESS"};
+            	String[] fields = {
+            		    "energy", "valence", "tempo", "danceability", "acousticness", 
+            		    "instrumentalness", "liveness", "speechiness" // 추가
+            		};
                 for (String f : fields) {
-                    Object val = getValue(feature, f, f.toLowerCase());
+                    Object val = getValue(feature, f.toUpperCase(), f.toLowerCase());
                     if (val != null) esUpdateDoc.put(f.toLowerCase(), val);
                 }
             }
 
+            // 3. 가사 데이터 추가 (기존 로직)
             if (lyrics != null) {
                 Object lText = getValue(lyrics, "LYRICS_TEXT", "lyrics_text");
                 if (lText != null) {
-                    String rawLyrics = "";
-                    if (lText instanceof java.sql.Clob) {
-                        java.sql.Clob clob = (java.sql.Clob) lText;
-                        rawLyrics = clob.getSubString(1, (int) clob.length());
-                    } else {
-                        rawLyrics = lText.toString();
-                    }
-                    esUpdateDoc.put("lyrics_text", rawLyrics.replaceAll("\\[\\d{2}:\\d{2}\\.\\d{2,3}\\]", "").trim());
+                    String rawLyrics = (lText instanceof java.sql.Clob) 
+                        ? clobToString((java.sql.Clob) lText) : lText.toString();
+                    String cleanLyrics = rawLyrics.replaceAll("\\[\\d{2}:\\d{2}\\.\\d{2,3}\\]", "").trim();
+                    esUpdateDoc.put("lyrics_text", cleanLyrics);
                 }
             }
 
+            // 4. ES 전송 (upsert)
             if (!esUpdateDoc.isEmpty()) {
-                esClient.update(new UpdateRequest("music_index", String.valueOf(mNo)).doc(esUpdateDoc), RequestOptions.DEFAULT);
+                UpdateRequest request = new UpdateRequest("music_index", String.valueOf(mNo))
+                        .doc(esUpdateDoc)
+                        .docAsUpsert(true);
+                esClient.update(request, RequestOptions.DEFAULT);
+                System.out.println("[ES SUCCESS] 제목/가수/특징/가사 통합 색인 완료: " + musicInfo.getM_title());
             }
         } catch (Exception e) {
-            System.err.println("ES 상세 업데이트 실패: " + e.getMessage());
+            System.err.println("[ES ERROR] " + e.getMessage());
         }
     }
-  
+
+    // Clob 변환 보조 메서드
+    private String clobToString(java.sql.Clob clob) throws Exception {
+        return clob.getSubString(1, (int) clob.length());
+    }
  // --- 보조 메서드: Spotify 데이터 정제 ---
     private Map<String, Object> prepareFeatureParams(int mNo, Map<String, Object> raw) {
-        Map<String, Object> params = new HashMap<>();
-        Object fObj = raw.get("audio_features");
-        Map<String, Object> data = (fObj instanceof Map) ? (Map<String, Object>) fObj : raw;
-        
-        params.put("m_no", mNo);
-        params.put("danceability", data.get("danceability"));
-        params.put("energy", data.get("energy"));
-        params.put("valence", data.get("valence"));
-        params.put("tempo", data.get("tempo"));
-        params.put("acousticness", data.get("acousticness"));
-        return params;
+        Map<String, Object> param = new HashMap<>();
+        param.put("m_no", mNo);
+
+        // [핵심] audio_features 내부 객체를 먼저 꺼냅니다.
+        Map<String, Object> features = (Map<String, Object>) raw.get("audio_features");
+
+        if (features != null) {
+            // 이제 features 안에서 값을 꺼내야 정상적으로 숫자가 나옵니다.
+            param.put("danceability", features.get("danceability"));
+            param.put("energy", features.get("energy"));
+            param.put("valence", features.get("valence"));
+            param.put("tempo", features.get("tempo"));
+            param.put("acousticness", features.get("acousticness"));
+            param.put("instrumentalness", features.get("instrumentalness"));
+            param.put("liveness", features.get("liveness"));
+            param.put("speechiness", features.get("speechiness"));
+        }
+        return param;
     }
     
     private Object getValue(Map<String, Object> map, String upperKey, String lowerKey) {
@@ -238,5 +296,43 @@ public class MusicService {
             return new ArrayList<>();
         }
     }
+    /**
+    * [3단계] 재생 히스토리 저장
+    * @param params {m_no, u_no, h_location, h_weather, h_lat, h_lon}
+    */
 
+    @Transactional
+    public void insertPlayHistory(Map<String, Object> params) {
+        try {
+            HistoryDTO history = new HistoryDTO();
+            
+            // 1. 필수 데이터 매핑 (m_no, u_no)
+            history.setM_no(Integer.parseInt(params.get("m_no").toString()));
+            
+            // u_no가 0이면 게스트이므로 DB 무결성을 위해 0 그대로 두거나, 
+            // Mapper에서 처리하도록 넘깁니다.
+            int uNo = Integer.parseInt(params.getOrDefault("u_no", "0").toString());
+            history.setU_no(uNo);
+
+            // 2. 부가 정보 매핑 (위치, 날씨 등)
+            history.setH_location((String) params.getOrDefault("h_location", "UNKNOWN"));
+            
+            if (params.get("h_weather") != null) {
+                history.setH_weather(Integer.parseInt(params.get("h_weather").toString()));
+            }
+            
+            // 좌표 정보가 있다면 추가 (DTO에 필드가 있는 경우)
+            // history.setH_lat(Double.parseDouble(params.getOrDefault("h_lat", "0").toString()));
+            // history.setH_lon(Double.parseDouble(params.getOrDefault("h_lon", "0").toString()));
+
+            // 3. DAO 호출
+            musicDAO.insertHistory(history);
+            
+            System.out.println("[SUCCESS] 재생 기록 저장 완료: 곡 번호 " + history.getM_no());
+            
+        } catch (Exception e) {
+            System.err.println("[ERROR] insertPlayHistory 실패: " + e.getMessage());
+            // 에러가 나더라도 음악 재생은 되어야 하므로 런타임 예외를 던지지 않고 로그만 남깁니다.
+        }
+    }
 }

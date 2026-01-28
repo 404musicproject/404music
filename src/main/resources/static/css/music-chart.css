@@ -1,0 +1,158 @@
+@charset "UTF-8";
+
+/* --- 1. 기본 레이아웃 및 폰트 --- */
+body { 
+    font-family: 'Pretendard', -apple-system, sans-serif; 
+    background-color: #000; 
+    color: #fff; 
+    margin: 0; 
+    padding: 0; 
+}
+main { padding: 40px 20px; min-height: 85vh; position: relative; z-index: 10; }
+.container { max-width: 1000px; margin: 0 auto; }
+
+/* --- 2. 탭 버튼 디자인 --- */
+.chart-tabs { 
+    display: flex; align-items: center; width: 100%; 
+    gap: 12px; margin-bottom: 25px; min-height: 50px;
+}
+.tab-btn {
+    background: rgba(10, 10, 10, 0.8); border: 1px solid #00f2ff; color: #00f2ff;
+    padding: 10px 25px; cursor: pointer; border-radius: 4px;
+    font-weight: bold; font-size: 0.85rem; transition: 0.3s;
+    text-transform: uppercase; letter-spacing: 1px;
+    display: inline-flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(10px);
+}
+.tab-btn:hover { 
+    background: rgba(0, 242, 255, 0.1); 
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); 
+    transform: translateY(-2px);
+}
+.tab-btn.active { 
+    background: #ff0055 !important; color: #fff !important; 
+    border-color: #ff0055 !important; 
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.6); 
+}
+
+/* --- 3. 차트 섹션 및 테이블 --- */
+.section { 
+    background: rgba(10, 10, 10, 0.9); padding: 25px; 
+    border-radius: 16px; border: 2px solid #00f2ff; 
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.15); 
+}
+.chart-header { 
+    display: flex; justify-content: space-between; 
+    align-items: flex-end; margin-bottom: 20px; 
+    border-bottom: 1px solid #222; padding-bottom: 12px; 
+}
+
+.chart-table { width: 100%; border-collapse: collapse; }
+.chart-table th { font-size: 0.85rem; color: #00f2ff; padding: 12px; border-bottom: 2px solid #222; text-align: left; }
+
+/* --- 4. 음악 행 호버 및 요소 --- */
+#chart-body tr { cursor: pointer; transition: 0.2s; }
+#chart-body tr:hover td { background: rgba(255, 0, 85, 0.08); }
+
+.rank { font-weight: bold; width: 45px; color: #ff0055; font-size: 1.1rem; text-align: center; }
+.album-art { 
+    width: 42px; height: 42px; border-radius: 4px; 
+    margin-right: 12px; vertical-align: middle; 
+    border: 1px solid #222; transition: 0.3s; 
+}
+#chart-body tr:hover .album-art { 
+    transform: scale(1.15); border-color: #00f2ff; 
+}
+
+.song-title { font-weight: 600; color: #fff; font-size: 0.95rem; }
+.artist-name { font-size: 0.8rem; color: #888; }
+
+/* 미리듣기 뱃지 */
+.preview-badge { 
+    font-size: 0.65rem; 
+    font-weight: 600;
+    border: 1px solid #00f2ff; 
+    color: #00f2ff; 
+    padding: 2px 10px; 
+    border-radius: 30px; 
+    margin-left: 10px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+    background: rgba(0, 242, 255, 0.05);
+    text-transform: uppercase;
+    display: inline-block;
+    vertical-align: middle;
+}
+.preview-badge:hover { 
+    background: #00f2ff; 
+    color: #000; 
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.8);
+}
+
+/* 하트(좋아요) 버튼 */
+.btn-like { 
+    background: transparent !important; border: none; cursor: pointer; 
+    font-size: 1.3rem; color: rgba(255, 255, 255, 0.15); 
+    transition: 0.3s; padding: 5px; outline: none;
+}
+.btn-like.active { 
+    color: #ff0055 !important; text-shadow: 0 0 10px #ff0055; 
+}
+
+/* 재생 횟수 배지 */
+.play-cnt { 
+    color: #00f2ff; font-weight: bold; font-size: 0.75rem; 
+    border: 1px solid rgba(0, 242, 255, 0.3); padding: 4px 10px; 
+    border-radius: 4px; background: rgba(0, 242, 255, 0.05); 
+}
+
+/* --- 5. 하단 고정 플레이어 (수정됨) --- */
+#player-container { 
+    position: fixed; 
+    bottom: 90px;      /* 1. 하단 바(Footer)와 겹치지 않게 높임 */
+    left: 30px;        /* 2. 우측의 챗봇 기능을 피해 왼쪽으로 이동 */
+    right: auto;       /* 기존 우측 고정 해제 */
+    width: 320px; 
+    background: rgba(0, 0, 0, 0.9); 
+    padding: 15px; 
+    border-radius: 12px; 
+    z-index: 9999; 
+    border: 2px solid #ff0055; 
+    box-shadow: 0 0 25px rgba(255, 0, 85, 0.5);
+    display: none; 
+}
+
+/* 3. 유튜브 영상이 잘리지 않도록 높이 명시 */
+#player {
+    width: 100% !important;
+    height: 180px !important; 
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+#now-playing-title {
+    font-size: 0.8rem; 
+    color: #00f2ff; 
+    margin: 0; 
+    max-width: 250px; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+/* 추가 스타일 */
+.itunes-card:hover {
+    transform: translateY(-5px);
+    border-color: #ff0055 !important;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+    background: #1a1a1a !important;
+}
+.itunes-card img { transition: 0.3s; }
+.itunes-card:hover img { filter: brightness(1.2); }
+
+/* 하단 푸터 재생바가 플레이어보다 위에 오게 설정 */
+footer {
+    position: relative;
+    z-index: 10000;
+}

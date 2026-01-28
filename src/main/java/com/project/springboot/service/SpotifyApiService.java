@@ -19,18 +19,22 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class SpotifyApiService {
     
+	// 1. 분석 API용 키 (기존 키)
     @Value("${rapidapi.key}")
-    private String apiKey;
+    private String analysisKey;
+
+    // 2. 스크래퍼 API용 키 (새로 발급받은 키 ★)
+    @Value("${scraper.api.key}")
+    private String scraperKey;
 
     @Value("${rapidapi.host}")
-    private String apiHost; // 분석 API 호스트
+    private String analysisHost;
     
     @Value("${scraper.api.host}")
-    private String scraperHost; // 스크래퍼 API 호스트
-    
+    private String scraperHost;
+
     @Autowired
     private RestTemplate restTemplate;
-
     /**
      * [1] Spotify 수치(Features) 가져오기 - 업체 1 (spotify-audio-features...)
      */
@@ -38,12 +42,12 @@ public class SpotifyApiService {
         if (spotifyId == null || spotifyId.isEmpty()) return null;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-rapidapi-key", apiKey);
-        headers.set("x-rapidapi-host", apiHost);
+        headers.set("x-rapidapi-key", analysisKey); // <--- 여기를 scraperKey로!
+        headers.set("x-rapidapi-host", analysisHost);
 
         try {
             // [수정] Unirest 명세에 따라 파라미터명을 'spotify_track_id'로 변경
-            String url = "https://" + apiHost + "/tracks/spotify_audio_features?spotify_track_id=" + spotifyId;
+            String url = "https://" + scraperHost + "/tracks/spotify_audio_features?spotify_track_id=" + spotifyId;
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
@@ -59,7 +63,7 @@ public class SpotifyApiService {
      */
     public String searchTrackId(String title, String artist) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-rapidapi-key", apiKey);
+        headers.set("x-rapidapi-key", scraperKey);
         headers.set("x-rapidapi-host", scraperHost);
 
         try {
@@ -89,7 +93,7 @@ public class SpotifyApiService {
         List<Map<String, Object>> resultList = new ArrayList<>();
         
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-rapidapi-key", apiKey);
+        headers.set("x-rapidapi-key", analysisKey);
         headers.set("x-rapidapi-host", scraperHost); // 기존에 정의된 scraperHost 사용
 
         try {
@@ -134,7 +138,7 @@ public class SpotifyApiService {
         if (spotifyId == null) return null;
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-rapidapi-key", apiKey);
+        headers.set("x-rapidapi-key", scraperKey);
         headers.set("x-rapidapi-host", scraperHost);
 
         try {
