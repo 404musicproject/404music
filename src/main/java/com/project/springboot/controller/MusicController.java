@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,8 +18,11 @@ import org.springframework.web.client.RestTemplate;
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
+import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
 import com.project.springboot.service.YouTubeApiService;
+
+import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/music")
@@ -205,6 +209,38 @@ public class MusicController {
     public ResponseEntity<String> youtubeSearch(@RequestParam("q") String q) {
         String videoId = youtubeService.searchYouTube(q);
         return ResponseEntity.ok(videoId != null ? videoId : "fail");
+    }
+   
+    @PostMapping("/add-library")
+    public ResponseEntity<String> addLibrary(@RequestParam("m_no") int mNo, @RequestParam("u_no") int uNo) {
+        try {
+            // 이미 보관함에 있는지 체크하는 로직을 넣으면 더 좋습니다.
+            musicDAO.insertLibraryTrack(uNo, mNo);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("fail");
+        }
+    }
+    @GetMapping("/music/myLibrary")
+    public String myLibrary(HttpSession session, Model model) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        if (user == null) return "redirect:/login";
+
+        List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(user.getUNo());
+        model.addAttribute("libraryList", libraryList);
+        
+        // guest/가 아니라 user/ 폴더 안에 만드셨으므로 경로 수정!
+        return "user/MyLibrary"; 
+    }
+    
+    @PostMapping("/remove-library")
+    public ResponseEntity<String> removeLibrary(@RequestParam("m_no") int mNo, @RequestParam("u_no") int uNo) {
+        try {
+            musicDAO.deleteLibraryTrack(uNo, mNo);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("fail");
+        }
     }
 
 }

@@ -64,6 +64,14 @@ public interface IMusicDAO {
     //특정 곡의 가사 정보 가져오기
     Map<String, Object> selectLyrics(@Param("m_no") int m_no);
     Integer selectMNoByTitleAndArtist(@Param("title") String title, @Param("artist") String artist);
+    
+    // 특정 유저의 '내 보관함'이라는 이름의 플레이리스트 번호를 가져오거나 생성
+    void insertLibraryTrack(@Param("u_no") int uNo, @Param("m_no") int mNo);
+	 // 11. 라이브러리(보관함) 조회
+	 // 유저 번호를 입력받아 해당 유저가 보관함(MY_LIBRARY)에 담은 곡 리스트를 반환합니다.
+	List<MusicDTO> selectMusicByLibrary(@Param("u_no") int u_no);
+	 
+	void deleteLibraryTrack(@Param("u_no") int uNo, @Param("m_no") int mNo);
    
     
     // 유튜브 ID 조회를 위한 메서드 추가

@@ -133,7 +133,7 @@
             </div>
             <table class="chart-table">
                 <thead>
-                    <tr><th>RANK</th><th>SONG INFO</th><th style="text-align: center;">LIKE</th><th style="text-align: right; padding-right: 20px;">PLAYS</th></tr>
+                    <tr><th>RANK</th><th>SONG INFO</th><th style="text-align: center;">LIKE</th><th style="text-align: center; width: 80px;">LIB</th> <th style="text-align: right; padding-right: 20px;">PLAYS</th></tr>
                 </thead>
                 <tbody id="chart-body"></tbody>
             </table>

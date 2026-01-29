@@ -6,24 +6,58 @@
     <meta charset="UTF-8">
     <title>404Music | 추천 음악</title>
     
+    <style>
+        /* 네온 탭 스타일 추가 */
+        .chart-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding: 10px 0; }
+        .tab-btn { 
+            padding: 10px 25px; background: transparent; border: 1px solid #444; color: #888; 
+            cursor: pointer; border-radius: 20px; font-weight: bold; transition: 0.3s; white-space: nowrap;
+        }
+        .tab-btn.active { border-color: #00f2ff; color: #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
+        .tag-hero { 
+            height: 300px; background: #050505; display: flex; align-items: center; justify-content: center; 
+            position: relative; border-bottom: 2px solid #00f2ff; overflow: hidden;
+        }
+        #hero-bg { position: absolute; width: 100%; height: 100%; background-size: cover; filter: blur(30px) brightness(0.3); opacity: 0.7; }
+        .hero-content { position: relative; z-index: 2; text-align: center; }
+        #hero-tag-name { font-size: 4rem; color: #ff0055; text-shadow: 0 0 20px #ff0055; text-transform: uppercase; }
+    </style>
+    
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/music-chart.css">
     <!-- 기타 CSS 및 JS 파일 포함 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/music-service.js"></script> 
 
 <script>
-    $(document).ready(function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const tagName = urlParams.get('tagName'); 
-        const currentUserNo = "${sessionScope.user.u_no}"; 
+$(document).ready(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentTag = urlParams.get('tagName') || "${topTags[0]}"; // 기본값 첫 번째 태그
+    const uNo = "${sessionScope.loginUser.uNo}" || 0;
 
-        if (tagName) {
-            $('#chart-title').text(tagName + ' 추천 음악');
-            loadRecommendedMusic(tagName);
-        } else {
-            $('#chart-title').text('잘못된 접근입니다.');
+    // 초기 로드
+    changeTag(currentTag, $('.tab-btn:contains("' + currentTag + '")'));
+});
+
+// 탭 변경 함수 (여기서 AJAX 호출)
+function changeTag(tagName, btn) {
+    $('.tab-btn').removeClass('active');
+    $(btn).addClass('active');
+    $('#hero-tag-name').text(tagName);
+    
+    const uNo = "${sessionScope.loginUser.uNo}" || 0;
+
+    $.ajax({
+        url: '${pageContext.request.contextPath}/api/recommendations/tag/' + encodeURIComponent(tagName) + '?u_no=' + uNo,
+        method: 'GET',
+        success: function(data) {
+            renderMusicList(data);
+            if(data.length > 0) {
+                $('#hero-bg').css('background-image', 'url(' + (data[0].b_image || data[0].B_IMAGE) + ')');
+            }
         }
-        
+    });
+}
+
         function loadRecommendedMusic(tagName) {
             $.ajax({
                 url: '${pageContext.request.contextPath}/api/recommendations/tag/' + encodeURIComponent(tagName) + '?u_no=' + currentUserNo,
@@ -78,38 +112,42 @@
 </script>
 </head>
 <body>
-
 <header><%@ include file="/WEB-INF/views/common/Header.jsp" %></header>
+
+<section class="tag-hero">
+    <div id="hero-bg"></div>
+    <div class="hero-content">
+        <h1 id="hero-tag-name">MOOD</h1>
+        <div id="hero-tag-desc">Analyzing your music taste...</div>
+    </div>
+</section>
 
 <main>
     <div class="container">
+        <!-- 태그 탭 영역 (동적으로 5~10개 배치) -->
+        <div class="chart-tabs">
+            <c:forEach var="t" items="${topTags}">
+                <button class="tab-btn ${t == tagName ? 'active' : ''}" onclick="changeTag('${t}', this)">${t}</button>
+            </c:forEach>
+            <button class="tab-btn" onclick="location.href='${pageContext.request.contextPath}/home'" style="margin-left: auto; border-color: #444; color: #888 !important;">← BACK</button>
+        </div>
+
         <div class="section">
             <div class="chart-header">
-                <div>
-                    <h2 id="chart-title"></h2>
-                </div>
+                <h2 style="margin:0; color:#00f2ff;">RECOMMENDED LIST</h2>
             </div>
-
             <table class="chart-table">
-                 <thead>
-                    <tr>
-                        <th>RANK</th>
-                        <th>SONG INFO</th>
-                        <th style="text-align: center;">LIKE</th>
-                        <th style="text-align: right; padding-right: 20px;">PLAYS</th>
-                    </tr>
+                <thead>
+                    <tr><th>RANK</th><th>SONG INFO</th><th style="text-align: center;">LIKE</th><th style="text-align: center;">LIB</th><th style="text-align: right; padding-right: 20px;">PLAY</th></tr>
                 </thead>
-                <tbody id="chart-body">
-                    <!-- Music list will be rendered here by JavaScript -->
-                </tbody>
+                <tbody id="chart-body"></tbody>
             </table>
         </div>
     </div>
 </main>
 
-<!-- Player container (as per your original code) -->
-<div id="player-container" style="display: none;">
-     <!-- ... player HTML ... -->
+<div id="player-container" style="position: fixed; bottom: 30px; right: 30px; background: #000; padding: 12px; border-radius: 12px; display: none; z-index: 1001; border: 2px solid #00f2ff;">
+    <div id="player"></div>
 </div>
 
 <footer><%@ include file="/WEB-INF/views/common/Footer.jsp" %></footer>

@@ -49,24 +49,16 @@ pageEncoding="UTF-8"%>
 </div>
 
 <!-- 검색차아아아아아아아아아아아앙 -->
-		<div class="header-center">
-		    <form action="/productSearchfh" method="get" class="search-form">
-		        <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
-		        <button type="submit" class="search-button">
-		            <i class="fa-solid fa-magnifying-glass"></i>
-		        </button>
-		    </form>
-		</div>
 		
     <div class="header-center">
-        <form action="/productSearchfh" method="get" class="search-form">
-            <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
-              <%-- 텍스트 '검색' 대신 돋보기 아이콘 적용 --%>
-		    <button type="submit" class="search-button">
-		    <i class="fa-solid fa-magnifying-glass"></i>
-			</button>
-        </form>
-    </div>
+	    <%-- /MusicSearch 를 /musicSearch 로 변경 --%>
+	    <form action="/musicSearch" method="get" class="search-form">
+	        <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
+	        <button type="submit" class="search-button">
+	            <i class="fa-solid fa-magnifying-glass"></i>
+	        </button>
+	    </form>
+	</div>
     
 <div class="header-right">
     <div class="user-status-group">
@@ -80,6 +72,9 @@ pageEncoding="UTF-8"%>
                 <div class="auth-info">
                     <span class="user-greeting"><strong>${sessionScope.loginUser.UNick}</strong>님</span>
                     <span class="auth-divider">|</span>
+                    <a href="${pageContext.request.contextPath}/music/myLibrary">
+					    <i class="fa-solid fa-box-archive"></i> MY LIBRARY
+					</a>
                     <a href="/logout" class="login-text-btn">LOGOUT</a>
                 </div>
                 
