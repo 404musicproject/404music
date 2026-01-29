@@ -1,5 +1,6 @@
 package com.project.springboot.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
@@ -15,7 +16,7 @@ import com.project.springboot.service.RecommendationService; // 변경된 서비
 
 import jakarta.servlet.http.HttpSession;
 
-@Controller // JSP 이동과 데이터 처리를 같이 하는 클래스
+@Controller
 public class RecommendationController {
 
     private final RecommendationService recommendationService;
@@ -30,31 +31,47 @@ public class RecommendationController {
         return "user/recommendationCategories"; 
     }
 
-    // 2. AJAX 데이터 리턴 (JSON 리턴을 위해 @ResponseBody 필수!)
+    // 2. 유저의 선호 태그 목록 가져오기 (AJAX용)
+    @GetMapping("/api/recommendations/user-tags")
+    @ResponseBody
+    public List<String> getUserTopTags(HttpSession session) {
+        UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
+        
+        // int uNo를 꺼낸 뒤 서비스(Long)에 맞게 형변환하여 전달
+        int uNo = (loginUser != null) ? loginUser.getUNo() : 0;
+        return recommendationService.getUserTopTags((long) uNo);
+    }
+
+    // 3. 특정 태그의 음악 리스트 가져오기 (AJAX용)
     @GetMapping("/api/recommendations/tag/{tagName}")
     @ResponseBody
     public List<MusicDTO> getMusicByTag(
             @PathVariable("tagName") String tagName, 
             HttpSession session) {
         
-        // 1. 세션에서 "loginUser" 키로 객체를 꺼냅니다. (UserRestController와 일치)
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
-        
-        // 2. 객체가 있으면 번호를 추출, 없으면 0(비로그인)으로 설정
-        int u_no = (loginUser != null) ? loginUser.getUNo() : 0; 
-        
-        // 디버깅용 로그
-        System.out.println("로그인 확인 - 닉네임: " + (loginUser != null ? loginUser.getUNick() : "비로그인"));
-        System.out.println("전달될 u_no: " + u_no);
+        int uNo = (loginUser != null) ? loginUser.getUNo() : 0; 
 
-        return recommendationService.getRecommendationsByTag(tagName, u_no);
+        // 파라미터 tagName과 Long 타입으로 변환된 uNo 전달
+        return recommendationService.getRecommendationsByTag(tagName, (long) uNo);
     }
-    
+
+    // 4. 상세 리스트 페이지로 이동
     @GetMapping("/music/recommendationList")
-    public String showRecommendationList(@RequestParam("tagName") String tagName, Model model) {
-        // JSP에서 어떤 태그를 보여줄지 알 수 있도록 tagName을 전달
+    public String showRecommendationList(@RequestParam("tagName") String tagName, HttpSession session, Model model) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        Long uNo = (user != null) ? (long)user.getUNo() : 0L;
+        
+        List<String> topTags = recommendationService.getUserTopTags(uNo);
+        
+        // [핵심] 만약 4번 섹션에서 클릭한 tagName이 topTags 리스트에 없다면 맨 앞에 추가해줌
+        if (!topTags.contains(tagName)) {
+            topTags = new ArrayList<>(topTags); // 수정 가능한 리스트로 변환
+            topTags.add(0, tagName); 
+        }
+        
         model.addAttribute("tagName", tagName);
-        return "user/RecommendationList"; // -> /WEB-INF/views/recommendationList.jsp 실행
+        model.addAttribute("topTags", topTags);
+        return "user/RecommendationList";
     }
-    
 }

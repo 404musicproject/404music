@@ -110,6 +110,7 @@ public class MusicService {
             System.err.println("초기 ES 색인 에러: " + e.getMessage());
         }
     }
+    
     @Transactional
     public ArtistDTO getArtistDetailWithImage(int aNo) {
         ArtistDTO artist = musicDAO.selectArtistByNo(aNo);
@@ -140,74 +141,70 @@ public class MusicService {
  // [2단계] 클릭 시 상세 정보 보완 (Lazy Loading & ES Update)
     @Transactional
     public Map<String, Object> getOrFetchMusicDetail(int mNo) {
+        // 1. 기본 곡 정보 조회 (이게 없으면 진짜 404)
         MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
-        if (musicInfo == null) return null;
+        if (musicInfo == null) return null; 
 
+        // 미리 반환할 맵을 만들어 둠 (API가 실패해도 제목/가수는 돌려줘야 하니까요)
+        Map<String, Object> result = new HashMap<>();
+        result.put("m_title", musicInfo.getM_title());
+        result.put("a_name", musicInfo.getA_name());
+        
         String spotifyId = musicInfo.getIsrc_code();
 
-        // ★ [수정] ID가 null이면 여기서 다시 한번 검색해서 채워넣기
+        // 2. Spotify ID가 없으면 검색 시도 (실패해도 에러만 찍고 통과!)
         if (spotifyId == null || spotifyId.isEmpty()) {
-            System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
-            spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
-            
-            if (spotifyId != null) {
-                // DB에 ID 업데이트 (다음에 또 검색 안 하게)
-                // (MusicDTO에 spotifyId 필드가 isrc_code에 매핑되어 있다면)
-                musicInfo.setIsrc_code(spotifyId);
-               // musicDAO.updateSpotifyId(mNo, spotifyId); // 이 쿼리를 만들어서 실행하면 더 좋음
+            try {
+                System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
+                spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
+                if (spotifyId != null) {
+                    musicInfo.setIsrc_code(spotifyId);
+                }
+            } catch (Exception e) {
+                System.err.println("[WARN] Spotify ID 검색 실패(할당량 초과): " + e.getMessage());
             }
         }
 
-        if (spotifyId == null) {
-            System.err.println("[FAIL] Spotify ID를 찾을 수 없어 상세정보 수집 불가");
-            return null; 
-        }
+        // 3. Spotify ID가 있을 때 상세 정보 수집 (에러 나도 catch로 잡음)
         Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
         Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
 
-        // 데이터가 없으면 Spotify에서 가져오기
-        if (feature == null || lyrics == null) {
-        	System.out.println("[DEBUG] Spotify에서 특징 가져오기 시도 ID: " + spotifyId);
-            Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
-            if (raw == null) {
-                System.err.println("[DEBUG] Spotify API가 null을 반환함 - ID 확인 필요");
-            } else {
-                System.out.println("[DEBUG] Spotify 데이터 수신 성공: " + raw.toString());
-                feature = prepareFeatureParams(mNo, raw);
-                musicDAO.insertMusicFeature(feature);
-            }
-            
-            
-            if (feature == null) {
-                if (raw != null) {
-                    feature = prepareFeatureParams(mNo, raw);
-                    musicDAO.insertMusicFeature(feature);
+        if (spotifyId != null && !spotifyId.isEmpty()) {
+            try {
+                if (feature == null) {
+                    Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
+                    if (raw != null) {
+                        feature = prepareFeatureParams(mNo, raw);
+                        musicDAO.insertMusicFeature(feature);
+                    }
                 }
-            }
-            if (lyrics == null) {
-                String lyricsText = spotifyApiService.getLyrics(spotifyId);
-                if (lyricsText != null) {
-                    Map<String, Object> lyricsParam = new HashMap<>();
-                    lyricsParam.put("m_no", mNo);
-                    lyricsParam.put("lyrics_text", lyricsText);
-                    lyricsParam.put("lyricist", musicInfo.getA_name());
-                    musicDAO.insertLyrics(lyricsParam);
-                    lyrics = lyricsParam;
+                if (lyrics == null) {
+                    String lyricsText = spotifyApiService.getLyrics(spotifyId);
+                    if (lyricsText != null) {
+                        Map<String, Object> lyricsParam = new HashMap<>();
+                        lyricsParam.put("m_no", mNo);
+                        lyricsParam.put("lyrics_text", lyricsText);
+                        lyricsParam.put("lyricist", musicInfo.getA_name());
+                        musicDAO.insertLyrics(lyricsParam);
+                        lyrics = lyricsParam;
+                    }
                 }
+                // 수집 성공 시 ES 업데이트
+                updateElasticsearchDetail(mNo, feature, lyrics);
+            } catch (Exception e) {
+                // 여기가 핵심! API가 429(할당량 초과)를 뱉어도 여기서 잡아주면
+                // 아래의 return result까지 무사히 내려갑니다.
+                System.err.println("[WARN] Spotify API 호출 제한으로 상세 정보를 생략합니다.");
             }
         }
 
-        // ES 통합 업데이트 (특징 + 가사)
-        updateElasticsearchDetail(mNo, feature, lyrics);
-
-        Map<String, Object> result = new HashMap<>();
+        // 4. 요청하신 '날려먹으면 안 되는' 부분! 
+        // API가 성공했으면 feature/lyrics가 들어있을 거고, 실패했으면 null인 상태로 진행됩니다.
         if (feature != null) result.putAll(feature);
         if (lyrics != null) result.putAll(lyrics);
-        result.put("m_title", musicInfo.getM_title());
-        result.put("a_name", musicInfo.getA_name());
-        return result;
+        
+        return result; // 이제 무조건 200 OK와 함께 기본 정보라도 반환됩니다!
     }
-
     
     private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics) {
         try {
@@ -226,10 +223,7 @@ public class MusicService {
 
             // 2. Feature 데이터 추가 (기존 로직)
             if (feature != null) {
-            	String[] fields = {
-            		    "energy", "valence", "tempo", "danceability", "acousticness", 
-            		    "instrumentalness", "liveness", "speechiness" // 추가
-            		};
+                String[] fields = {"energy", "valence", "tempo", "danceability", "acousticness"};
                 for (String f : fields) {
                     Object val = getValue(feature, f.toUpperCase(), f.toLowerCase());
                     if (val != null) esUpdateDoc.put(f.toLowerCase(), val);
@@ -266,24 +260,17 @@ public class MusicService {
     }
  // --- 보조 메서드: Spotify 데이터 정제 ---
     private Map<String, Object> prepareFeatureParams(int mNo, Map<String, Object> raw) {
-        Map<String, Object> param = new HashMap<>();
-        param.put("m_no", mNo);
-
-        // [핵심] audio_features 내부 객체를 먼저 꺼냅니다.
-        Map<String, Object> features = (Map<String, Object>) raw.get("audio_features");
-
-        if (features != null) {
-            // 이제 features 안에서 값을 꺼내야 정상적으로 숫자가 나옵니다.
-            param.put("danceability", features.get("danceability"));
-            param.put("energy", features.get("energy"));
-            param.put("valence", features.get("valence"));
-            param.put("tempo", features.get("tempo"));
-            param.put("acousticness", features.get("acousticness"));
-            param.put("instrumentalness", features.get("instrumentalness"));
-            param.put("liveness", features.get("liveness"));
-            param.put("speechiness", features.get("speechiness"));
-        }
-        return param;
+        Map<String, Object> params = new HashMap<>();
+        Object fObj = raw.get("audio_features");
+        Map<String, Object> data = (fObj instanceof Map) ? (Map<String, Object>) fObj : raw;
+        
+        params.put("m_no", mNo);
+        params.put("danceability", data.get("danceability"));
+        params.put("energy", data.get("energy"));
+        params.put("valence", data.get("valence"));
+        params.put("tempo", data.get("tempo"));
+        params.put("acousticness", data.get("acousticness"));
+        return params;
     }
     
     private Object getValue(Map<String, Object> map, String upperKey, String lowerKey) {
@@ -381,23 +368,4 @@ public class MusicService {
             // 에러가 나더라도 음악 재생은 되어야 하므로 런타임 예외를 던지지 않고 로그만 남깁니다.
         }
     }
-    
- // MusicService.java 하단에 추가
-    public List<Map<String, Object>> getPopupList() {
-        // 실제로는 DB에서 활성화된 팝업을 가져와야 하지만, 
-        // 우선 404 에러를 없애기 위해 빈 리스트를 반환하거나 샘플 데이터를 넣습니다.
-        List<Map<String, Object>> popups = new ArrayList<>();
-        
-        /* 샘플 데이터가 필요하다면 주석 해제
-        Map<String, Object> sample = new HashMap<>();
-        sample.put("title", "환영합니다!");
-        sample.put("content", "2NE1의 음악을 감상해보세요.");
-        popups.add(sample);
-        */
-        
-        return popups;
-    }
-    
-    
-    
 }

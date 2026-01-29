@@ -1,19 +1,17 @@
 package com.project.springboot.controller;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.project.springboot.dao.IMusicDAO;
+import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
 import com.project.springboot.dto.MusicDTO;
 import com.project.springboot.dto.UserDTO;
@@ -31,9 +29,6 @@ public class MusicPageController {
     private MusicService musicService;
     @Autowired
     private IMusicDAO musicDAO;
-    
-    @Autowired
-    private RecommendationService recommendationService;
     // =====================================================
     // 0. 검색
     // =====================================================
@@ -91,6 +86,9 @@ public class MusicPageController {
     // 1. 페이지 이동 관련 (View Rendering)
     // =====================================================
 
+    @Autowired
+    private RecommendationService recommendationService;
+    
     // 메인 홈 화면 (3단 레이아웃)
     // 주의: 다른 컨트롤러(UserViewController 등)에 @GetMapping("/")이 있다면 지워야 충돌이 안 납니다.
     @GetMapping({"/", "/home"}) 
@@ -98,26 +96,20 @@ public class MusicPageController {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         Long uNo = (user != null) ? (long)user.getUNo() : 0L; 
         
-     // 2. [추가] 사용자 맞춤 태그 TOP 5 가져오기
-        List<String> topTags;
-        if (uNo > 0) {
-            topTags = recommendationService.getUserTopTags(uNo.intValue());
-        } else {
-            // 비로그인 시 보여줄 기본 태그 5개
-            topTags = Arrays.asList("운동", "휴식", "잠잘 때", "행복한 기분", "로맨스");
-        }
-        
-        // 만약 로그인 유저인데 감상 기록이 없어 빈 리스트가 왔을 때를 대비
+        // 5번째 섹션용: 유저 선호 태그
+        List<String> topTags = recommendationService.getUserTopTags(uNo);
         if (topTags == null || topTags.isEmpty()) {
-            topTags = Arrays.asList("운동", "휴식", "잠잘 때", "행복한 기분", "로맨스");
+            topTags = Arrays.asList("행복한 기분", "카페/작업", "운동", "새벽 감성", "휴식");
         }
-        
         model.addAttribute("topTags", topTags);
-        
-        
-        return "Home"; // src/main/webapp/WEB-INF/views/Home.jsp
-    }
 
+        // 4번째 섹션용: 주변 장소/상황 태그 (날씨 칸을 제외한 4개)
+        // 이 리스트는 DB에서 가져오거나, 고정된 대표 장소 태그로 구성합니다.
+        List<String> placeTags = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉");
+        model.addAttribute("placeTags", placeTags);
+        
+        return "Home"; 
+    }
     // 음악 메인 인덱스 (실시간 차트 등)
     @GetMapping("/music/Index")
     public String mainIndex() {
@@ -170,34 +162,22 @@ public class MusicPageController {
         return "guest/ArtistDetail";
     }
 
-    // 앨범도 같은 방식으로 통일해두면 에러를 방지할 수 있습니다.
-    @GetMapping("/album/detail")
-    public String albumDetail(@RequestParam("b_no") int bNo, HttpSession session, Model model) {
+    @RequestMapping("/album/detail")
+    public String albumDetail(@RequestParam("b_no") int b_no, HttpSession session, Model model) {
+        AlbumDTO album = musicDAO.selectAlbumByNo(b_no);
+        
+        // [체크] 만약 album이 null이면 musicList의 첫 번째 곡 정보를 활용해서라도 채워야 합니다.
+        if (album == null) {
+            System.out.println("⚠️ 앨범 정보를 찾을 수 없습니다. b_no: " + b_no);
+        }
+
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         int uNo = (user != null) ? user.getUNo() : 0;
-
-        model.addAttribute("album", musicDAO.selectAlbumByNo(bNo));
-        model.addAttribute("musicList", musicDAO.selectMusicByAlbumNo(bNo, uNo));
+        List<MusicDTO> musicList = musicDAO.selectMusicByAlbumNo(b_no, uNo);
+        
+        model.addAttribute("album", album);
+        model.addAttribute("musicList", musicList);
         
         return "guest/AlbumDetail";
-    }
-    
-    @GetMapping("/api/popup/list")
-    @ResponseBody  // 👈 이게 빠지면 500 에러 혹은 404 에러가 발생합니다!
-    public List<Map<String, Object>> getPopupList() {
-        try {
-            List<Map<String, Object>> popups = new ArrayList<>();
-            
-            // 테스트용 데이터 (이 데이터가 프론트에 나오면 성공입니다)
-            Map<String, Object> testPopup = new HashMap<>();
-            testPopup.put("title", "연결 성공");
-            testPopup.put("content", "이제 500 에러가 나지 않습니다.");
-            popups.add(testPopup);
-            
-            return popups; // 이제 JSON 형태로 깔끔하게 반환됩니다.
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>(); // 에러 시 빈 리스트 반환
-        }
     }
 }

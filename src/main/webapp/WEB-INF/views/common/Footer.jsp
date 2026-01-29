@@ -190,134 +190,298 @@
 </div>
 
 <script>
-var player;
+var player = null;
 var isPlayerReady = false;
 
-window.onYouTubeIframeAPIReady = function() {
-    player = new YT.Player('youtube-player', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 1, 'origin': window.location.origin, 'enablejsapi': 1 },
-        events: { 
-            'onReady': function() { isPlayerReady = true; console.log("Player Ready"); },
-            'onStateChange': onPlayerStateChange 
-        }
-    });
+window.onYouTubeIframeAPIReady = function () {
+  player = new YT.Player("youtube-player", {
+    height: "100%",
+    width: "100%",
+    playerVars: { autoplay: 1, controls: 1, origin: window.location.origin, enablejsapi: 1 },
+    events: {
+      onReady: function () { isPlayerReady = true; console.log("Player Ready"); },
+      onStateChange: onPlayerStateChange
+    }
+  });
 };
 
 function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.ENDED) PlayQueue.next();
-    if (event.data === YT.PlayerState.PLAYING) { PlayQueue.isPlaying = true; $('#play-icon').attr('class', 'fas fa-pause'); } 
-    else { PlayQueue.isPlaying = false; $('#play-icon').attr('class', 'fas fa-play'); }
+  if (event.data === YT.PlayerState.ENDED) {
+    PlayQueue.next();
+    return;
+  }
+
+  // PLAYING / PAUSED만 아이콘 확정 (BUFFERING 때문에 깜빡이는 것 방지)
+  if (event.data === YT.PlayerState.PLAYING) {
+    PlayQueue.isPlaying = true;
+    $("#play-icon").attr("class", "fas fa-pause");
+  } else if (event.data === YT.PlayerState.PAUSED) {
+    PlayQueue.isPlaying = false;
+    $("#play-icon").attr("class", "fas fa-play");
+  }
 }
 
 var PlayQueue = {
-    list: [], currentIndex: -1, isPlaying: false,
-    init: function() {
-        const saved = localStorage.getItem('music_queue');
-        if (saved) { this.list = JSON.parse(saved); $('#queue-status').text('Queue: ' + this.list.length); renderPlaylist(); }
-    },
-    save: function() { localStorage.setItem('music_queue', JSON.stringify(this.list)); },
-    addAndPlay: function(mNo, title, artist, img) {
-        let exists = this.list.findIndex(s => s.title === title && s.artist === artist);
-        if (exists !== -1) { this.playIndex(exists); return; }
-        let query = (artist && artist !== 'Unknown') ? (artist + ' ' + title) : title;
-        $.get('/api/music/youtube-search', { q: query }, (res) => {
-            let vId = (typeof res === 'object') ? res.videoId : res;
-            if(vId && vId !== 'fail') {
-                this.list.push({ mNo, title, artist, img, videoId: vId });
-                this.save(); $('#queue-status').text('Queue: ' + this.list.length);
-                if (this.currentIndex === -1 || !this.isPlaying) this.retryPlay(this.list.length - 1, 0);
-                else renderPlaylist();
-            }
+  list: [],
+  currentIndex: -1,
+  isPlaying: false,
+
+  init: function () {
+    var saved = localStorage.getItem("music_queue");
+    if (saved) {
+      try { this.list = JSON.parse(saved) || []; } catch (e) { this.list = []; }
+      $("#queue-status").text("Queue: " + this.list.length);
+      renderPlaylist();
+    }
+  },
+
+  save: function () {
+    localStorage.setItem("music_queue", JSON.stringify(this.list));
+  },
+
+  addAndPlay: function (mNo, title, artist, img) {
+    var exists = this.list.findIndex(function (s) { return s.title === title && s.artist === artist; });
+    if (exists !== -1) { this.playIndex(exists); return; }
+
+    var query = (artist && artist !== "Unknown") ? (artist + " " + title) : title;
+
+    $.get("/api/music/youtube-search", { q: query }, function (res) {
+      var vId = (typeof res === "object" && res) ? res.videoId : res;
+      if (vId && vId !== "fail") {
+        PlayQueue.list.push({ mNo: mNo, title: title, artist: artist, img: img, videoId: vId });
+        PlayQueue.save();
+        $("#queue-status").text("Queue: " + PlayQueue.list.length);
+
+        if (PlayQueue.currentIndex === -1 || !PlayQueue.isPlaying) PlayQueue.retryPlay(PlayQueue.list.length - 1, 0);
+        else renderPlaylist();
+      }
+    });
+  },
+
+  retryPlay: function (idx, count) {
+    if (isPlayerReady && player && typeof player.loadVideoById === "function") this.playIndex(idx);
+    else if (count < 20) setTimeout(function () { PlayQueue.retryPlay(idx, count + 1); }, 500);
+  },
+
+  addOnly: function (mNo, title, artist, img) {
+    this.list.push({ mNo: mNo, title: title, artist: artist, img: img, videoId: null });
+    this.save();
+    $("#queue-status").text("Queue: " + this.list.length);
+    renderPlaylist();
+  },
+
+  playIndex: function (idx) {
+    if (idx < 0 || idx >= this.list.length) return;
+
+    if (!isPlayerReady || !player || typeof player.loadVideoById !== "function") {
+      this.retryPlay(idx, 0);
+      return;
+    }
+
+    this.currentIndex = idx;
+    var song = this.list[idx];
+
+    // UI 반영
+    $("#footer-title").text(song.title || "");
+    $("#footer-artist").text(song.artist || "");
+    if (song.img) $("#footer-art").attr("src", song.img).show();
+    else $("#footer-art").hide().removeAttr("src");
+
+    // 재생 로그 연동
+    if (song.mNo && window.MusicApp && typeof window.MusicApp.sendPlayLog === "function") {
+      try { window.MusicApp.sendPlayLog(song.mNo); } catch (e) { console.warn("sendPlayLog fail", e); }
+    }
+
+    var playWithId = function (videoId) {
+      try {
+        player.loadVideoById(videoId);
+        PlayQueue.isPlaying = true;
+        renderPlaylist();
+      } catch (e) {
+        console.error("유튜브 재생 중 에러:", e);
+      }
+    };
+
+    // videoId 없으면 서버에서 검색해서 저장 후 재생
+    if (!song.videoId) {
+      var query = (song.artist && song.artist !== "Unknown") ? (song.artist + " " + song.title) : song.title;
+
+      $.get("/api/music/youtube-search", { q: query })
+        .done(function (res) {
+          var vId = (typeof res === "object" && res) ? res.videoId : res;
+          if (vId && vId !== "fail") {
+            PlayQueue.list[idx].videoId = vId;
+            PlayQueue.save();
+            playWithId(vId);
+          } else {
+            console.error("비디오 ID를 찾을 수 없습니다. 다음 곡으로 넘어갑니다.");
+            PlayQueue.next();
+          }
+        })
+        .fail(function (xhr) {
+          console.error("youtube-search 요청 실패:", xhr);
+          PlayQueue.next();
         });
-    },
-    retryPlay: function(idx, count) {
-        if (isPlayerReady && player && typeof player.loadVideoById === 'function') this.playIndex(idx);
-        else if (count < 20) setTimeout(() => this.retryPlay(idx, count + 1), 500);
-    },
-    addOnly: function(mNo, title, artist, img) {
-        // 이미 큐에 있는 곡은 추가하지 않습니다. (선택 사항)
-        // let exists = this.list.findIndex(s => s.title === title && s.artist === artist);
-        // if (exists !== -1) { return; } 
 
-        // playAllLibrary에서 넘겨준 videoId를 어떻게 처리할지 불분명합니다. 
-        // playAllLibrary 함수에서 videoId를 가져오는 코드가 없으므로, 
-        // addOnly는 비디오 ID 없이 객체를 저장하고, 재생 시에 ID를 가져오도록 설계해야 합니다.
+      return;
+    }
 
-        this.list.push({ mNo, title, artist, img, videoId: null }); // videoId는 null로 저장
-        this.save(); 
-        $('#queue-status').text('Queue: ' + this.list.length);
-        renderPlaylist(); // 재생 목록 UI 업데이트
-    },
-    playIndex: function(idx) {
-        if(idx < 0 || idx >= this.list.length) return;
-        if (!isPlayerReady || !player || typeof player.loadVideoById !== 'function') { this.retryPlay(idx, 0); return; }
-        this.currentIndex = idx;
-        let song = this.list[idx];
-        
-        // --- [수정된 핵심 로직: videoId가 없으면 서버에서 가져오기] ---
-        if (!song.videoId) {
-            let query = (song.artist && song.artist !== 'Unknown') ? (song.artist + ' ' + song.title) : song.title;
-            $.get('/api/music/youtube-search', { q: query }, (res) => {
-                let vId = (typeof res === 'object') ? res.videoId : res;
-                if(vId && vId !== 'fail') {
-                    this.list[idx].videoId = vId; // videoId 저장
-                    this.save();
-                    this.playIndex(idx); // ID 가져온 후 다시 재생 시도
-                } else {
-                    console.error("비디오 ID를 찾을 수 없습니다. 다음 곡으로 넘어갑니다.");
-                    this.next(); 
-                }
-            });
-            return; // ID를 가져오는 동안 현재 재생 중단
-        }
-        // --- [수정된 핵심 로직 끝] ---
-        
-        
-        
-        
-        $('#footer-title').text(song.title); $('#footer-artist').text(song.artist); 
-        if (song.img) $('#footer-art').attr('src', song.img).show();
-        else $('#footer-art').hide().removeAttr('src');
-        try { player.loadVideoById(song.videoId); this.isPlaying = true; renderPlaylist(); } catch(e) { console.error(e); }
-    },
-    next: function() { if(this.currentIndex < this.list.length - 1) this.playIndex(this.currentIndex + 1); },
-    prev: function() { if(this.currentIndex > 0) this.playIndex(this.currentIndex - 1); },
-    togglePlay: function() { if(!isPlayerReady) return; if(player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo(); },
-    seek: function(e) { if(!isPlayerReady || !player.getDuration) return; let pct = e.offsetX / $('.progress-container').width(); player.seekTo(player.getDuration() * pct); },
-    remove: function(idx, event) { if(event) event.stopPropagation(); this.list.splice(idx, 1); this.save(); if (this.currentIndex >= idx) this.currentIndex--; $('#queue-status').text('Queue: ' + this.list.length); renderPlaylist(); }
+    playWithId(song.videoId);
+  },
+
+  next: function () {
+    if (this.currentIndex < this.list.length - 1) this.playIndex(this.currentIndex + 1);
+  },
+
+  prev: function () {
+    if (this.currentIndex > 0) this.playIndex(this.currentIndex - 1);
+  },
+
+  togglePlay: function () {
+    if (!isPlayerReady || !player || !player.getPlayerState) return;
+    if (player.getPlayerState() === 1) player.pauseVideo();
+    else player.playVideo();
+  },
+
+  seek: function (e) {
+    if (!isPlayerReady || !player || !player.getDuration || !player.seekTo) return;
+
+    var dur = player.getDuration();
+    if (!dur || dur <= 0) return;
+
+    var el = document.querySelector(".progress-container");
+    if (!el) return;
+
+    var rect = el.getBoundingClientRect();
+    var x = (e && e.clientX ? e.clientX : 0) - rect.left;
+    var pct = x / rect.width;
+    if (pct < 0) pct = 0;
+    if (pct > 1) pct = 1;
+
+    player.seekTo(dur * pct, true);
+  },
+
+  remove: function (idx, event) {
+    if (event) event.stopPropagation();
+    this.list.splice(idx, 1);
+    this.save();
+
+    if (this.currentIndex >= idx) this.currentIndex--;
+    if (this.currentIndex < 0 && this.list.length > 0) this.currentIndex = 0;
+
+    $("#queue-status").text("Queue: " + this.list.length);
+    renderPlaylist();
+  }
 };
 
-function togglePlaylist() { $('#playlist-window').fadeToggle(200); if($('#playlist-window').is(':visible')) renderPlaylist(); }
+function togglePlaylist() {
+  $("#playlist-window").fadeToggle(200);
+  if ($("#playlist-window").is(":visible")) renderPlaylist();
+}
+
 function renderPlaylist() {
-    const $container = $('#playlist-items'); $container.empty();
-    if (PlayQueue.list.length === 0) { $container.append('<div style="padding:20px; text-align:center; color:#555;">비어 있습니다.</div>'); return; }
-    PlayQueue.list.forEach((song, idx) => {
-        const isActive = (PlayQueue.currentIndex === idx) ? 'active' : '';
-        const titleColor = isActive ? '#ff0055' : '#eee';
-        $container.append(`<div class="playlist-item \${isActive}" onclick="PlayQueue.playIndex(\${idx})"><div class="pl-info"><span class="pl-title" style="color:\${titleColor}">\${song.title}</span><span class="pl-artist">- \${song.artist}</span></div><button onclick="PlayQueue.remove(\${idx}, event)" style="background:none; border:none; color:#444;"><i class="fas fa-trash-alt"></i></button></div>`);
-    });
+  var $container = $("#playlist-items");
+  $container.empty();
+
+  if (!PlayQueue.list || PlayQueue.list.length === 0) {
+    $container.append('<div style="padding:20px; text-align:center; color:#555;">비어 있습니다.</div>');
+    return;
+  }
+
+  PlayQueue.list.forEach(function (song, idx) {
+    var isActive = (PlayQueue.currentIndex === idx);
+
+    var $item = $("<div>")
+      .addClass("playlist-item")
+      .toggleClass("active", isActive)
+      .on("click", function () { PlayQueue.playIndex(idx); });
+
+    var $info = $("<div>").addClass("pl-info");
+    var $title = $("<span>").addClass("pl-title").text(song.title || "");
+    if (isActive) $title.css("color", "#ff0055");
+
+    var $artist = $("<span>").addClass("pl-artist").text("- " + (song.artist || ""));
+
+    var $btn = $("<button>")
+      .css({ background: "none", border: "none", color: "#444" })
+      .html('<i class="fas fa-trash-alt"></i>')
+      .on("click", function (e) { PlayQueue.remove(idx, e); });
+
+    $info.append($title).append($artist);
+    $item.append($info).append($btn);
+
+    $container.append($item);
+  });
 }
 
-function toggleVideo(show) { if(show) { $('#video-overlay').css('display', 'flex'); $('#youtube-player').removeClass('player-hidden'); } else { $('#video-overlay').hide(); $('#youtube-player').addClass('player-hidden'); } }
-function toggleChat() { $('#chat-window').fadeToggle(200).css('display', 'flex'); }
+function toggleVideo(show) {
+  if (show) {
+    $("#video-overlay").css("display", "flex");
+    $("#youtube-player").removeClass("player-hidden");
+  } else {
+    $("#video-overlay").hide();
+    $("#youtube-player").addClass("player-hidden");
+  }
+}
+
+function toggleChat() {
+  $("#chat-window").fadeToggle(200).css("display", "flex");
+}
+
 function sendChat() {
-    let msg = $('#chat-input').val().trim(); if(!msg) return;
-    $('#chat-body').append('<div class="msg user">'+msg+'</div>'); $('#chat-input').val('');
-    $.post('/api/chat/send', { msg: msg }).done(function(res) { $('#chat-body').append('<div class="msg bot">'+res+'</div>'); $('#chat-body').scrollTop($('#chat-body')[0].scrollHeight); });
+  var msg = $("#chat-input").val().trim();
+  if (!msg) return;
+
+  $("#chat-body").append('<div class="msg user">' + msg + "</div>");
+  $("#chat-input").val("");
+
+  $.post("/api/chat/send", { msg: msg }).done(function (res) {
+    $("#chat-body").append('<div class="msg bot">' + res + "</div>");
+    $("#chat-body").scrollTop($("#chat-body")[0].scrollHeight);
+  });
 }
 
-$(document).ready(function() {
-    PlayQueue.init();
-    $.get('/api/popup/list').done(function(list) {
-        if(list && Array.isArray(list)) {
-            list.forEach(p => {
-                let html = `<div class="retro-popup" id="pop-\${p.pno}"><div class="retro-header"><span>NOTICE</span><button onclick="$('#pop-\${p.pno}').remove()" style="background:none; border:none; color:white;">&times;</button></div><div class="retro-content"><strong>\${p.ptitle}</strong><br>\${p.pcontent}</div></div>`;
-                $('#popup-area').append(html);
-            });
-        }
-    }).fail(function() { console.log("ℹ️ 팝업 API 준비 중..."); });
-    
-    setInterval(() => { if(isPlayerReady && player && player.getCurrentTime && PlayQueue.isPlaying) { let per = (player.getCurrentTime() / player.getDuration()) * 100; $('#progress-bar').css('width', per + '%'); } }, 500);
+$(document).ready(function () {
+  PlayQueue.init();
+
+  // 팝업도 JSP EL 충돌 피하려고 템플릿 리터럴 제거
+  $.get("/api/popup/list")
+    .done(function (list) {
+      if (list && Array.isArray(list)) {
+        list.forEach(function (p) {
+          var $pop = $("<div>").addClass("retro-popup").attr("id", "pop-" + p.pno);
+
+          var $header = $("<div>").addClass("retro-header");
+          $header.append($("<span>").text("NOTICE"));
+
+          var $close = $("<button>")
+            .css({ background: "none", border: "none", color: "white", cursor: "pointer" })
+            .html("&times;")
+            .on("click", function () { $pop.remove(); });
+
+          $header.append($close);
+
+          var $content = $("<div>").addClass("retro-content");
+          $content.append($("<strong>").text(p.ptitle || ""));
+          $content.append("<br>");
+          $content.append(document.createTextNode(p.pcontent || ""));
+
+          $pop.append($header).append($content);
+          $("#popup-area").append($pop);
+        });
+      }
+    })
+    .fail(function () { console.log("ℹ️ 팝업 API 준비 중..."); });
+
+  setInterval(function () {
+    if (!isPlayerReady || !player || !player.getCurrentTime || !player.getDuration) return;
+    if (!PlayQueue.isPlaying) return;
+
+    var dur = player.getDuration();
+    if (!dur || dur <= 0) return;
+
+    var per = (player.getCurrentTime() / dur) * 100;
+    $("#progress-bar").css("width", per + "%");
+  }, 500);
 });
 </script>

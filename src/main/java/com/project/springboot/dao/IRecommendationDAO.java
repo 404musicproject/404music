@@ -7,11 +7,12 @@ import com.project.springboot.dto.MusicDTO;
 
 @Mapper
 public interface IRecommendationDAO {
-    // u_no를 추가하여 유저별 히스토리 점수를 계산할 수 있게 합니다.
+    // 파라미터 타입을 Long으로 수정
+    List<String> findUserTopTags(@Param("uNo") Long uNo);
+    
+    // 이전에 만드신 태그별 검색 메서드도 타입을 맞춰주는 것이 좋습니다.
     List<MusicDTO> findMusicDTOByTagName(
         @Param("tagName") String tagName, 
-        @Param("u_no") Integer u_no
+        @Param("u_no") Long u_no
     );
-    
-    List<String> findUserTopTags(@Param("uNo") int uNo);
 }
