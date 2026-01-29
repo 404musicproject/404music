@@ -13,23 +13,29 @@ window.MusicApp = {
 	init: function(uNo) {
 	    this.currentUserNo = uNo || 0;
 	    
-	    // 제외할 페이지 경로에 artist/detail 추가
 	    const isSearchPage = window.location.pathname.includes('musicSearch');
 	    const isLibraryPage = window.location.pathname.includes('myLibrary');
-	    const isArtistPage = window.location.pathname.includes('artist/detail'); // 추가
-	    const isAlbumPage = window.location.pathname.includes('album/detail');   // 미리 추가 (나중을 위해)
+	    const isArtistPage = window.location.pathname.includes('artist/detail');
+	    const isAlbumPage = window.location.pathname.includes('album/detail');
 	    
-	    // 아티스트 페이지와 앨범 페이지도 차트 자동 로드에서 제외
 	    if ($('#chart-body').length && !isSearchPage && !isLibraryPage && !isArtistPage && !isAlbumPage) { 
 	        this.loadChart(); 
 	    }
-	    
-	    this.initEventListeners();
-	},
 
-    initEventListeners: function() { 
-        console.log("MusicApp Integrated Service Started..."); 
-    },
+	    // [여기에 추가!] 페이지가 로드될 때 iTunes 신곡 데이터를 가져오도록 명령
+		if ($('#itunes-list').length) {
+		        this.loadItunesMusic();
+		    }
+		    
+		    // 이 줄에서 에러가 난다면 아래에 함수 정의가 있는지 확인하세요!
+		    if (typeof this.initEventListeners === 'function') {
+		        this.initEventListeners();
+		    }
+		},
+
+		initEventListeners: function() { 
+		    console.log("MusicApp Integrated Service Started..."); 
+		},
 
     toHighResArtwork: function(url) {
         if (!url) return this.FALLBACK_IMG;
@@ -162,22 +168,42 @@ window.MusicApp = {
 	    });
 	},
 
-    sendPlayLog: function(mNo) {
-        const postData = {
-            u_no: this.currentUserNo, m_no: mNo,
-            h_location: 'UNKNOWN', h_weather: 800, h_lat: 0, h_lon: 0
-        };
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((pos) => {
-                postData.h_lat = pos.coords.latitude;
-                postData.h_lon = pos.coords.longitude;
-                this._submitLog(postData, mNo);
-            }, () => this._submitLog(postData, mNo));
-        } else {
-            this._submitLog(postData, mNo);
-        }
-    },
+	sendPlayLog: function(mNo) {
+	    const postData = {
+	        u_no: this.currentUserNo, 
+	        m_no: mNo,
+	        h_location: 'UNKNOWN', 
+	        h_weather: 800, 
+	        h_lat: 0, 
+	        h_lon: 0
+	    };
+
+	    const options = {
+	        enableHighAccuracy: true, // 최대한 GPS/Wi-Fi 기반 정확도 높임
+	        timeout: 5000,            // 5초 이내 응답 없으면 실패 처리
+	        maximumAge: 0             // 캐시된 데이터 사용 안 함
+	    };
+
+	    if (navigator.geolocation) {
+	        navigator.geolocation.getCurrentPosition(
+	            (pos) => {
+	                postData.h_lat = pos.coords.latitude;
+	                postData.h_lon = pos.coords.longitude;
+	                
+	                // [선택 사항] 좌표를 행정구역(예: 서울 강남구)으로 변환하고 싶다면 
+	                // 여기서 카카오 API 등을 호출한 뒤 _submitLog를 실행하세요.
+	                this._submitLog(postData, mNo);
+	            }, 
+	            (err) => {
+	                console.error("위치 획득 실패:", err.message);
+	                this._submitLog(postData, mNo); // 실패 시 UNKNOWN으로 전송
+	            },
+	            options
+	        );
+	    } else {
+	        this._submitLog(postData, mNo);
+	    }
+	},
 
     _submitLog: function(data, mNo) {
         $.post(this.basePath + '/api/music/history', data, () => {
@@ -206,6 +232,41 @@ window.MusicApp = {
 	       })
 	       .fail((err) => {
 	           alert("이미 추가되었거나 오류가 발생했습니다.");
+	       });
+	   },
+	   // --- 추가해야 할 코드 ---
+	   // music-service.js 파일 내부 수정
+	   loadItunesMusic: function() {
+	       const $container = $('#itunes-list');
+	       
+	       // 1. 요청을 보내기 "직전"에 화면을 비웁니다. (섞임 방지 핵심)
+	       $container.empty(); 
+
+	       $.get(this.basePath + "/api/music/rss/new-releases", { limit: 8 }, (data) => {
+	           // 2. 데이터가 없거나 서버 에러(500)로 빈 값이 왔을 때 처리
+	           if (!data || data.length === 0) {
+	               $container.html('<div style="color:#666; padding:20px;">현재 Apple 차트 서버 점검 중입니다.</div>');
+	               return;
+	           }
+	           
+	           let html = '';
+	           data.forEach((m) => {
+	               const t = (m.TITLE || 'Unknown').replace(/'/g, "\\'");
+	               const a = (m.ARTIST || 'Unknown').replace(/'/g, "\\'");
+	               const img = this.toHighResArtwork(m.ALBUM_IMG);
+	               
+	               html += `
+	                   <div class="itunes-card" onclick="MusicApp.playLatestYouTube('${t}', '${a}', '${m.ALBUM_IMG}')">
+	                       <img src="${img}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;" onerror="this.src='${this.FALLBACK_IMG}'">
+	                       <div class="city-top-song" style="margin-top:10px;">${m.TITLE}</div>
+	                       <div class="city-top-artist" style="color:#00f2ff;">${m.ARTIST}</div>
+	                   </div>`;
+	           });
+	           
+	           // 3. 새로 만든 8개만 삽입
+	           $container.html(html);
+	       }).fail(() => {
+	           $container.html('<div style="color:#666; padding:20px;">차트를 불러올 수 없습니다.</div>');
 	       });
 	   }
 };

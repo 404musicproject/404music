@@ -178,49 +178,44 @@ public class MusicController {
     }
     
     
-    @GetMapping("/rss/most-played")
-    public ResponseEntity<List<Map<String, Object>>> getRssMostPlayed(
-            @RequestParam(value="storefront", defaultValue="kr") String storefront,
-            @RequestParam(value="limit", defaultValue="10") int limit
-    ) {
+ // MusicController.java의 해당 메서드 부분을 잠시 이렇게 바꿔보세요.
+    @GetMapping("/rss/new-releases")
+    public ResponseEntity<List<Map<String, Object>>> getRssNewReleases() {
         try {
-            String url =
-                "https://rss.applemarketingtools.com/api/v2/"
-                + storefront.toLowerCase()
-                + "/music/most-played/"
-                + limit
-                + "/songs.json";
+            // [수정] limit을 변수로 처리하여 주소를 유연하게 만듭니다.
+            int limit = 8;
+            String url = "https://rss.applemarketingtools.com/api/v2/kr/music/most-played/" + limit + "/songs.json";
 
             RestTemplate rt = new RestTemplate();
+            // Apple 서버가 500 에러를 낼 경우를 대비해 예외 처리를 감쌉니다.
             Map<String, Object> root = rt.getForObject(url, Map.class);
-
-            if (root == null || root.get("feed") == null) {
-                return ResponseEntity.ok(List.of());
-            }
+            
+            if (root == null || !root.containsKey("feed")) return ResponseEntity.ok(List.of());
 
             Map<String, Object> feed = (Map<String, Object>) root.get("feed");
             List<Map<String, Object>> results = (List<Map<String, Object>>) feed.get("results");
 
             if (results == null) return ResponseEntity.ok(List.of());
 
-            // home.jsp가 바로 쓰기 쉽도록 기존 키 형태(TITLE/ARTIST/ALBUM_IMG)로 변환
-            List<Map<String, Object>> out = results.stream().map(r -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("MNO", 0); // 클릭 시 title로 검색 이동만 할 거라 의미없음
-                m.put("TITLE", r.get("name"));
-                m.put("ARTIST", r.get("artistName"));
-                m.put("ALBUM_IMG", r.get("artworkUrl100"));
-                m.put("URL", r.get("url"));
-                return m;
-            }).toList();
+            // 정확히 8개만 잘라서 반환
+            List<Map<String, Object>> out = results.stream()
+                .limit(limit)
+                .map(r -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("TITLE", r.get("name"));
+                    m.put("ARTIST", r.get("artistName"));
+                    m.put("ALBUM_IMG", r.get("artworkUrl100"));
+                    return m;
+                }).toList();
 
             return ResponseEntity.ok(out);
-
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.ok(List.of());
+            // Apple 서버가 500 에러를 내면 여기로 들어옵니다.
+            System.err.println("Apple 서버 응답 오류(500 등): " + e.getMessage());
+            return ResponseEntity.ok(List.of()); // 에러 시 빈 리스트 반환
         }
     }
+    
     @GetMapping("/youtube-search")
     public ResponseEntity<String> youtubeSearch(@RequestParam("q") String q) {
         String videoId = youtubeService.searchYouTube(q);

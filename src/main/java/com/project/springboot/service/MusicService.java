@@ -381,4 +381,23 @@ public class MusicService {
             // 에러가 나더라도 음악 재생은 되어야 하므로 런타임 예외를 던지지 않고 로그만 남깁니다.
         }
     }
+    
+ // MusicService.java 하단에 추가
+    public List<Map<String, Object>> getPopupList() {
+        // 실제로는 DB에서 활성화된 팝업을 가져와야 하지만, 
+        // 우선 404 에러를 없애기 위해 빈 리스트를 반환하거나 샘플 데이터를 넣습니다.
+        List<Map<String, Object>> popups = new ArrayList<>();
+        
+        /* 샘플 데이터가 필요하다면 주석 해제
+        Map<String, Object> sample = new HashMap<>();
+        sample.put("title", "환영합니다!");
+        sample.put("content", "2NE1의 음악을 감상해보세요.");
+        popups.add(sample);
+        */
+        
+        return popups;
+    }
+    
+    
+    
 }

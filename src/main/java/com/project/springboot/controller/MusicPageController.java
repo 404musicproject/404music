@@ -1,13 +1,17 @@
 package com.project.springboot.controller;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.ArtistDTO;
@@ -176,5 +180,24 @@ public class MusicPageController {
         model.addAttribute("musicList", musicDAO.selectMusicByAlbumNo(bNo, uNo));
         
         return "guest/AlbumDetail";
+    }
+    
+    @GetMapping("/api/popup/list")
+    @ResponseBody  // 👈 이게 빠지면 500 에러 혹은 404 에러가 발생합니다!
+    public List<Map<String, Object>> getPopupList() {
+        try {
+            List<Map<String, Object>> popups = new ArrayList<>();
+            
+            // 테스트용 데이터 (이 데이터가 프론트에 나오면 성공입니다)
+            Map<String, Object> testPopup = new HashMap<>();
+            testPopup.put("title", "연결 성공");
+            testPopup.put("content", "이제 500 에러가 나지 않습니다.");
+            popups.add(testPopup);
+            
+            return popups; // 이제 JSON 형태로 깔끔하게 반환됩니다.
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>(); // 에러 시 빈 리스트 반환
+        }
     }
 }

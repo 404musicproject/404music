@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/music-service.js"></script>
-	<script src="/js/music-service.js"></script>
     <style>
         body { background-color: #050505; color: #fff; font-family: 'Pretendard', sans-serif; overflow-x: hidden; margin: 0; }
         
@@ -96,7 +95,7 @@
     <section class="container">
         <div class="chart-header">
             <div>
-                <h2 style="color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); margin:0;">NEW RELEASES</h2>
+                <h2 style="color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); margin:0;">K-POP Trend</h2>
                 <p style="margin: 4px 0 0 0; color: #888; font-size: 0.8rem;">글로벌 트렌드 차트</p>
                 
             </div>
@@ -136,23 +135,71 @@
         </div>
     </section>
     
+<section class="context-recommend-section" style="max-width: 1000px; margin: 80px auto; padding: 0 20px;">
+    <div class="section-title">Vibe by Context</div>
+    <div class="location-grid">
+        <div class="location-card card-weather" onclick="goContext('weather')">
+            <span class="city-name">CURRENT WEATHER</span>
+            <div id="weather-desc" class="city-top-song">비 오는 날의 선율</div>
+            <div class="city-top-artist">지금 날씨에 딱 맞는 곡</div>
+        </div>
+        
+        <div class="location-card card-place" onclick="goContext('cafe')">
+            <span class="city-name">PLACE VIBE</span>
+            <div id="place-desc" class="city-top-song">카페에서 듣기 좋은</div>
+            <div class="city-top-artist">공간을 채우는 감성</div>
+        </div>
+
+        <div class="location-card card-time" onclick="goContext('night')">
+            <span class="city-name">TIME OF DAY</span>
+            <div id="time-desc" class="city-top-song">깊은 밤, 새벽 감성</div>
+            <div class="city-top-artist">오늘 하루를 마무리하며</div>
+        </div>
+
+        <div class="location-card card-workout" onclick="goContext('workout')">
+            <span class="city-name">ACTIVITY</span>
+            <div id="activity-desc" class="city-top-song">에너지 업! 비트</div>
+            <div class="city-top-artist">운동할 때 힘이 되는 음악</div>
+        </div>
+
+        <div class="location-card card-drive" onclick="goContext('drive')">
+            <span class="city-name">DRIVE</span>
+            <div id="drive-desc" class="city-top-song">끝없이 펼쳐진 도로</div>
+            <div class="city-top-artist">드라이브 필수 플레이리스트</div>
+        </div>
+    </div>
+</section>    
     
-<section class="tag-recommend-section">
-    <div class="section-title">For You: My Mood Tags</div>
-    <div> <a href="${pageContext.request.contextPath}/recommendationCategories" style="padding: 10px 20px; background-color: #00f2ff; color: black; text-decoration: none; border-radius: 5px; font-weight: bold;">
-					    상황별 &amp; 날씨별 음악 추천 보기
-					</a></div>
+    
+<section class="location-section">
+    <div class="section-title">Personalized Mood Tags</div>
     <div class="location-grid">
         <c:forEach var="tag" items="${topTags}" varStatus="status">
-            <!-- 태그별로 색상을 다르게 주기 위해 tag-color-${status.index} 클래스 활용 -->
-            <div class="location-card tag-color-${status.index}" onclick="goTag('${tag}')">
-                <span class="city-name">${tag}</span>
-                <div class="city-top-song">나만을 위한 추천</div>
-                <div class="city-top-artist">#${tag} #추천곡</div>
+            <div class="location-card tag-card-${status.index}" onclick="goTag('${tag}')">
+                <span class="city-name">MY TAG #${status.index + 1}</span>
+                <div class="city-top-song">${tag} 스타일</div>
+                <div class="city-top-artist">당신이 자주 찾는 감성</div>
             </div>
         </c:forEach>
     </div>
 </section>
+
+
+
+
+
+<a href="${pageContext.request.contextPath}/recommendationCategories" 
+   style="display: flex; align-items: center; justify-content: space-between; 
+          background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); 
+          color: white; padding: 20px; border-radius: 12px; text-decoration: none; margin: 20px 0;">
+    <div>
+        <h4 style="margin: 0; font-size: 1.2rem;">어떤 음악을 들을지 고민인가요? 🤔</h4>
+        <p style="margin: 5px 0 0 0; opacity: 0.8;">지금 기분과 날씨에 딱 맞는 곡을 추천해 드려요.</p>
+    </div>
+    <span style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; font-weight: bold;">
+        보러가기 >
+    </span>
+</a>
 
 
 </main>
@@ -210,33 +257,34 @@ function loadRegionalPreviews() {
     });
 }
 
-function loadItunesMusic() {
-    $.get(contextPath + "/api/music/rss/most-played", { limit: 8 }, function(data) {
-        let html = '';
-        data.forEach(function(m) {
-            const t = (m.TITLE || 'Unknown').replace(/'/g, "\\'");
-            const a = (m.ARTIST || 'Unknown').replace(/'/g, "\\'");
-            html += '<div class="itunes-card" onclick="playLatestYouTube(\'' + t + '\', \'' + a + '\', \'' + m.ALBUM_IMG + '\')">'
-                + '  <img src="' + toHighResArtwork(m.ALBUM_IMG) + '" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;">'
-                + '  <div class="city-top-song" style="margin-top:10px;">' + m.TITLE + '</div>'
-                + '  <div class="city-top-artist" style="color:#00f2ff;">' + m.ARTIST + '</div>'
-                + '</div>';
+function loadNewReleases() {
+    $.get(contextPath + '/api/music/rss/new-releases', function(data) {
+        const $list = $('#itunes-list');
+        $list.empty();
+
+        data.forEach(m => {
+            const img = toHighResArtwork(m.ALBUM_IMG);
+            $list.append(`
+                <div class="itunes-card" onclick="playLatestYouTube('${m.TITLE}', '${m.ARTIST}', '${img}')">
+                    <img src="${img}" style="width:100%; border-radius:8px;">
+                    <div style="margin-top:8px; font-weight:bold;">${m.TITLE}</div>
+                    <div style="font-size:0.8rem; color:#00f2ff;">${m.ARTIST}</div>
+                </div>
+            `);
         });
-        $('#itunes-list').html(html);
     });
 }
 
 function goRegional(city) { location.href = contextPath + '/music/regional?city=' + city; }
 
 $(document).ready(function() {
-    // ERR_INCOMPLETE_CHUNKED_ENCODING 방지를 위해 아주 약간의 지연 후 실행
     setTimeout(function() {
         if (window.MusicApp) {
             MusicApp.init(${loginUser.uNo != null ? loginUser.uNo : 0});
         }
-        loadTopOne();
+        loadTopOne();        // 히어로 (top100 OK)
+        loadNewReleases();   // 🔥 NEW RELEASES
         loadRegionalPreviews();
-        loadItunesMusic();
     }, 100);
 });
 

@@ -27,7 +27,7 @@ public class RecommendationController {
     // 1. 페이지 이동 (View 리턴)
     @GetMapping("/recommendationCategories")
     public String showRecommendationPage() {
-        return "recommendationCategories"; 
+        return "user/recommendationCategories"; 
     }
 
     // 2. AJAX 데이터 리턴 (JSON 리턴을 위해 @ResponseBody 필수!)
@@ -54,7 +54,7 @@ public class RecommendationController {
     public String showRecommendationList(@RequestParam("tagName") String tagName, Model model) {
         // JSP에서 어떤 태그를 보여줄지 알 수 있도록 tagName을 전달
         model.addAttribute("tagName", tagName);
-        return "RecommendationList"; // -> /WEB-INF/views/recommendationList.jsp 실행
+        return "user/RecommendationList"; // -> /WEB-INF/views/recommendationList.jsp 실행
     }
     
 }
