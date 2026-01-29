@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.project.springboot.dao.IMusicDAO;
+import com.project.springboot.dto.ArtistDTO;
 import com.project.springboot.dto.MusicDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
@@ -28,20 +29,53 @@ public class MusicPageController {
     // 0. 검색
     // =====================================================
     		
-    @GetMapping("/musicSearch") // 소문자로 시작
-    public String searchPage(@RequestParam(value = "searchKeyword", required = false) String keyword, Model model) {
-        
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            musicService.searchAndSave(keyword);
-            List<MusicDTO> searchResults = musicService.getMusicListByKeyword(keyword);
-            
-            model.addAttribute("musicList", searchResults);
-            model.addAttribute("keyword", keyword);
+    @GetMapping("/musicSearch")
+    public String searchPage(
+            @RequestParam(value = "searchType", required = false, defaultValue = "TITLE") String searchType,
+            @RequestParam(value = "searchKeyword", required = false) String keyword,
+            HttpSession session, // 1. 세션 추가
+            Model model
+    ) {
+        // 2. 로그인한 유저 정보 가져오기
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        int uNo = (user != null) ? user.getUNo() : 0; 
+
+        String type = (searchType == null) ? "TITLE" : searchType.trim().toUpperCase();
+        if (!List.of("TITLE", "ARTIST", "ALBUM", "LYRICS", "ALL").contains(type)) {
+            type = "TITLE";
         }
-        
-        // 이 파일이 views/guest/ 폴더 안에 있는게 확실하다면 이대로 둡니다.
-        // 만약 views/ 폴더 바로 아래에 있다면 "SearchResult"로 고쳐야 합니다.
-        return "guest/SearchResult"; 
+
+        model.addAttribute("searchType", type);
+        model.addAttribute("keyword", keyword);
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return "guest/SearchResult";
+        }
+
+        List<MusicDTO> searchResults;
+        // 3. DAO 호출 시 uNo를 두 번째 인자로 반드시 전달!
+        switch (type) {
+            case "ARTIST" -> searchResults = musicDAO.selectMusicByArtist(keyword, uNo);
+            case "ALBUM" -> searchResults = musicDAO.selectMusicByAlbum(keyword, uNo);
+            case "LYRICS" -> searchResults = musicDAO.selectMusicByLyrics(keyword, uNo);
+            case "ALL" -> searchResults = musicDAO.selectMusicByKeyword(keyword, uNo);
+            default -> searchResults = musicDAO.selectMusicByTitle(keyword, uNo);
+        }
+
+        // 결과 없을 때 재수집 로직에서도 마찬가지로 uNo 추가
+        if ((searchResults == null || searchResults.isEmpty()) && !"LYRICS".equals(type)) {
+            musicService.searchAndSave(keyword);
+
+            switch (type) {
+                case "ARTIST" -> searchResults = musicDAO.selectMusicByArtist(keyword, uNo);
+                case "ALBUM" -> searchResults = musicDAO.selectMusicByAlbum(keyword, uNo);
+                case "ALL" -> searchResults = musicDAO.selectMusicByKeyword(keyword, uNo);
+                default -> searchResults = musicDAO.selectMusicByTitle(keyword, uNo);
+            }
+        }
+
+        model.addAttribute("musicList", searchResults);
+        return "guest/SearchResult";
     }
     
     // =====================================================
@@ -90,5 +124,34 @@ public class MusicPageController {
         model.addAttribute("keyword", "MY LIBRARY"); // 제목 표시용
         
         return "user/MyLibrary"; 
+    }
+    
+    // [수정] 주소에 슬래시(/)를 넣어서 브라우저 요청과 일치시킵니다.
+    @GetMapping("/artist/detail")
+    public String artistDetail(@RequestParam("a_no") int aNo, HttpSession session, Model model) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        int uNo = (user != null) ? user.getUNo() : 0;
+
+        // [변경] 서비스 호출을 통해 사진이 없으면 채워오도록 함
+        // (서비스에 로직 짜기 귀찮다면 일단 기존 데이터가 잘 들어왔는지 확인부터 해야합니다)
+        ArtistDTO artist = musicDAO.selectArtistByNo(aNo); 
+        List<MusicDTO> musicList = musicDAO.selectMusicByArtistNo(aNo, uNo);
+
+        model.addAttribute("artist", artist);
+        model.addAttribute("musicList", musicList);
+        
+        return "guest/ArtistDetail";
+    }
+
+    // 앨범도 같은 방식으로 통일해두면 에러를 방지할 수 있습니다.
+    @GetMapping("/album/detail")
+    public String albumDetail(@RequestParam("b_no") int bNo, HttpSession session, Model model) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        int uNo = (user != null) ? user.getUNo() : 0;
+
+        model.addAttribute("album", musicDAO.selectAlbumByNo(bNo));
+        model.addAttribute("musicList", musicDAO.selectMusicByAlbumNo(bNo, uNo));
+        
+        return "guest/AlbumDetail";
     }
 }

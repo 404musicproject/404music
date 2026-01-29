@@ -34,12 +34,28 @@ public class MusicController {
 
     // 1. 검색 및 수집
     @GetMapping("/search")
-    public ResponseEntity<List<MusicDTO>> searchMusic(@RequestParam("keyword") String keyword) {
-        // iTunes에서 수집 및 저장
-        musicService.searchAndSave(keyword);
-        // DB에서 조회된 결과 반환
-        List<MusicDTO> list = musicService.getMusicListByKeyword(keyword);
+    public ResponseEntity<List<MusicDTO>> searchMusic(@RequestParam("keyword") String keyword, HttpSession session) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        int uNo = (user != null) ? user.getUNo() : 0; 
+
+        musicService.searchAndSave(keyword); // 수집 로직
+        List<MusicDTO> list = musicService.getMusicListByKeyword(keyword, uNo); // uNo 전달!
         return ResponseEntity.ok(list);
+    }
+
+    // 1-1. (SearchResult.jsp의 AUTO REGISTER 버튼용) 키워드 기반 수집만 수행
+    @PostMapping("/register")
+    public ResponseEntity<String> registerMusic(@RequestParam("keyword") String keyword) {
+        try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("empty");
+            }
+            musicService.searchAndSave(keyword);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("fail");
+        }
     }
 
     // 2. 노래 상세 조회 (중요: 여기서 가사, 수치, ES 업데이트가 처리됨)

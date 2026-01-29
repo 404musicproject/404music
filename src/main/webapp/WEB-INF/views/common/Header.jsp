@@ -49,14 +49,23 @@ pageEncoding="UTF-8"%>
 </div>
 
     <div class="header-center">
-	    <%-- /MusicSearch 를 /musicSearch 로 변경 --%>
-	    <form action="/musicSearch" method="get" class="search-form">
-	        <input type="text" name="searchKeyword" placeholder="어떤 음악을 검색하시겠습니까?">
-	        <button type="submit" class="search-button">
-	            <i class="fa-solid fa-magnifying-glass"></i>
-	        </button>
-	    </form>
-	</div>
+        <form action="${pageContext.request.contextPath}/musicSearch" method="get" class="search-form" id="headerSearchForm">
+            <select name="searchType" class="search-select" id="headerSearchType">
+                <option value="TITLE" ${param.searchType == 'TITLE' ? 'selected' : ''}>제목</option>
+                <option value="ARTIST" ${param.searchType == 'ARTIST' ? 'selected' : ''}>아티스트</option>
+                <option value="ALBUM" ${param.searchType == 'ALBUM' ? 'selected' : ''}>앨범</option>
+                <option value="LYRICS" ${param.searchType == 'LYRICS' ? 'selected' : ''}>가사</option>
+                <option value="ALL" ${empty param.searchType || param.searchType == 'ALL' ? 'selected' : ''}>전체</option>
+            </select>
+
+            <input type="text" name="searchKeyword" id="headerSearchKeyword"
+                   value="${param.searchKeyword}" placeholder="검색어를 입력하세요">
+
+            <button type="submit" class="search-button" title="검색">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+        </form>
+    </div>
     
 <div class="header-right">
     <div class="user-status-group">
@@ -157,6 +166,27 @@ function applyIcon(imgName) {
         location.href = "profile_main.jsp?changeImg=" + imgName;
     }
 }
+
+// 헤더 검색: 조건(제목/아티스트/앨범/가사)에 따라 placeholder 변경
+document.addEventListener('DOMContentLoaded', function () {
+    const sel = document.getElementById('headerSearchType');
+    const input = document.getElementById('headerSearchKeyword');
+    if (!sel || !input) return;
+
+    const setPlaceholder = () => {
+        const v = (sel.value || 'TITLE').toUpperCase();
+        switch (v) {
+            case 'ARTIST': input.placeholder = '아티스트 이름을 검색하세요'; break;
+            case 'ALBUM':  input.placeholder = '앨범 제목을 검색하세요'; break;
+            case 'LYRICS': input.placeholder = '가사 일부를 검색하세요'; break;
+            case 'ALL':    input.placeholder = '제목/아티스트/앨범 통합검색'; break;
+            default:       input.placeholder = '노래 제목을 검색하세요';
+        }
+    };
+
+    sel.addEventListener('change', setPlaceholder);
+    setPlaceholder();
+});
 
 </script>
 </html>

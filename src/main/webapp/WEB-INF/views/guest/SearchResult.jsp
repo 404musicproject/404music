@@ -5,8 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <title>404Music | SEARCH RESULT</title>
-    
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/music-chart.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -14,14 +12,29 @@
 
     <style>
         /* 푸터/플레이어와 겹치지 않게 레이아웃 조정 */
+      
         body { background-color: #050505; color: #fff; margin: 0; }
         main { 
             min-height: calc(100vh - 180px); 
             padding-top: 20px; 
-            padding-bottom: 120px; /* 플레이어 바 높이만큼 여유 */
+            padding-bottom: 120px; 
             position: relative;
             z-index: 1; 
         }
+        .container {
+	        max-width: 1000px; /* 화면에 따라 1000px ~ 1200px 추천 */
+	        margin: 0 auto;
+	        padding: 0 20px;
+	    }
+		.chart-table {
+	        table-layout: fixed; /* 컬럼 너비를 고정하여 균형을 맞춤 */
+	    }
+	    .chart-table th:nth-child(1) { width: 50px; }
+	    .chart-table th:nth-child(2) { width: auto; } /* 정보창이 가장 넓게 */
+	    .chart-table th:nth-child(3), 
+	    .chart-table th:nth-child(4) { width: 80px; }
+	    .chart-table th:nth-child(5) { width: 100px; }
+		.chart-table th:nth-child(5) { width: 80px; }  /* PLAY */
         .search-keyword { color: #ff0055; text-shadow: 0 0 10px rgba(255, 0, 85, 0.5); font-style: italic; }
         .search-empty-box { 
             padding: 100px 20px; text-align: center; border: 1px dashed #333; 
@@ -39,12 +52,16 @@
         
         /* 테이블 스타일 보정 */
         .chart-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .album-art { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin-right: 15px; }
+        .album-art { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 15px; transition: 0.3s; cursor: pointer; flex-shrink: 0; }
+        .album-art:hover { filter: brightness(1.3); transform: scale(1.05); }
+        
+        /* 아티스트 링크 스타일 */
+        .artist-link { cursor: pointer; transition: 0.2s; display: inline-block; }
+        .artist-link:hover { color: #00f2ff !important; text-decoration: underline; }
     </style>
 </head>
 <body>
-
-<jsp:include page="/WEB-INF/views/common/Header.jsp" />
+<header><jsp:include page="/WEB-INF/views/common/Header.jsp" /></header>
 
 <main>
     <div class="container">
@@ -60,8 +77,14 @@
         
         <div class="section">
             <div class="chart-header">
-                <h2 id="chart-title">SEARCHING FOR <span class="search-keyword">"${keyword}"</span></h2>
-                <p style="color: #666; font-size: 0.9rem;">"${keyword}"에 대한 검색 결과입니다.</p>
+                <h2 id="chart-title">
+                    SEARCHING
+                    <span class="search-keyword">${searchTypeLabel}</span>
+                    FOR <span class="search-keyword">"${keyword}"</span>
+                </h2>
+                <p style="color: #666; font-size: 0.9rem;">
+                    <strong>${searchTypeLabel}</strong> 기준으로 <strong>"${keyword}"</strong> 검색 결과입니다.
+                </p>
             </div>
 
             <table class="chart-table">
@@ -85,19 +108,28 @@
                                     <td style="padding: 15px; color: #444;">${status.count}</td>
                                     <td>
                                         <div style="display: flex; align-items: center; padding: 10px 0;">
-                                            <img src="${not empty music.b_image ? music.b_image : 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png'}" class="album-art">
+                                            <%-- 앨범 상세 이동: 앨범 이미지 클릭 시 --%>
+                                            <div onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/album/detail?b_no=${music.b_no}'" title="앨범 상세 보기">
+                                                <img src="${not empty music.b_image ? music.b_image : 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png'}" class="album-art">
+                                            </div>
                                             <div>
                                                 <div style="font-weight: bold; color: #eee; margin-bottom: 4px;">${music.m_title}</div>
-                                                <div style="font-size: 0.85rem; color: #888;">${music.a_name}</div>
+                                                <%-- 아티스트 상세 이동: 아티스트 이름 클릭 시 --%>
+                                                <div class="artist-link" style="font-size: 0.85rem; color: #888;"
+                                                     onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/artist/detail?a_no=${music.a_no}'" title="아티스트 정보 보기">
+                                                    ${music.a_name}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td style="text-align: center;">
-                                        <button class="btn-like" style="background:none; border:none; color:#444; cursor:pointer;"
-                                                onclick="event.stopPropagation(); if(typeof MusicApp !== 'undefined') MusicApp.toggleLike(${music.m_no}, this);">
-                                            <i class="fa-solid fa-heart"></i>
-                                        </button>
-                                    </td>
+									    <%-- music.isLiked 값이 'Y'이면 active 클래스를 추가하여 빨간 하트로 표시 --%>
+									    <button class="btn-like ${music.isLiked eq 'Y' ? 'active' : ''}" 
+										        style="background:none; border:none; cursor:pointer; color: ${music.isLiked eq 'Y' ? '#ff0055' : '#444'};"
+										        onclick="event.stopPropagation(); MusicApp.toggleLike(${music.m_no}, this);">
+										    <i class="fa-${music.isLiked eq 'Y' ? 'solid' : 'regular'} fa-heart"></i>
+										</button>
+									</td>
                                     <td style="text-align: center;">
 									    <button class="btn-add-lib" title="라이브러리에 추가"
 									            style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;"
@@ -113,12 +145,23 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="4">
+                                <td colspan="5">
                                     <div class="search-empty-box">
                                         <p style="color: #666; font-size: 1.1rem;">"${keyword}" 에 대한 검색 결과가 없습니다.</p>
-                                        <button class="btn-register" onclick="registerNewMusic('${keyword}')">
-                                            <i class="fa-solid fa-bolt"></i> AUTO REGISTER
-                                        </button>
+
+                                        <c:choose>
+                                            <c:when test="${searchType eq 'LYRICS'}">
+                                                <p style="color:#555; font-size:0.9rem; margin-top:10px; line-height:1.4;">
+                                                    ※ 가사 검색은 <strong>가사가 수집된 곡</strong>만 검색됩니다.
+                                                    (곡을 한번 재생/상세 열람하면 가사가 자동 수집될 수 있습니다.)
+                                                </p>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <button class="btn-register" onclick="registerNewMusic('${keyword}', '${searchType}')">
+                                                    <i class="fa-solid fa-bolt"></i> AUTO REGISTER
+                                                </button>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                 </td>
                             </tr>
@@ -130,42 +173,33 @@
     </div>
 </main>
 
-<jsp:include page="/WEB-INF/views/common/Footer.jsp" />
+<footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
 
 <script>
 $(document).ready(function() {
-	    // 세션에서 유저 번호 가져오기 (jsp 변수 사용)
 	    const sessionUno = "${sessionScope.loginUser.UNo}";
-	    
 	    if (sessionUno && sessionUno !== "0") {
-	        // music-service.js 초기화
 	        if(typeof MusicApp !== 'undefined') {
 	            MusicApp.init(Number(sessionUno));
-	            console.log("MusicApp 초기화 완료: " + sessionUno);
 	        }
 	    }
 	});
 	
 	function handlePlay(mNo, title, artist, img) {
-	    // 로그 남기기 (music-service.js의 함수 호출)
 	    if (typeof MusicApp !== 'undefined' && typeof MusicApp.sendPlayLog === 'function') {
 	        MusicApp.sendPlayLog(mNo);
 	    }
-	    
-	    // 재생
 	    if (typeof PlayQueue !== 'undefined') {
 	        PlayQueue.addAndPlay(mNo, title, artist, img);
 	    }
 	}
+
     function addToLibrary(mNo) {
         const uNo = "${sessionScope.loginUser.UNo}";
         if (!uNo || uNo == "0") {
             alert("로그인이 필요한 서비스입니다.");
             return;
         }
-
-        // URL을 MusicController에 정의한 /api/music/toggle-like가 아닌 
-        // 보관함 전용 엔드포인트로 정확히 호출해야 합니다.
         $.post('${pageContext.request.contextPath}/api/music/add-library', { 
             m_no: mNo,
             u_no: uNo
@@ -178,13 +212,14 @@ $(document).ready(function() {
         });
     }
 
-    function registerNewMusic(keyword) {
+    function registerNewMusic(keyword, type) {
         if(!keyword) return;
         $('.search-empty-box').html('<p style="color: #00f2ff;"><i class="fa-solid fa-sync fa-spin"></i> 데이터를 수집하고 있습니다...</p>');
         
         $.post('${pageContext.request.contextPath}/api/music/register', { keyword: keyword })
          .done(function() {
-             location.href = "/musicSearch?searchKeyword=" + encodeURIComponent(keyword);
+             const t = type ? type : 'TITLE';
+             location.href = "${pageContext.request.contextPath}/musicSearch?searchType=" + encodeURIComponent(t) + "&searchKeyword=" + encodeURIComponent(keyword);
          })
          .fail(function() {
              alert("등록 실패");

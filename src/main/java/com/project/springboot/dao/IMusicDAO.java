@@ -20,7 +20,13 @@ public interface IMusicDAO {
     
     // 2. 검색 및 업데이트
     int updateYoutubeId(@Param("m_no") int m_no, @Param("m_youtube_id") String m_youtube_id);
-    List<MusicDTO> selectMusicByKeyword(String keyword);
+    List<MusicDTO> selectMusicByKeyword(@Param("keyword") String keyword, @Param("u_no") int u_no);
+
+    // 2-1. 헤더 검색(조건별)
+    List<MusicDTO> selectMusicByTitle(@Param("keyword") String keyword, @Param("u_no") int u_no);
+    List<MusicDTO> selectMusicByArtist(@Param("keyword") String keyword, @Param("u_no") int u_no);
+    List<MusicDTO> selectMusicByAlbum(@Param("keyword") String keyword, @Param("u_no") int u_no);
+    List<MusicDTO> selectMusicByLyrics(@Param("keyword") String keyword, @Param("u_no") int u_no);
     
     // 3. 히스토리(재생기록) 저장
     int insertHistory(HistoryDTO historyDTO);
@@ -72,5 +78,17 @@ public interface IMusicDAO {
 	List<MusicDTO> selectMusicByLibrary(@Param("u_no") int u_no);
 	 
 	void deleteLibraryTrack(@Param("u_no") int uNo, @Param("m_no") int mNo);
+	// 12. 상세 페이지용 메서드 추가
+	// 특정 아티스트의 모든 곡 조회 (좋아요 여부 포함)
+	List<MusicDTO> selectMusicByArtistNo(@Param("a_no") int aNo, @Param("u_no") int uNo);
+
+	// 특정 앨범의 모든 곡 조회 (좋아요 여부 포함)
+	List<MusicDTO> selectMusicByAlbumNo(@Param("b_no") int bNo, @Param("u_no") int uNo);
+
+	// 아티스트/앨범 자체의 정보를 가져오는 메서드 (이미 있다면 pass)
+	ArtistDTO selectArtistByNo(@Param("a_no") int aNo);
+	AlbumDTO selectAlbumByNo(@Param("b_no") int bNo);
+	void updateArtistImage(@Param("a_no") int aNo, @Param("a_image") String aImage);
+	
    
 }

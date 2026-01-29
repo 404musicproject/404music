@@ -5,30 +5,42 @@
 
     <resultMap id="MusicMap" type="com.project.springboot.dto.MusicDTO">
         <id property="m_no" column="m_no" />
+        <id property="a_no" column="a_no" />
         <result property="m_title" column="m_title" />
         <result property="a_no" column="a_no" />
         <result property="b_no" column="b_no" />
+        <result property="a_name" column="a_name" />
+    	<result property="a_image" column="a_image" /> 
+    	<result property="a_genres" column="a_genres" />
         <result property="isrc_code" column="isrc_code" />
         <result property="m_youtube_id" column="m_youtube_id" />
         <result property="m_preview_url" column="m_preview_url" />
         <result property="a_name" column="a_name" />
         <result property="b_title" column="b_title" />
         <result property="b_image" column="b_image" />
+        <result property="isLiked" column="isLiked" />
     </resultMap>
+    <resultMap id="ArtistMap" type="com.project.springboot.dto.ArtistDTO">
+	    <id property="a_no" column="a_no" />
+	    <result property="a_name" column="a_name" />
+	    <result property="a_image" column="a_image" />
+	    <result property="a_genres" column="a_genres" />
+	</resultMap>
 
     <insert id="insertArtist" parameterType="com.project.springboot.dto.ArtistDTO">
-        <selectKey keyProperty="a_no" resultType="int" order="BEFORE">
-            SELECT COALESCE(
-                (SELECT a_no FROM artists WHERE a_name = #{a_name} AND ROWNUM = 1),
-                artist_no_seq.NEXTVAL
-            ) FROM DUAL
-        </selectKey>
-        MERGE INTO artists a
-        USING DUAL ON (a.a_name = #{a_name})
-        WHEN NOT MATCHED THEN
-            INSERT (a_no, a_name, a_image)
-            VALUES (#{a_no}, #{a_name}, #{a_image})
-    </insert>
+	    <selectKey keyProperty="a_no" resultType="int" order="BEFORE">
+	        SELECT COALESCE(
+	            (SELECT a_no FROM artists WHERE a_name = #{a_name} AND ROWNUM = 1),
+	            artist_no_seq.NEXTVAL
+	        ) FROM DUAL
+	    </selectKey>
+	    MERGE INTO artists a
+	    USING DUAL ON (a.a_name = #{a_name})
+	    WHEN MATCHED THEN
+	        UPDATE SET a.a_image = NVL(a.a_image, #{a_image}) WHEN NOT MATCHED THEN
+	        INSERT (a_no, a_name, a_image)
+	        VALUES (#{a_no}, #{a_name}, #{a_image})
+	</insert>
 
     <insert id="insertAlbum" parameterType="com.project.springboot.dto.AlbumDTO">
         <selectKey keyProperty="b_no" resultType="int" order="BEFORE">
@@ -64,20 +76,125 @@
         WHERE m_no = #{m_no}
     </update>
 
-    <select id="selectMusicByKeyword" resultMap="MusicMap">
+   <select id="selectMusicByKeyword" resultMap="MusicMap">
 	  SELECT 
 	      m.m_no, m.m_title, m.a_no, m.b_no,
 	      m.isrc_code, m.m_youtube_id, m.m_preview_url,
-	      a.a_name, b.b_title, b.b_image
-	  FROM music m
+	      a.a_name, b.b_title, b.b_image,
+	      (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+	       FROM likes l 
+	       WHERE l.l_target_type = 'MUSIC' 
+	         AND l.l_target_no = m.m_no 
+	         AND l.u_no = #{u_no}) as isLiked  FROM music m
 	  LEFT JOIN artists a ON m.a_no = a.a_no
 	  LEFT JOIN album b ON m.b_no = b.b_no
 	  WHERE (
-	      UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%')
-	      OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
+	      UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%') OR UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
 	      OR UPPER(b.b_title) LIKE UPPER('%' || #{keyword} || '%')
 	  )
 	</select>
+
+    <!-- =========================
+         헤더 검색 (조건별)
+         ========================= -->
+    <select id="selectMusicByTitle" resultMap="MusicMap">
+	  SELECT 
+	      m.m_no, m.m_title, m.a_no, m.b_no,
+	      m.isrc_code, m.m_youtube_id, m.m_preview_url,
+	      a.a_name, b.b_title, b.b_image,
+	      (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+	       FROM likes l 
+	       WHERE l.l_target_type = 'MUSIC' 
+	         AND l.l_target_no = m.m_no 
+	         AND l.u_no = #{u_no}) as isLiked
+	  FROM music m
+	  LEFT JOIN artists a ON m.a_no = a.a_no
+	  LEFT JOIN album b ON m.b_no = b.b_no
+	  WHERE UPPER(m.m_title) LIKE UPPER('%' || #{keyword} || '%')
+	  ORDER BY m.m_no DESC
+	</select>
+
+    <select id="selectMusicByArtist" resultMap="MusicMap">
+	  SELECT 
+	      m.m_no, m.m_title, m.a_no, m.b_no,
+	      m.isrc_code, m.m_youtube_id, m.m_preview_url,
+	      a.a_name, b.b_title, b.b_image,
+	      (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+	       FROM likes l 
+	       WHERE l.l_target_type = 'MUSIC' 
+	         AND l.l_target_no = m.m_no 
+	         AND l.u_no = #{u_no}) as isLiked
+	  FROM music m
+	  LEFT JOIN artists a ON m.a_no = a.a_no
+	  LEFT JOIN album b ON m.b_no = b.b_no
+	  WHERE UPPER(a.a_name) LIKE UPPER('%' || #{keyword} || '%')
+	  ORDER BY m.m_no DESC
+	</select>
+	<select id="selectArtistByNo" resultMap="ArtistMap">
+	    SELECT 
+	        a.a_no, 
+	        a.a_name,
+	        NVL(a.a_image, (
+	            SELECT b_image 
+	            FROM (
+	                SELECT b_image 
+	                FROM album 
+	                WHERE a_no = a.a_no 
+	                AND b_image IS NOT NULL 
+	                ORDER BY b_no DESC
+	            ) 
+	            WHERE ROWNUM = 1
+	        )) AS a_image,
+	        a.a_genres
+	    FROM artists a
+	    WHERE a.a_no = #{a_no}
+	</select>
+	
+	<select id="selectMusicByArtistNo" resultMap="MusicMap">
+	    SELECT 
+	        m.*, a.a_name, b.b_title, b.b_image,
+	        (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+	         FROM likes l 
+	         WHERE l.l_target_type = 'MUSIC' 
+	           AND l.l_target_no = m.m_no 
+	           AND l.u_no = #{u_no}) as isLiked
+	    FROM music m
+	    JOIN artists a ON m.a_no = a.a_no
+	    JOIN album b ON m.b_no = b.b_no
+	    WHERE m.a_no = #{a_no}
+	    ORDER BY b.b_title ASC, m.m_title ASC
+	</select>
+	
+	<select id="selectAlbumByNo" resultType="com.project.springboot.dto.AlbumDTO">
+	    SELECT * FROM album WHERE b_no = #{b_no}
+	</select>
+    <select id="selectMusicByAlbumNo" resultMap="MusicMap">
+	    SELECT 
+	        m.*, a.a_name, b.b_title, b.b_image,
+	        (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+	         FROM likes l 
+	         WHERE l.l_target_type = 'MUSIC' 
+	           AND l.l_target_no = m.m_no 
+	           AND l.u_no = #{u_no}) as isLiked
+	    FROM music m
+	    JOIN artists a ON m.a_no = a.a_no
+	    JOIN album b ON m.b_no = b.b_no
+	    WHERE m.b_no = #{b_no}
+	    ORDER BY m.m_no ASC
+	</select>
+
+    <select id="selectMusicByLyrics" resultMap="MusicMap">
+      SELECT 
+          m.m_no, m.m_title, m.a_no, m.b_no,
+          m.isrc_code, m.m_youtube_id, m.m_preview_url,
+          a.a_name, b.b_title, b.b_image
+      FROM music m
+      LEFT JOIN artists a ON m.a_no = a.a_no
+      LEFT JOIN album b ON m.b_no = b.b_no
+      JOIN music_lyrics l ON m.m_no = l.m_no
+      WHERE DBMS_LOB.INSTR(UPPER(l.lyrics_text), UPPER(#{keyword})) > 0
+      ORDER BY m.m_no DESC
+    </select>
     
    <insert id="insertHistory">
 	    INSERT INTO history (
@@ -340,5 +457,9 @@
 	      AND m_no = #{m_no} 
 	      AND t_title = 'MY_LIBRARY'
 	</delete>
+	
+	<update id="updateArtistImage">
+	    UPDATE artists SET a_image = #{a_image} WHERE a_no = #{a_no}
+	</update>
 </mapper>
 	
