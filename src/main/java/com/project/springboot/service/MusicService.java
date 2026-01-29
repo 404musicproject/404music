@@ -110,6 +110,7 @@ public class MusicService {
             System.err.println("초기 ES 색인 에러: " + e.getMessage());
         }
     }
+    
     @Transactional
     public ArtistDTO getArtistDetailWithImage(int aNo) {
         ArtistDTO artist = musicDAO.selectArtistByNo(aNo);
@@ -140,65 +141,70 @@ public class MusicService {
  // [2단계] 클릭 시 상세 정보 보완 (Lazy Loading & ES Update)
     @Transactional
     public Map<String, Object> getOrFetchMusicDetail(int mNo) {
+        // 1. 기본 곡 정보 조회 (이게 없으면 진짜 404)
         MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
-        if (musicInfo == null) return null;
+        if (musicInfo == null) return null; 
 
+        // 미리 반환할 맵을 만들어 둠 (API가 실패해도 제목/가수는 돌려줘야 하니까요)
+        Map<String, Object> result = new HashMap<>();
+        result.put("m_title", musicInfo.getM_title());
+        result.put("a_name", musicInfo.getA_name());
+        
         String spotifyId = musicInfo.getIsrc_code();
 
-        // ★ [수정] ID가 null이면 여기서 다시 한번 검색해서 채워넣기
+        // 2. Spotify ID가 없으면 검색 시도 (실패해도 에러만 찍고 통과!)
         if (spotifyId == null || spotifyId.isEmpty()) {
-            System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
-            spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
-            
-            if (spotifyId != null) {
-                // DB에 ID 업데이트 (다음에 또 검색 안 하게)
-                // (MusicDTO에 spotifyId 필드가 isrc_code에 매핑되어 있다면)
-                musicInfo.setIsrc_code(spotifyId);
-                // musicDAO.updateSpotifyId(mNo, spotifyId); // 이 쿼리를 만들어서 실행하면 더 좋음
+            try {
+                System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
+                spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
+                if (spotifyId != null) {
+                    musicInfo.setIsrc_code(spotifyId);
+                }
+            } catch (Exception e) {
+                System.err.println("[WARN] Spotify ID 검색 실패(할당량 초과): " + e.getMessage());
             }
         }
 
-        if (spotifyId == null) {
-            System.err.println("[FAIL] Spotify ID를 찾을 수 없어 상세정보 수집 불가");
-            return null; 
-        }
+        // 3. Spotify ID가 있을 때 상세 정보 수집 (에러 나도 catch로 잡음)
         Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
         Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
 
-        // 데이터가 없으면 Spotify에서 가져오기
-        if (feature == null || lyrics == null) {
-            
-            if (feature == null) {
-                Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
-                if (raw != null) {
-                    feature = prepareFeatureParams(mNo, raw);
-                    musicDAO.insertMusicFeature(feature);
+        if (spotifyId != null && !spotifyId.isEmpty()) {
+            try {
+                if (feature == null) {
+                    Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
+                    if (raw != null) {
+                        feature = prepareFeatureParams(mNo, raw);
+                        musicDAO.insertMusicFeature(feature);
+                    }
                 }
-            }
-            if (lyrics == null) {
-                String lyricsText = spotifyApiService.getLyrics(spotifyId);
-                if (lyricsText != null) {
-                    Map<String, Object> lyricsParam = new HashMap<>();
-                    lyricsParam.put("m_no", mNo);
-                    lyricsParam.put("lyrics_text", lyricsText);
-                    lyricsParam.put("lyricist", musicInfo.getA_name());
-                    musicDAO.insertLyrics(lyricsParam);
-                    lyrics = lyricsParam;
+                if (lyrics == null) {
+                    String lyricsText = spotifyApiService.getLyrics(spotifyId);
+                    if (lyricsText != null) {
+                        Map<String, Object> lyricsParam = new HashMap<>();
+                        lyricsParam.put("m_no", mNo);
+                        lyricsParam.put("lyrics_text", lyricsText);
+                        lyricsParam.put("lyricist", musicInfo.getA_name());
+                        musicDAO.insertLyrics(lyricsParam);
+                        lyrics = lyricsParam;
+                    }
                 }
+                // 수집 성공 시 ES 업데이트
+                updateElasticsearchDetail(mNo, feature, lyrics);
+            } catch (Exception e) {
+                // 여기가 핵심! API가 429(할당량 초과)를 뱉어도 여기서 잡아주면
+                // 아래의 return result까지 무사히 내려갑니다.
+                System.err.println("[WARN] Spotify API 호출 제한으로 상세 정보를 생략합니다.");
             }
         }
 
-        // ES 통합 업데이트 (특징 + 가사)
-        updateElasticsearchDetail(mNo, feature, lyrics);
-
-        Map<String, Object> result = new HashMap<>();
+        // 4. 요청하신 '날려먹으면 안 되는' 부분! 
+        // API가 성공했으면 feature/lyrics가 들어있을 거고, 실패했으면 null인 상태로 진행됩니다.
         if (feature != null) result.putAll(feature);
         if (lyrics != null) result.putAll(lyrics);
-        result.put("m_title", musicInfo.getM_title());
-        result.put("a_name", musicInfo.getA_name());
-        return result;
+        
+        return result; // 이제 무조건 200 OK와 함께 기본 정보라도 반환됩니다!
     }
-
     
     private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics) {
         try {

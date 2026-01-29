@@ -23,6 +23,7 @@ import com.project.springboot.service.MusicService;
 import com.project.springboot.service.YouTubeApiService;
 
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/music")
@@ -32,6 +33,11 @@ public class MusicController {
     @Autowired private IMusicDAO musicDAO;
     @Autowired private YouTubeApiService youtubeService;
 
+    @Value("${weather.api.key}")
+    private String weatherApiKey;
+
+    @Autowired
+    private RestTemplate restTemplate;
     // 1. 검색 및 수집
     @GetMapping("/search")
     public ResponseEntity<List<MusicDTO>> searchMusic(@RequestParam("keyword") String keyword, HttpSession session) {
@@ -61,6 +67,8 @@ public class MusicController {
     // 2. 노래 상세 조회 (중요: 여기서 가사, 수치, ES 업데이트가 처리됨)
     @GetMapping("/detail")
     public ResponseEntity<Map<String, Object>> getMusicDetail(@RequestParam("m_no") int m_no) {
+    	System.out.println("상세조회 요청 m_no: " + m_no); // 로그 추가
+    	
         // [로직] DB에 데이터가 없으면 Spotify에서 즉시 수집하여 채워주는 지연 로딩 로직
         Map<String, Object> detail = musicService.getOrFetchMusicDetail(m_no);
         
@@ -125,26 +133,46 @@ public class MusicController {
     }
     
     // 6. 재생 로그 저장 (기존 @RequestBody 방식에서 일반 폼 전송 방식으로도 가능하게 보강)
+
+
     @PostMapping("/history")
     public ResponseEntity<String> saveHistory(HistoryDTO history) {
         try {
-            if (history.getU_no() == 0) {
-                history.setU_no(0); 
+            // 1. 좌표가 있을 때만 날씨 정보를 숫자로 가져옴
+            if (history.getH_lat() != 0 && history.getH_lon() != 0) {
+                try {
+                    String url = "https://api.openweathermap.org/data/2.5/weather?lat=" + history.getH_lat() 
+                               + "&lon=" + history.getH_lon() + "&appid=" + weatherApiKey + "&units=metric";
+                    
+                    Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                    
+                    if (response != null) {
+                        // API 응답에서 'id' (예: 800) 값을 꺼냅니다.
+                        List<Map<String, Object>> weatherList = (List<Map<String, Object>>) response.get("weather");
+                        
+                        // 핵심: 받아온 값을 int로 변환해서 set 합니다.
+                        // 이렇게 하면 DTO를 바꿀 필요가 전혀 없습니다!
+                        Object idObj = weatherList.get(0).get("id");
+                        int weatherId = Integer.parseInt(String.valueOf(idObj)); 
+
+                        history.setH_weather(weatherId); // 기존 int 필드 그대로 사용
+                        history.setH_location(String.valueOf(response.get("name")));
+                    }
+                } catch (Exception e) {
+                    // 에러 나면 기존에 쓰시던 기본값(800) 세팅
+                    history.setH_weather(800);
+                }
             }
-            
-            // [수정] 데이터가 잘 들어오는지 콘솔에서 확인하기 위한 로그
-            System.out.println("[차트 반영] 곡:" + history.getM_no() + 
-                               " | 지역:" + history.getH_location() + 
-                               " | 좌표:(" + history.getH_lat() + ", " + history.getH_lon() + ")");
+
+            // 2. 로그 확인 (정상적으로 숫자가 찍힐 겁니다)
+            System.out.println("[차트 반영] 곡:" + history.getM_no() + " | 날씨ID:" + history.getH_weather());
 
             musicDAO.insertHistory(history);
             return ResponseEntity.ok("success");
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("fail: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("fail");
         }
     }
-    
    
     @PostMapping("/toggle-like")
     @ResponseBody
@@ -222,9 +250,23 @@ public class MusicController {
         }
     }
     @GetMapping("/youtube-search")
-    public ResponseEntity<String> youtubeSearch(@RequestParam("q") String q) {
+    public ResponseEntity<Map<String, Object>> youtubeSearch(
+            @RequestParam("q") String q,
+            @RequestParam(value="title", required=false) String title, // JS에서 보내주는 제목
+            @RequestParam(value="artist", required=false) String artist // JS에서 보내주는 아티스트
+    ) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 1. 유튜브 비디오 ID 검색
         String videoId = youtubeService.searchYouTube(q);
-        return ResponseEntity.ok(videoId != null ? videoId : "fail");
+        result.put("videoId", videoId != null ? videoId : "fail");
+
+        // 2. 방금 확인한 XML 쿼리를 호출하여 m_no 획득
+        // title과 artist 파라미터가 있어야 DAO가 작동하므로 @RequestParam에 포함시켰습니다.
+        Integer mNo = musicDAO.selectMNoByTitleAndArtist(title, artist);
+        result.put("mNo", (mNo != null) ? mNo : 0);
+
+        return ResponseEntity.ok(result);
     }
    
     @PostMapping("/add-library")

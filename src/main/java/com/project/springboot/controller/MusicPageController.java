@@ -1,18 +1,22 @@
 package com.project.springboot.controller;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.project.springboot.dao.IMusicDAO;
+import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
 import com.project.springboot.dto.MusicDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
+import com.project.springboot.service.RecommendationService;
 
 // 스프링 부트 버전에 따라 아래 import 중 맞는 것을 사용하세요.
 // import javax.servlet.http.HttpSession; // 구버전 (Spring Boot 2.x)
@@ -82,15 +86,30 @@ public class MusicPageController {
     // 1. 페이지 이동 관련 (View Rendering)
     // =====================================================
 
+    @Autowired
+    private RecommendationService recommendationService;
+    
     // 메인 홈 화면 (3단 레이아웃)
     // 주의: 다른 컨트롤러(UserViewController 등)에 @GetMapping("/")이 있다면 지워야 충돌이 안 납니다.
     @GetMapping({"/", "/home"}) 
     public String home(HttpSession session, Model model) {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        Long uNo = (user != null) ? (long)user.getUNo() : 0L;      
-        return "Home"; // src/main/webapp/WEB-INF/views/Home.jsp
-    }
+        Long uNo = (user != null) ? (long)user.getUNo() : 0L; 
+        
+        // 5번째 섹션용: 유저 선호 태그
+        List<String> topTags = recommendationService.getUserTopTags(uNo);
+        if (topTags == null || topTags.isEmpty()) {
+            topTags = Arrays.asList("행복한 기분", "카페/작업", "운동", "새벽 감성", "휴식");
+        }
+        model.addAttribute("topTags", topTags);
 
+        // 4번째 섹션용: 주변 장소/상황 태그 (날씨 칸을 제외한 4개)
+        // 이 리스트는 DB에서 가져오거나, 고정된 대표 장소 태그로 구성합니다.
+        List<String> placeTags = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉");
+        model.addAttribute("placeTags", placeTags);
+        
+        return "Home"; 
+    }
     // 음악 메인 인덱스 (실시간 차트 등)
     @GetMapping("/music/Index")
     public String mainIndex() {
@@ -143,14 +162,21 @@ public class MusicPageController {
         return "guest/ArtistDetail";
     }
 
-    // 앨범도 같은 방식으로 통일해두면 에러를 방지할 수 있습니다.
-    @GetMapping("/album/detail")
-    public String albumDetail(@RequestParam("b_no") int bNo, HttpSession session, Model model) {
+    @RequestMapping("/album/detail")
+    public String albumDetail(@RequestParam("b_no") int b_no, HttpSession session, Model model) {
+        AlbumDTO album = musicDAO.selectAlbumByNo(b_no);
+        
+        // [체크] 만약 album이 null이면 musicList의 첫 번째 곡 정보를 활용해서라도 채워야 합니다.
+        if (album == null) {
+            System.out.println("⚠️ 앨범 정보를 찾을 수 없습니다. b_no: " + b_no);
+        }
+
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         int uNo = (user != null) ? user.getUNo() : 0;
-
-        model.addAttribute("album", musicDAO.selectAlbumByNo(bNo));
-        model.addAttribute("musicList", musicDAO.selectMusicByAlbumNo(bNo, uNo));
+        List<MusicDTO> musicList = musicDAO.selectMusicByAlbumNo(b_no, uNo);
+        
+        model.addAttribute("album", album);
+        model.addAttribute("musicList", musicList);
         
         return "guest/AlbumDetail";
     }

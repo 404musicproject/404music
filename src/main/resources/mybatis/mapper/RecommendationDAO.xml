@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace를 반드시 변경된 인터페이스 이름과 경로로 맞춰야 합니다 -->
+<mapper namespace="com.project.springboot.dao.IRecommendationDAO"> 
+
+    <!-- 결과 매핑 설정 -->
+    <resultMap id="MusicRecommendationResultMap" type="com.project.springboot.dto.MusicDTO">
+        <id property="m_no" column="m_no"/>
+        <result property="m_title" column="m_title"/>
+        <result property="a_no" column="a_no"/>
+        <result property="b_no" column="b_no"/>
+        <result property="isrc_code" column="isrc_code"/>
+        <result property="m_youtube_id" column="m_youtube_id"/>
+        <result property="m_preview_url" column="m_preview_url"/>
+        
+        <!-- JOIN 결과 매핑 -->
+        <result property="a_name" column="a_name"/> 
+        <result property="b_title" column="b_title"/>
+        <result property="b_image" column="b_image"/>
+    </resultMap>
+
+    <!-- 태그별 음악 추천 조회 쿼리 -->
+    <select id="findMusicDTOByTagName" resultMap="MusicRecommendationResultMap">
+    SELECT 
+        m.m_no, 
+        m.m_title, 
+        m.a_no, 
+        m.b_no, 
+        m.isrc_code, 
+        m.m_youtube_id, 
+        m.m_preview_url,
+        a.a_name,   
+        b.b_title,  
+        b.b_image,
+        COUNT(h.h_no) AS play_count
+    FROM SCOTT.music m
+    INNER JOIN SCOTT.music_tag_map map ON m.m_no = map.m_no
+    INNER JOIN SCOTT.tags t ON map.g_no = t.g_no
+    INNER JOIN SCOTT.artists a ON m.a_no = a.a_no
+    INNER JOIN SCOTT.album b ON m.b_no = b.b_no
+    LEFT OUTER JOIN SCOTT.history h ON m.m_no = h.m_no AND h.u_no = #{u_no}
+    WHERE t.g_name = #{tagName}
+    GROUP BY 
+        m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, 
+        m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title, b.b_image
+    ORDER BY play_count DESC, m.m_no DESC
+</select>
+
+<select id="findUserTopTags" resultType="string">
+    SELECT t.g_name
+    FROM SCOTT.history h
+    JOIN SCOTT.music_tag_map mtm ON h.m_no = mtm.m_no
+    JOIN SCOTT.tags t ON mtm.g_no = t.g_no
+    WHERE h.u_no = #{uNo}
+    GROUP BY t.g_name
+    ORDER BY COUNT(*) DESC
+    OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
+</select>
+
+
+</mapper>

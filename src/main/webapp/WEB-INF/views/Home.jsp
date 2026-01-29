@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" buffer="16kb" autoFlush="true" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -32,7 +33,7 @@
         .itunes-card:hover { transform: translateY(-5px); border-color: #ff0055 !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.3); background: #1a1a1a !important; }
 
         /* 4. 지역별 섹션 이미지 스타일 (완벽 복구) */
-        .location-section { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
+        .location-section, .Weather-section, .activity-section { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
         .section-title { color: #ff0055; font-size: 1.5rem; font-weight: bold; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; border-left: 4px solid #ff0055; padding-left: 15px; }
         .location-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
         .location-card { position: relative; height: 160px; background-color: #111; background-size: cover; background-position: center; border: 1px solid #222; border-radius: 12px; transition: all 0.3s ease; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; text-decoration: none; cursor: pointer; }
@@ -55,6 +56,8 @@
             .location-grid { grid-template-columns: repeat(2, 1fr); }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
         }
+        
+        
     </style>
 </head>
 <body>
@@ -132,6 +135,39 @@
             </div>
         </div>
     </section>
+    
+<section class="Weather-section">
+    <div class="section-title">Today's Context</div>
+    <div class="location-grid">
+        <div class="location-card card-weather" id="geo-weather-card" onclick="goContext('weather')">
+            <span class="city-name" id="geo-city">LOCATING...</span>
+            <div id="geo-weather-title" class="city-top-song">날씨 확인 중</div>
+            <div id="geo-weather-desc" class="city-top-artist">잠시만 기다려주세요</div>
+        </div>
+
+        <c:forEach var="ptag" items="${placeTags}" varStatus="vs">
+            <div class="location-card tag-card-p${vs.index}" onclick="goTag('${ptag}')">
+                <span class="city-name">NEARBY PLACE</span>
+                <div class="city-top-song">${ptag}</div>
+                <div class="city-top-artist">지금 위치에 어울리는 추천</div>
+            </div>
+        </c:forEach>
+    </div>
+</section>
+    
+    
+<section class="activity-section">
+    <div class="section-title">Personalized Mood Tags</div>
+    <div class="location-grid">
+        <c:forEach var="tag" items="${topTags}" varStatus="status">
+            <div class="location-card tag-card-${status.index}" onclick="goTag('${tag}')">
+                <span class="city-name">MY TAG #${status.index + 1}</span>
+                <div class="city-top-song">${tag} 스타일</div>
+                <div class="city-top-artist">당신이 자주 찾는 감성</div>
+            </div>
+        </c:forEach>
+    </div>
+</section>
 </main>
 
 <footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
@@ -216,6 +252,163 @@ $(document).ready(function() {
         loadItunesMusic();
     }, 100);
 });
+
+function goTag(tagName) {
+    // 기존에 만드신 추천 리스트 페이지로 이동
+    location.href = "${pageContext.request.contextPath}/music/recommendationList?tagName=" + encodeURIComponent(tagName);
+}
+
+function goContext(type) {
+    let tagName = "";
+    
+    switch(type) {
+        case 'weather':
+            // MusicApp이 수집한 weatherId 활용 (로그에 찍혔던 800 등)
+            const weatherId = (window.MusicApp && window.MusicApp.lastWeatherId) || 800;
+            
+            if (weatherId === 800) {
+                tagName = "맑음"; // 태그 ID 14
+            } else if (weatherId >= 200 && weatherId < 600) {
+                tagName = "비 오는 날"; // 태그 ID 8
+            } else if (weatherId >= 600 && weatherId < 700) {
+                tagName = "눈 오는 날"; // 태그 ID 16
+            } else if (weatherId > 800 && weatherId < 900) {
+                tagName = "흐림"; // 태그 ID 15
+            } else {
+                tagName = "행복한 기분"; // 기본값
+            }
+            break;
+
+        case 'cafe':
+            // 현재 위치나 상황에 따라 LOCATION 태그 매핑
+            tagName = "카페/작업"; // 태그 ID 19
+            break;
+
+        case 'night':
+            // 현재 시간대(Hour)를 체크해서 동적으로 변경도 가능
+            const hour = new Date().getHours();
+            if (hour >= 22 || hour <= 5) {
+                tagName = "새벽 감성"; // 태그 ID 9
+            } else {
+                tagName = "휴식"; // 낮 시간대라면 태그 ID 11
+            }
+            break;
+
+        case 'workout':
+            tagName = "운동"; // 태그 ID 5
+            break;
+
+        case 'drive':
+            // 드라이브에 어울리는 기분이나 날씨 태그로 연결
+            tagName = "자신감 뿜뿜"; // 태그 ID 4 (드라이브엔 신나는 곡)
+            break;
+
+        default:
+            tagName = "휴식";
+    }
+
+    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(tagName);
+}
+
+
+// 날씨 UI를 업데이트하는 함수
+function updateWeatherUI() {
+    // MusicApp에 저장된 날씨 데이터가 있는지 확인
+    if (window.MusicApp && window.MusicApp.lastWeatherData) {
+        const data = window.MusicApp.lastWeatherData; // music-service.js에서 저장한다고 가정
+        const city = data.name || "Unknown";
+        const desc = data.weather[0].description;
+        const temp = Math.round(data.main.temp);
+
+        $('#weather-city').text(city.toUpperCase());
+        $('#weather-desc').text(temp + "°C, " + desc);
+        $('#weather-status').text("이 날씨에 딱 맞는 추천 곡 보기");
+        
+        // 날씨에 따른 배경 이미지 변경 (선택 사항)
+        const weatherId = data.weather[0].id;
+        if (weatherId === 800) {
+            $('.card-weather').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/sunny.jpg")');
+        } else if (weatherId >= 200 && weatherId < 600) {
+            $('.card-weather').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/rainy.jpg")');
+        }
+    } else {
+        // 아직 데이터를 못 가져왔다면 0.5초 뒤 재시도
+        setTimeout(updateWeatherUI, 500);
+    }
+}
+
+$(document).ready(function() {
+    setTimeout(function() {
+        if (window.MusicApp) {
+            MusicApp.init(${loginUser.uNo != null ? loginUser.uNo : 0});
+            // 초기화 후 날씨 정보 UI 반영 시작
+            updateWeatherUI(); 
+        }
+        loadTopOne();
+        loadRegionalPreviews();
+        loadItunesMusic();
+    }, 100);
+});
+
+function renderContextWeather() {
+    console.log("날씨 데이터 수집 시작...");
+    if (!window.MusicApp) return;
+
+    // MusicApp의 getWeatherData를 호출하면서 콜백으로 UI 업데이트
+    window.MusicApp.getWeatherData(function(data) {
+        if (!data) {
+            console.error("날씨 데이터를 가져오지 못했습니다.");
+            $('#geo-weather-title').text("날씨 정보 오류");
+            return;
+        }
+
+        const city = data.name.toUpperCase();
+        const weatherId = data.weather[0].id;
+        
+        // 1. 보유 태그 매핑
+        let tagName = "맑음";
+        if (weatherId < 600) tagName = "비 오는 날";
+        else if (weatherId < 700) tagName = "눈 오는 날";
+        else if (weatherId > 800) tagName = "흐림";
+
+        // 2. HTML 텍스트 교체 (ID 정확히 매칭)
+        $('#geo-city').text(city);
+        $('#geo-weather-title').text(tagName);
+        $('#geo-weather-desc').text("실시간 기상 맞춤 선곡");
+        
+        // 3. 배경 이미지 변경 (날씨별 피드백)
+        if (weatherId < 600) {
+            $('#geo-weather-card').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/rainy.jpg")');
+        } else {
+            $('#geo-weather-card').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/sunny.jpg")');
+        }
+        
+        // 4. 클릭 이벤트 연결 (Controller의 recommendationList 경로)
+        $('#geo-weather-card').attr('onclick', "goTag('" + tagName + "')");
+        
+        console.log("날씨 UI 업데이트 완료: " + tagName);
+    });
+}
+
+// [최종] 단 하나의 document.ready에서 모든 로드 관리
+$(document).ready(function() {
+    setTimeout(function() {
+        // 1. MusicApp 초기화
+        if (window.MusicApp) {
+            const uNo = "${loginUser.uNo}" != "" ? "${loginUser.uNo}" : 0;
+            window.MusicApp.init(parseInt(uNo));
+            
+            // 2. 날씨 정보 로드 실행 (이게 호출되어야 '확인 중'이 바뀝니다)
+            renderContextWeather(); 
+        }
+
+        // 3. 나머지 차트 및 프리뷰 로드
+        loadTopOne();
+        loadRegionalPreviews();
+        loadItunesMusic();
+    }, 200); 
+});
+</script>
 </script>
 </body>
 </html>

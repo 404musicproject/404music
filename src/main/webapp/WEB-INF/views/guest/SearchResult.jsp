@@ -185,14 +185,14 @@ $(document).ready(function() {
 	    }
 	});
 	
-	function handlePlay(mNo, title, artist, img) {
-	    if (typeof MusicApp !== 'undefined' && typeof MusicApp.sendPlayLog === 'function') {
-	        MusicApp.sendPlayLog(mNo);
-	    }
-	    if (typeof PlayQueue !== 'undefined') {
-	        PlayQueue.addAndPlay(mNo, title, artist, img);
-	    }
-	}
+function handlePlay(mNo, title, artist, img) {
+    if (typeof MusicApp !== 'undefined' && typeof MusicApp.playLatestYouTube === 'function') {
+        // MusicApp의 통합 재생 로직 호출 (유튜브 검색 + 로그 기록 포함)
+        MusicApp.playLatestYouTube(title, artist, img);
+    } else {
+        console.error("MusicApp을 로드할 수 없습니다.");
+    }
+}
 
     function addToLibrary(mNo) {
         const uNo = "${sessionScope.loginUser.UNo}";

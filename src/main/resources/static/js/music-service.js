@@ -9,7 +9,57 @@ window.MusicApp = {
     latestLimit: 8,
     basePath: window.location.origin,
     FALLBACK_IMG: 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png',
+	lastWeatherData : null,
+	lastWeatherId : 800,
+	
+	// 날씨 정보를 가져오는 함수
+	getWeatherData: function(callback) {
+	        if (navigator.geolocation) {
+	            navigator.geolocation.getCurrentPosition((pos) => {
+	                const lat = pos.coords.latitude;
+	                const lon = pos.coords.longitude;
+	                
+	                // 서버의 날씨 API 호출
+	                $.get(this.basePath + '/api/music/weather', { lat: lat, lon: lon }, (data) => {
+	                    this.lastWeatherData = data;
+	                    this.lastWeatherId = data.weather[0].id;
 
+	                    // [추가] 화면 텍스트 업데이트 로직
+	                    this.updateWeatherDisplay(data);
+
+	                    if(callback) callback(data);
+	                });
+	            }, (err) => {
+	                console.error("위치 정보 권한 거부", err);
+	                $('#geo-weather-title').text("위치 비활성");
+	                $('#geo-weather-desc').text("권한을 허용해주세요");
+	            });
+	        }
+	    },
+
+	    // [신규] 실제로 HTML 텍스트를 갈아끼우는 함수
+	    updateWeatherDisplay: function(data) {
+	        const city = data.name ? data.name.toUpperCase() : "UNKNOWN";
+	        const weatherId = data.weather[0].id;
+	        
+	        let tagName = "맑음"; // 기본값
+	        if (weatherId < 600) tagName = "비 오는 날";
+	        else if (weatherId < 700) tagName = "눈 오는 날";
+	        else if (weatherId > 800) tagName = "흐림";
+
+	        // JSP에 설정한 ID들을 조준해서 텍스트 교체
+	        $('#geo-city').text(city);
+	        $('#geo-weather-title').text(tagName);
+	        $('#geo-weather-desc').text("실시간 기상 맞춤 선곡");
+	        
+	        // 클릭 시 RecommendationController로 연결되도록 URL 업데이트
+	        // Controller의 @GetMapping("/music/recommendationList") 경로 사용
+	        const targetUrl = `${this.basePath}/music/recommendationList?tagName=${encodeURIComponent(tagName)}`;
+	        $('#geo-weather-card').attr('onclick', `location.href='${targetUrl}'`);
+	        
+	        console.log("날씨 UI 업데이트 완료: ", tagName);
+	    },
+	
 	init: function(uNo) {
 	    this.currentUserNo = uNo || 0;
 	    
@@ -127,57 +177,102 @@ window.MusicApp = {
 	    console.log("유튜브 검색 쿼리:", query);
 
 	    $.ajax({
+	        // 주소 앞에 슬래시(/)를 확인하세요. 
 	        url: this.basePath + '/api/music/youtube-search', 
 	        type: 'GET',
-	        data: { q: query, title: title, artist: artist, albumImg: imgUrl },
+	        data: { q: query, title: title, artist: artist },
 	        success: (res) => {
 	            console.log("서버 응답 데이터:", res);
 	            
-	            // 응답이 'fail'이거나 데이터가 없을 때
-	            if (!res || res === 'fail' || res.videoId === 'fail') {
-	                console.error("유튜브 검색 결과가 없습니다.");
-	                alert('현재 유튜브 검색 서버가 응답하지 않습니다. (API 할당량 초과 등)');
+	            // Controller가 Map을 리턴하므로 res.videoId로 접근
+	            const videoId = res.videoId;
+	            const mNo = res.mNo || 0; 
+
+	            if (!videoId || videoId === 'fail') {
+	                alert('유튜브 영상을 찾을 수 없습니다.');
 	                return;
 	            }
 
-	            const videoId = (typeof res === 'string') ? res : (res.videoId || res);
-	            const mNo = res.mNo || 0; 
-
-	            // 정상적인 Video ID가 왔을 때만 재생
+	            // 1. 즉시 재생 실행
 	            if (window.PlayQueue && typeof window.PlayQueue.addAndPlay === 'function') {
+	                console.log("즉시 재생 시작 - 비디오 ID:", videoId);
 	                window.PlayQueue.addAndPlay(
 	                    mNo, 
 	                    title, 
 	                    artist, 
-	                    this.toHighResArtwork(imgUrl)
+	                    this.toHighResArtwork(imgUrl),
+	                    videoId
 	                );
 	            }
 	            
-	            if (mNo > 0) this.sendPlayLog(mNo);
+	            // 2. 상세 정보 로딩 및 재생 로그 전송 (백그라운드)
+	            if (mNo > 0) {
+	                // 상세 정보 수집 (Spotify 등)
+	                $.get(this.basePath + '/api/music/detail', { m_no: mNo })
+	                 .done(() => console.log("상세 정보 업데이트 완료"))
+	                 .fail(() => console.log("상세 정보 수집 생략"));
+	                
+	                // 재생 로그 저장 (히스토리)
+	                this.sendPlayLog(mNo);
+	            }
 	        },
 	        error: (xhr) => {
-	            console.error("서버 통신 에러:", xhr.status);
-	            alert("서버와 연결할 수 없습니다.");
+	            console.error("API 호출 에러:", xhr.status, xhr.responseText);
+	            alert("음악 검색 중 오류가 발생했습니다. (Error: " + xhr.status + ")");
 	        }
 	    });
 	},
 
-    sendPlayLog: function(mNo) {
-        const postData = {
-            u_no: this.currentUserNo, m_no: mNo,
-            h_location: 'UNKNOWN', h_weather: 800, h_lat: 0, h_lon: 0
-        };
-        
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((pos) => {
-                postData.h_lat = pos.coords.latitude;
-                postData.h_lon = pos.coords.longitude;
-                this._submitLog(postData, mNo);
-            }, () => this._submitLog(postData, mNo));
-        } else {
-            this._submitLog(postData, mNo);
-        }
-    },
+    sendPlayLog: async function(mNo) { 
+		// 서버가 필요한 최소한의 정보(사용자, 곡ID, 위치)만 준비
+		    const postData = {
+		        u_no: this.currentUserNo, 
+		        m_no: mNo,
+		        h_lat: 0, 
+		        h_lon: 0
+		    };
+		    
+			   const API_KEY = '9021ce9b1f7a9ae39654c4cb2f33250a'; // 본인의 API Key 입력
+
+			    // 1. 위치 정보 가져오기 (Promise화)
+			    const getPosition = () => {
+			        return new Promise((resolve, reject) => {
+			            navigator.geolocation.getCurrentPosition(resolve, reject, {
+			                enableHighAccuracy: true,
+			                timeout: 5000
+			            });
+			        });
+			    };
+
+			    try {
+			        // 위치 획득 시도
+			        const pos = await getPosition();
+			        postData.h_lat = pos.coords.latitude;
+			        postData.h_lon = pos.coords.longitude;
+
+			        // 2. 획득한 좌표로 OpenWeather API 호출
+			        // [OpenWeather Current Weather API](https://openweathermap.org) 사용
+					const weatherUrl =
+					  `https://api.openweathermap.org/data/2.5/weather`
+					  + `?lat=${postData.h_lat}`
+					  + `&lon=${postData.h_lon}`
+					  + `&appid=${API_KEY}`;
+					  
+			        const response = await fetch(weatherUrl);
+			        if (response.ok) {
+			            const weatherData = await response.json();
+			            postData.h_weather = weatherData.weather[0].id; // 날씨 상태 코드 (예: 800)
+			            postData.h_location = weatherData.name; // 도시 이름 (예: Seoul)
+			        }
+
+			    } catch (error) {
+			        console.warn("위치 또는 날씨 정보를 가져오는데 실패했습니다.", error);
+			        // 실패해도 초기 설정된 기본값(800, 0, 0)으로 로그는 남깁니다.
+			    } finally {
+			        // 3. 최종 로그 전송
+			        this._submitLog(postData, mNo);
+			    }
+			},
 
     _submitLog: function(data, mNo) {
         $.post(this.basePath + '/api/music/history', data, () => {
@@ -208,4 +303,7 @@ window.MusicApp = {
 	           alert("이미 추가되었거나 오류가 발생했습니다.");
 	       });
 	   }
+	   
+	   
+	   
 };
