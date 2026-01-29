@@ -110,7 +110,32 @@ public class MusicService {
             System.err.println("초기 ES 색인 에러: " + e.getMessage());
         }
     }
-    
+    @Transactional
+    public ArtistDTO getArtistDetailWithImage(int aNo) {
+        ArtistDTO artist = musicDAO.selectArtistByNo(aNo);
+        
+        // 사진이 없다면 iTunes 검색을 통해 보완
+        if (artist != null && (artist.getA_image() == null || artist.getA_image().isEmpty())) {
+            System.out.println("[우회경로] iTunes를 통해 아티스트 사진 보완: " + artist.getA_name());
+            
+            // fetchItunesList 메서드를 활용해 아티스트 이름으로 검색
+            List<Map<String, Object>> itunesResults = fetchItunesList(artist.getA_name());
+            
+            if (!itunesResults.isEmpty()) {
+                // 가장 첫 번째 결과의 앨범 이미지를 아티스트 이미지로 사용
+                String imageUrl = (String) itunesResults.get(0).get("artworkUrl100");
+                if (imageUrl != null) {
+                    // 고화질로 변환 (100x100 -> 600x600)
+                    imageUrl = imageUrl.replace("100x100bb", "600x600bb");
+                    
+                    // DB 업데이트
+                    musicDAO.updateArtistImage(aNo, imageUrl);
+                    artist.setA_image(imageUrl);
+                }
+            }
+        }
+        return artist;
+    }
     
  // [2단계] 클릭 시 상세 정보 보완 (Lazy Loading & ES Update)
     @Transactional
@@ -266,8 +291,29 @@ public class MusicService {
         return map.containsKey(upperKey) ? map.get(upperKey) : map.get(lowerKey);
     }
     
-    public List<MusicDTO> getMusicListByKeyword(String keyword) {
-        return musicDAO.selectMusicByKeyword(keyword);
+ // 1. 통합 키워드 검색 (이미 작성하신 부분)
+    public List<MusicDTO> getMusicListByKeyword(String keyword, int uNo) {
+        return musicDAO.selectMusicByKeyword(keyword, uNo);
+    }
+
+    // 2. 제목 검색 (uNo 추가)
+    public List<MusicDTO> getMusicListByTitle(String keyword, int uNo) {
+        return musicDAO.selectMusicByTitle(keyword, uNo);
+    }
+
+    // 3. 아티스트 검색 (uNo 추가)
+    public List<MusicDTO> getMusicListByArtist(String keyword, int uNo) {
+        return musicDAO.selectMusicByArtist(keyword, uNo);
+    }
+
+    // 4. 앨범 검색 (추가: 이 부분이 누락되어 에러가 났을 확률이 높습니다)
+    public List<MusicDTO> getMusicListByAlbum(String keyword, int uNo) {
+        return musicDAO.selectMusicByAlbum(keyword, uNo);
+    }
+
+    // 5. 가사 검색 (추가)
+    public List<MusicDTO> getMusicListByLyrics(String keyword, int uNo) {
+        return musicDAO.selectMusicByLyrics(keyword, uNo);
     }
 
     

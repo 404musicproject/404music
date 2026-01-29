@@ -10,19 +10,22 @@ window.MusicApp = {
     basePath: window.location.origin,
     FALLBACK_IMG: 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png',
 
-    init: function(uNo) {
-        this.currentUserNo = uNo || 0;
-        
-        // 검색 페이지나 보관함 페이지가 아닐 때만 차트를 자동 로드 (충돌 방지)
-        const isSearchPage = window.location.pathname.includes('musicSearch');
-        const isLibraryPage = window.location.pathname.includes('myLibrary');
-        
-        if ($('#chart-body').length && !isSearchPage && !isLibraryPage) { 
-            this.loadChart(); 
-        }
-        
-        this.initEventListeners();
-    },
+	init: function(uNo) {
+	    this.currentUserNo = uNo || 0;
+	    
+	    // 제외할 페이지 경로에 artist/detail 추가
+	    const isSearchPage = window.location.pathname.includes('musicSearch');
+	    const isLibraryPage = window.location.pathname.includes('myLibrary');
+	    const isArtistPage = window.location.pathname.includes('artist/detail'); // 추가
+	    const isAlbumPage = window.location.pathname.includes('album/detail');   // 미리 추가 (나중을 위해)
+	    
+	    // 아티스트 페이지와 앨범 페이지도 차트 자동 로드에서 제외
+	    if ($('#chart-body').length && !isSearchPage && !isLibraryPage && !isArtistPage && !isAlbumPage) { 
+	        this.loadChart(); 
+	    }
+	    
+	    this.initEventListeners();
+	},
 
     initEventListeners: function() { 
         console.log("MusicApp Integrated Service Started..."); 
@@ -88,27 +91,33 @@ window.MusicApp = {
     // ---------------------------------------------------------
     // 2. 좋아요 기능 (보관함 삭제 로직 제거)
     // ---------------------------------------------------------
-    toggleLike: function(mNo, btn) {
-        if (this.currentUserNo <= 0) return alert("로그인이 필요합니다.");
-        
-        $.post(this.basePath + '/api/music/toggle-like', { m_no: mNo, u_no: this.currentUserNo }, (res) => {
-            const icon = $(btn).find('i'); // FontAwesome 아이콘 대응
-            
-            if (res.status === 'liked') {
-                $(btn).addClass('active');
-                // 아이콘 방식이면 아이콘 변경, 텍스트 방식이면 텍스트 변경 (둘 다 대응)
-                if(icon.length) icon.removeClass('fa-regular').addClass('fa-solid').css('color', '#ff0055');
-                else $(btn).text('♥');
-            } else {
-                $(btn).removeClass('active');
-                if(icon.length) icon.removeClass('fa-solid').addClass('fa-regular').css('color', '#666');
-                else $(btn).text('♡');
-                
-                // [수정] 보관함에서 사라지는 fadeOut 로직을 제거했습니다.
-                // 이제 하트를 눌러도 목록에서 사라지지 않고 아이콘만 바뀝니다.
-            }
-        });
-    },
+	// music-service.js 내부의 toggleLike 수정 제안
+	toggleLike: function(mNo, btn) {
+	    if (this.currentUserNo <= 0) return alert("로그인이 필요합니다.");
+	    
+	    $.post(this.basePath + '/api/music/toggle-like', { m_no: mNo, u_no: this.currentUserNo }, (res) => {
+	        const $btn = $(btn);
+	        const $icon = $btn.find('i'); // 아이콘 요소 찾기
+	        
+	        if (res.status === 'liked') {
+	            $btn.addClass('active').css('color', '#ff0055');
+	            // FontAwesome 아이콘 클래스 교체 (빈 하트 -> 채워진 하트)
+	            if($icon.length) {
+	                $icon.removeClass('fa-regular').addClass('fa-solid');
+	            } else {
+	                $btn.text('♥');
+	            }
+	        } else {
+	            $btn.removeClass('active').css('color', '#666');
+	            // FontAwesome 아이콘 클래스 교체 (채워진 하트 -> 빈 하트)
+	            if($icon.length) {
+	                $icon.removeClass('fa-solid').addClass('fa-regular');
+	            } else {
+	                $btn.text('♡');
+	            }
+	        }
+	    });
+	},
 
     // ---------------------------------------------------------
     // 3. 재생 및 로그 통합 기능

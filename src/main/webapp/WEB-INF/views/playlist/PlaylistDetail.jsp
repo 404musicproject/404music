@@ -29,7 +29,7 @@
     <header><jsp:include page="/WEB-INF/views/common/Header.jsp" /></header>
 
     <div class="app-container">
-        <jsp:include page="/WEB-INF/views/common/SidebarLeft.jsp" />
+
 
         <main class="main-content">
             <div class="pl-header-section">
