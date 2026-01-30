@@ -57,6 +57,9 @@
     max-width: 600px;
 }
 
+/* ✅ [추가] 자동완성 박스 absolute 기준점 (기존 CSS 안 건드리고, 여기만 "추가") */
+.header-center { position: relative; }
+
 .search-form {
     display: flex;
     align-items: center;
@@ -194,6 +197,44 @@
 }
 .dropdown-table-menu tr:hover td { background-color: #222; color: #00f2ff; }
 .dropdown-table-menu .menu-logout:hover { color: #ff0055; }
+
+/* =========================
+   ✅ [추가] 자동완성 박스 스타일
+   - form은 overflow:hidden이라 form 안에 넣으면 잘려서 안 보임
+   - 그래서 form "밖"에 두고 header-center 기준으로 absolute
+========================= */
+#headerSuggestBox{
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 46px; /* 검색바 아래 */
+    background: #050505;
+    border: 1px solid rgba(0,242,255,0.7);
+    box-shadow: 0 0 12px rgba(0,242,255,0.25);
+    border-radius: 12px;
+    z-index: 99999;
+    display: none;
+    overflow: hidden;
+    max-height: 260px;
+}
+
+#headerSuggestBox .suggest-item{
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+}
+
+#headerSuggestBox .suggest-item:hover{
+    background: rgba(0,242,255,0.08);
+}
+
+#headerSuggestBox .suggest-title{ color:#fff; font-weight:600; }
+#headerSuggestBox .suggest-sub{
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    margin-top: 2px;
+}
 </style>
 </head>
 <body>
@@ -229,6 +270,9 @@
             <input type="text" name="searchKeyword" id="headerSearchKeyword" value="${param.searchKeyword}" placeholder="검색어를 입력하세요">
             <button type="submit" class="search-button"><i class="fa-solid fa-magnifying-glass"></i></button>
         </form>
+
+        <!-- ✅ [추가] 자동완성 박스 (form 밖) -->
+        <div id="headerSuggestBox"></div>
     </div>
     
     <div class="header-right">
@@ -301,6 +345,89 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     sel.addEventListener('change', setPlaceholder);
     setPlaceholder();
+});
+</script>
+
+<!-- ✅ [추가] 자동완성 기능 (JSP EL 충돌 0, 기존 코드 무수정) -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const CTX = '<%= request.getContextPath() %>';
+
+    const form  = document.getElementById('headerSearchForm');
+    const sel   = document.getElementById('headerSearchType');
+    const input = document.getElementById('headerSearchKeyword');
+    const box   = document.getElementById('headerSuggestBox');
+
+    if (!form || !sel || !input || !box) return;
+
+    let timer = null;
+
+    function escapeHtml(s){
+        if (s == null) return '';
+        return String(s)
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'",'&#39;');
+    }
+
+    function hideSuggest(){
+        box.style.display = 'none';
+        box.innerHTML = '';
+    }
+
+    function render(list){
+        if (!Array.isArray(list) || list.length === 0) { hideSuggest(); return; }
+
+        let html = '';
+        for (const it of list) {
+            const title  = it.title  || it.m_title || '';
+            const artist = it.artist || it.a_name  || '';
+            const album  = it.album  || it.b_title || '';
+            const label  = (artist && String(artist).trim().length > 0) ? (title + ' - ' + artist) : title;
+
+            html += ''
+              + '<div class="suggest-item" data-value="' + escapeHtml(title) + '">'
+              +   '<div class="suggest-title">' + escapeHtml(label) + '</div>'
+              +   '<div class="suggest-sub">' + escapeHtml(album) + '</div>'
+              + '</div>';
+        }
+
+        box.innerHTML = html;
+        box.style.display = 'block';
+    }
+
+    input.addEventListener('input', function () {
+        const q = input.value.trim();
+        if (q.length < 2) { hideSuggest(); return; }
+
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            const url = CTX + '/api/music/es-suggest'
+                + '?q=' + encodeURIComponent(q)
+                + '&searchType=' + encodeURIComponent(sel.value)
+                + '&size=10';
+
+            fetch(url)
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(render)
+                .catch(hideSuggest);
+        }, 150);
+    });
+
+    box.addEventListener('click', function (e) {
+        const item = e.target.closest('.suggest-item');
+        if (!item) return;
+
+        input.value = item.getAttribute('data-value') || '';
+        hideSuggest();
+        form.submit();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== input && !box.contains(e.target)) hideSuggest();
+    });
 });
 </script>
 

@@ -12,6 +12,13 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -309,7 +316,14 @@ public class MusicService {
         try {
             String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString());
             // limit을 20으로 늘려서 여러 곡을 가져옵니다.
-            String url = "https://itunes.apple.com/search?term=" + encodedKeyword + "&entity=song&limit=20";
+            String url = "https://itunes.apple.com/search"
+                    + "?term=" + encodedKeyword
+                    + "&country=KR"
+                    + "&lang=ko_kr"
+                    + "&media=music"
+                    + "&entity=song"
+                    + "&limit=20";
+
 
             RestTemplate restTemplate = new RestTemplate();
             
@@ -368,4 +382,57 @@ public class MusicService {
             // 에러가 나더라도 음악 재생은 되어야 하므로 런타임 예외를 던지지 않고 로그만 남깁니다.
         }
     }
+
+
+/**
+ * ES 자동완성/연관검색어용
+ * - 2글자 이상 입력 시만 동작
+ * - title/artist/album/lyrics 등을 대상으로 ngram_analyzer(인덱스) 기반 매칭
+ */
+public List<Map<String, Object>> esSuggest(String keyword, int size) {
+    try {
+        if (keyword == null) return new ArrayList<>();
+        String q = keyword.trim();
+        if (q.length() < 2) return new ArrayList<>();
+        if (size <= 0) size = 10;
+
+        SearchRequest request = new SearchRequest("music_index");
+        SearchSourceBuilder source = new SearchSourceBuilder();
+        source.size(size);
+
+        // title/artist/album/lyrics 대상으로 OR 검색
+        BoolQueryBuilder qb = QueryBuilders.boolQuery()
+                .should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO))
+                .should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO))
+                .should(QueryBuilders.matchQuery("b_title", q).fuzziness(Fuzziness.AUTO))
+                .should(QueryBuilders.matchQuery("lyrics_text", q).fuzziness(Fuzziness.AUTO))
+                .minimumShouldMatch(1);
+
+        source.query(qb);
+
+        // 필요한 필드만 반환 (payload 최소화)
+        source.fetchSource(new String[]{"m_no","m_title","a_name","b_title","b_image"}, null);
+
+        request.source(source);
+
+        SearchResponse resp = esClient.search(request, RequestOptions.DEFAULT);
+
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (SearchHit hit : resp.getHits().getHits()) {
+            Map<String, Object> src = hit.getSourceAsMap();
+            // 화면에서 쓰기 편하게 key 이름 통일
+            Map<String, Object> row = new HashMap<>();
+            row.put("mNo", src.get("m_no"));
+            row.put("title", src.get("m_title"));
+            row.put("artist", src.get("a_name"));
+            row.put("album", src.get("b_title"));
+            row.put("img", src.get("b_image"));
+            out.add(row);
+        }
+        return out;
+    } catch (Exception e) {
+        System.err.println("[ES SUGGEST ERROR] " + e.getMessage());
+        return new ArrayList<>();
+    }
+	}
 }

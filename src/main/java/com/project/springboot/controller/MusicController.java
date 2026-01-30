@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,6 @@ import com.project.springboot.service.MusicService;
 import com.project.springboot.service.YouTubeApiService;
 
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/music")
@@ -301,4 +301,15 @@ public class MusicController {
         }
     }
 
+
+
+/**
+ * 헤더 검색창 자동완성(2글자 이상) - Elasticsearch 기반
+ * 호출 예: /api/music/es-suggest?q=아이유
+ */
+@GetMapping("/es-suggest")
+public ResponseEntity<List<Map<String, Object>>> esSuggest(@RequestParam("q") String q) {
+    List<Map<String, Object>> list = musicService.esSuggest(q, 10);
+    return ResponseEntity.ok(list);
+}
 }
