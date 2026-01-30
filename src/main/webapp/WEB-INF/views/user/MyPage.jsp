@@ -8,21 +8,21 @@
     <style>
         /* 기본 네온 테마 스타일 */
         html, body { margin: 0; padding: 0; background-color: #000; color: #fff; font-family: 'Courier New', monospace; }
-        .mypage-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding-top: 50px; }
+        .mypage-container { display: flex;justify-content: center;align-items: flex-start;padding-top: 50px; }
         
-        .neon-card { width: 550px; padding: 40px; border: 2px solid #ff0055; box-shadow: 0 0 15px #ff0055; background: #000; }
-        
+        .neon-card { width: 550px; padding: 40px; border: 2px solid #ff0055; box-shadow: 0 0 15px #ff0055; background: #000;  display: flex; flex-direction: column;}
+  	
         /* 탭 버튼 스타일 */
         .tab-menu { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 1px solid #333; }
         .tab-btn { 
             padding: 10px 20px; background: transparent; border: none; color: #888; 
-            cursor: pointer; font-weight: bold; transition: 0.3s;
-        }
+            cursor: pointer; font-weight: bold; transition: 0.3s;}
+       
         .tab-btn.active { color: #00f2ff; border-bottom: 2px solid #00f2ff; text-shadow: 0 0 5px #00f2ff; }
 
         /* 섹션 제어 */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content { visibility: hidden; opacity: 0;height: 0;overflow: hidden;transition: opacity 0.25s ease;}
+        .tab-content.active { visibility: visible; opacity: 1; height: auto;}
 
         .info-row { margin-bottom: 20px; }
         .label { color: #ff0055; font-size: 12px; display: block; margin-bottom: 8px; text-transform: uppercase; }
@@ -34,8 +34,10 @@
         .danger-zone { border: 1px solid #ff0055; padding: 15px; margin-top: 30px; }
         .withdraw-btn { background: transparent; border: none; color: #ff0055; cursor: pointer; text-decoration: underline; font-size: 12px; }
 
-        .save-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .save-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid #00f2ff; color: #00f2ff; font-weight: bold; cursor: pointer; margin-top: auto; }
         .save-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 15px #00f2ff; }
+        .card.empty button {background: transparent;border: 1px solid #ff0055;color: #ff0055;padding: 10px 25px;font-size: 13px;font-weight: bold;cursor: pointer;transition: 0.3s;text-transform: uppercase;
+}
     </style>
     
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
@@ -141,14 +143,14 @@
 
     <div class="mypage-container">
         <div class="neon-card">
-            <h2 style="text-align:center; color:#ff0055; text-shadow: 0 0 10px #ff0055;">SYSTEM SETTINGS</h2>
+            <h2 style="text-align:center; color:#ff0055; text-shadow: 0 0 10px #ff0055;">시스템 설정</h2>
 
             <!-- 탭 메뉴 -->
             <div class="tab-menu">
-                <button class="tab-btn active" onclick="openTab(event, 'general')">GENERAL</button>
-                <button class="tab-btn" onclick="openTab(event, 'security')">SECURITY</button>
-                <button class="tab-btn" onclick="openTab(event, 'notification')">NOTI</button>
-                <button class="tab-btn" onclick="openTab(event, 'sub-container')">SUBSCRIPTION</button>
+                <button class="tab-btn active" onclick="openTab(event, 'general')">일반</button>
+                <button class="tab-btn" onclick="openTab(event, 'security')">보안</button>
+                <button class="tab-btn" onclick="openTab(event, 'notification')">알림</button>
+                <button class="tab-btn" onclick="openTab(event, 'sub-container')">구독</button>
             </div>
 
             <form action="/api/user/update" method="POST">
@@ -156,14 +158,14 @@
 					<div id="general" class="tab-content active">
 					        <!-- 아이디 (고정) -->
 					        <div class="info-row">
-					            <span class="label">ID / EMAIL</span>
+					            <span class="label">아이디 / 비밀번호</span>
 					            <span class="value">${sessionScope.loginUser.UId}</span>
 					            <input type="hidden" name="uId" value="${sessionScope.loginUser.UId}">
 					        </div>
 					
 					        <!-- 닉네임 (조회/수정 공용) -->
 							<div class="info-row">
-							    <span class="label">NICKNAME</span>
+							    <span class="label">닉네임</span>
 							    <!-- 조회 모드 -->
 							    <span class="view-mode">${sessionScope.loginUser.UNick}</span>
 							    
@@ -176,40 +178,40 @@
 					
 					        <!-- 지역 (조회/수정 공용) -->
 					        <div class="info-row">
-					            <span class="label">REGION</span>
+					            <span class="label">지역</span>
 					            <span class="view-mode">${not empty sessionScope.loginUser.URegion ? sessionScope.loginUser.URegion : '미설정'}</span>
 					            <input type="text" name="uRegion" class="neon-input edit-mode" value="${sessionScope.loginUser.URegion}" style="display:none;">
 					        </div>
 					
 					        <!-- 성별 (조회/수정 공용) -->
 					        <div class="info-row">
-					            <span class="label">GENDER</span>
+					            <span class="label">성별</span>
 					            <span class="view-mode">
 					                <c:choose>
-					                    <c:when test="${sessionScope.loginUser.UGender == 'M'}">MALE</c:when>
-					                    <c:when test="${sessionScope.loginUser.UGender == 'F'}">FEMALE</c:when>
-					                    <c:otherwise>OTHER</c:otherwise>
+					                    <c:when test="${sessionScope.loginUser.UGender == 'M'}">남성</c:when>
+					                    <c:when test="${sessionScope.loginUser.UGender == 'F'}">여성</c:when>
+					                    <c:otherwise>기타</c:otherwise>
 					                </c:choose>
 					            </span>
 					            <select name="uGender" class="neon-input edit-mode" style="display:none;">
-					                <option value="M" ${sessionScope.loginUser.UGender == 'M' ? 'selected' : ''}>MALE</option>
-					                <option value="F" ${sessionScope.loginUser.UGender == 'F' ? 'selected' : ''}>FEMALE</option>
-					                <option value="O" ${sessionScope.loginUser.UGender == 'O' ? 'selected' : ''}>OTHER</option>
+					                <option value="M" ${sessionScope.loginUser.UGender == 'M' ? 'selected' : ''}>남성</option>
+					                <option value="F" ${sessionScope.loginUser.UGender == 'F' ? 'selected' : ''}>여성</option>
+					                <option value="O" ${sessionScope.loginUser.UGender == 'O' ? 'selected' : ''}>기타</option>
 					            </select>
 					        </div>
 					
 					        <!-- 선호 장르 -->
 					        <div class="info-row">
-					            <span class="label">PREFERRED GENRE</span>
+					            <span class="label">선호 장르</span>
 					            <span class="view-mode">${not empty sessionScope.loginUser.UPreferredGenre ? sessionScope.loginUser.UPreferredGenre : 'NONE'}</span>
 					            <input type="text" name="uPreferredGenre" class="neon-input edit-mode" value="${sessionScope.loginUser.UPreferredGenre}" style="display:none;">
 					        </div>
 					
 					        <!-- 버튼 제어 -->
 					        <div class="btn-group">
-					            <button type="button" id="edit-start-btn" class="save-btn" onclick="toggleEditMode(true)">EDIT PROFILE INFO</button>
-					            <button type="submit" id="save-btn" class="save-btn edit-mode" style="display:none;">SAVE CHANGES</button>
-					            <button type="button" id="cancel-btn" class="withdraw-btn edit-mode" style="display:none; margin-top:10px;" onclick="toggleEditMode(false)">CANCEL</button>
+					            <button type="button" id="edit-start-btn" class="save-btn" onclick="toggleEditMode(true)">프로필 정보수정</button>
+					            <button type="submit" id="save-btn" class="save-btn edit-mode" style="display:none;">변경사항 저장</button>
+					            <button type="button" id="cancel-btn" class="withdraw-btn edit-mode" style="display:none; margin-top:10px;" onclick="toggleEditMode(false)">취소</button>
 					        </div>
 					  
 					</div>
@@ -221,18 +223,18 @@
 					            <!-- 비밀번호 변경 전용 입력 그룹 -->
 					            <div id="pw-change-group">
 					                <div class="info-row">
-					                    <span class="label">CURRENT PASSWORD</span>
+					                    <span class="label">현재 비밀번호</span>
 					                    <input type="password" id="currentPw" class="neon-input" placeholder="현재 비밀번호를 입력하세요">
 					                </div>
 					                <div class="info-row">
-					                    <span class="label">NEW PASSWORD</span>
+					                    <span class="label">새로운 비밀번호</span>
 					                    <input type="password" id="newPw" class="neon-input" placeholder="새 비밀번호를 입력하세요">
 					                </div>
 					                <div class="info-row">
-					                    <span class="label">CONFIRM NEW PASSWORD</span>
+					                    <span class="label">새 비밀번호 확인</span>
 					                    <input type="password" id="confirmPw" class="neon-input" placeholder="새 비밀번호를 한 번 더 입력하세요">
 					                </div>
-					                <button type="button" class="save-btn" onclick="changePassword()">CHANGE PASSWORD</button>
+					                <button type="button" class="save-btn" onclick="changePassword()">비밀번호 변경</button>
 					                <div id="pwMsg" style="font-size: 12px; margin-top: 10px; text-align: center;"></div>
 					            </div>
 					        </c:when>
@@ -246,23 +248,23 @@
 					
 					    <!-- 탈퇴 구역 -->
 					    <div class="danger-zone">
-					        <span class="label">DANGER ZONE</span>
+					        <span class="label">계정 삭제</span>
 					        <p style="font-size:11px; color:#888;">회원 탈퇴 시 모든 데이터가 즉시 삭제되며 복구할 수 없습니다.</p>
-					        <button type="button" class="withdraw-btn" onclick="confirmWithdraw()">DELETE ACCOUNT</button>
+					        <button type="button" class="withdraw-btn" onclick="confirmWithdraw()">계정삭제</button>
 					    </div>
 					</div>
 
                 <!-- [3] 알림 설정 탭 -->
                 <div id="notification" class="tab-content">
                     <div class="info-row">
-                        <span class="label">EMAIL NOTIFICATION</span>
-                        <input type="checkbox" name="emailNoti" checked> Receive system updates via email
+                        <span class="label">이메일 알림</span>
+                        <input type="checkbox" name="emailNoti" checked> 이메일로 시스템 업데이트 받기
                     </div>
                     <div class="info-row">
-                        <span class="label">MARKETING PUSH</span>
-                        <input type="checkbox" name="pushNoti"> Receive marketing & event news
+                        <span class="label">마케팅 알림</span>
+                        <input type="checkbox" name="pushNoti"> 마케팅 & 이벤트 소식 받기
                     </div>
-                    <button type="submit" class="save-btn">SAVE PREFERENCES</button>
+                    <button type="submit" class="save-btn">환경설정 저장</button>
                 </div>
                 <!-- [4] 구독 정보 탭 -->
                 <div id="sub-container" class="tab-content">
@@ -275,7 +277,7 @@
 							    <!-- 결제 상태에 따라 텍스트 및 다음 결제일 표시 제어 -->
 							    <p>결제 상태: 
 							        <c:choose>
-							            <c:when test="${subscription.SStatus eq 'PENDING_CANCEL'}">
+							            <c:when test="${subscription.SStatus eq '해지 대기중'}">
 							                <strong style="color:#ff0055;">취소 예정</strong>
 							            </c:when>
 							            <c:otherwise>
@@ -287,7 +289,7 @@
 							    <p>이용 기간: ${subscription.SStartDate} ~ ${subscription.SEndDate}</p>
 							
 							    <!-- '취소 예정' 상태가 아닐 때만 다음 결제 예정일을 표시 -->
-							    <c:if test="${subscription.SStatus ne 'PENDING_CANCEL'}">
+							    <c:if test="${subscription.SStatus ne '해지 대기중'}">
 							        <p>다음 결제 예정일: <strong>${subscription.SNextSub}</strong></p>
 							    </c:if>
 							    
@@ -329,6 +331,15 @@
         // 2. 파라미터가 'sub'이면 구독 탭 강제 활성화
         if (tabParam === 'sub') {
             openTab(null, 'sub-container');
+        } else {
+            // ✅ 기본 진입 시 일반 탭 자동 활성화
+            openTab(null, 'general');
+
+            // ✅ 일반 탭 버튼 파란 불 켜기
+            const generalBtn = document.querySelector(".tab-btn[onclick*='general']");
+            if (generalBtn) {
+                generalBtn.classList.add("active");
+            }
         }
     });
 
@@ -369,7 +380,6 @@
             }
         });
     }
-    
     
     
         // 수정 모드 토글 함수

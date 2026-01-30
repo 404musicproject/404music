@@ -3,48 +3,43 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>404Music // CREATE_INQUIRY</title>
+    <title>404Music // 문의 작성</title>
+
     <style>
-        /* Neon Retro Theme Variable */
         :root {
             --neon-cyan: #00f2ff;
             --neon-pink: #ff0055;
             --neon-purple: #bc13fe;
             --dark-bg: #050505;
-            --grid-line: rgba(188, 19, 254, 0.15);
         }
 
-        body { 
-            background-color: var(--dark-bg); 
-            color: var(--neon-cyan); 
-            font-family: 'Courier New', monospace;
-            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
-                              linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 30px 30px;
-            margin: 0;
+        .support-page {
+            min-height: 100vh;
+            background-color: #050505;
+            background-image: none !important;
+            padding-top: 60px;
         }
 
         .form-container { 
             max-width: 800px; 
-            margin: 60px auto; 
-            padding: 40px; 
-            border: 2px solid var(--neon-purple); 
-            background: rgba(10, 10, 10, 0.9);
-            box-shadow: 0 0 20px rgba(188, 19, 254, 0.3), inset 0 0 15px rgba(188, 19, 254, 0.1);
+            margin: 0 auto; 
+            padding: 40px;
+            border: none;
+            background: transparent;
+            box-shadow: none;
         }
 
         .form-title { 
             color: var(--neon-cyan); 
-            border-bottom: 2px solid var(--neon-pink); 
-            padding-bottom: 15px; 
+            padding-left: 16px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--neon-pink);
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 10px var(--neon-cyan);
-            margin-bottom: 35px;
+            font-size: 12px;
         }
 
-        .input-group { margin-bottom: 30px; }
-        
         .label-neon { 
             display: block; 
             color: var(--neon-pink); 
@@ -52,18 +47,21 @@
             font-weight: bold; 
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-size:12px;
         }
 
         .retro-input { 
             width: 100%; 
-            padding: 15px; 
-            background: #000; 
-            border: 1px solid var(--grid-line); 
+            padding: 10px; 
+            background: #000;
+            border: 1px solid rgba(0,242,255,0.35);
             color: var(--neon-cyan); 
             outline: none; 
             box-sizing: border-box;
             font-family: inherit;
             transition: 0.3s;
+            font-size:10px;
+            margin-bottom: 20px;
         }
 
         .retro-input:focus { 
@@ -71,21 +69,20 @@
             box-shadow: 0 0 15px var(--neon-cyan); 
         }
 
-        /* 체크박스 커스텀 디자인 */
         .checkbox-group { 
             display: flex; 
             align-items: center; 
-            margin-bottom: 35px;
+            margin-bottom: 25px;
             cursor: pointer;
         }
-        
+
         .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             appearance: none;
             border: 2px solid var(--neon-pink);
             background: transparent;
-            margin-right: 15px;
+            margin-right: 12px;
             cursor: pointer;
             position: relative;
         }
@@ -104,17 +101,17 @@
             font-size: 16px;
         }
 
-        /* 전송 버튼 */
         .btn-neon-submit { 
             background: transparent; 
             color: var(--neon-pink); 
             border: 2px solid var(--neon-pink); 
-            padding: 18px 30px; 
+            padding: 12px 30px; 
             cursor: pointer; 
             width: 100%; 
-            font-weight: bold; 
+            font-weight: bold;
+            font-size:10px;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             transition: 0.4s;
             font-family: inherit;
         }
@@ -126,35 +123,54 @@
         }
     </style>
 </head>
+
 <body>
+
 <jsp:include page="/WEB-INF/views/common/Header.jsp" />
 
-<div class="form-container">
-    <h2 class="form-title">CREATE_INQUIRY_PACKET</h2>
-    
-    <form action="${pageContext.request.contextPath}/support/insertInquiry.do" method="post">
-        <!-- 세션 유저 번호 -->
-        <input type="hidden" name="uNo" value="${sessionScope.loginUser.UNo}">
-        
-        <div class="input-group">
-            <label class="label-neon">SUBJECT_HEADER</label>
-            <input type="text" name="iTitle" class="retro-input" required placeholder="ENTER SUBJECT...">
-        </div>
-        
-        <div class="input-group">
-            <label class="label-neon">ENCRYPTED_MESSAGE_BODY</label>
-            <textarea name="iContent" rows="10" class="retro-input" required placeholder="ENTER DATA..."></textarea>
-        </div>
+<div class="support-page">
 
-        <div class="checkbox-group">
-            <input type="checkbox" name="iIsSecret" value="Y" id="secret">
-            <label for="secret" class="label-neon" style="margin-bottom:0; cursor:pointer;">SET_PRIVATE_ENCRYPTION</label>
-        </div>
-        
-        <button type="submit" class="btn-neon-submit">TRANSMIT_PACKET_TO_ADMIN</button>
-    </form>
+    <div class="form-container">
+        <h2 class="form-title">문의 생성</h2>
+
+        <form action="${pageContext.request.contextPath}/support/insertInquiry.do" method="post">
+
+            <!-- 세션 유저 번호 -->
+            <input type="hidden" name="uNo" value="${sessionScope.loginUser.UNo}">
+
+            <div class="input-group">
+                <label class="label-neon">제목</label>
+                <input type="text"
+                       name="iTitle"
+                       class="retro-input"
+                       required
+                       placeholder="제목을 입력하세요...">
+            </div>
+
+            <div class="input-group">
+                <label class="label-neon">암호화된 내용 본문</label>
+                <textarea name="iContent"
+                          rows="10"
+                          class="retro-input"
+                          required
+                          placeholder="내용을 입력하세요..."></textarea>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" name="iIsSecret" value="Y" id="secret">
+                <label for="secret"
+                       class="label-neon"
+                       style="margin-bottom:0; cursor:pointer;">
+                    비공개 암호화 설정
+                </label>
+            </div>
+
+            <button type="submit" class="btn-neon-submit">
+                관리자에게 전송
+            </button>
+        </form>
+    </div>
 </div>
-
 <jsp:include page="/WEB-INF/views/common/Footer.jsp" />
 </body>
 </html>

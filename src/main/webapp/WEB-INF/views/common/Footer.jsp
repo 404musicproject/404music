@@ -1,6 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <script src="https://www.youtube.com/iframe_api"></script>
-
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <style type="text/css">
     /* [기본 레이아웃] */
     body { margin: 0; padding: 0; }
@@ -13,7 +13,7 @@
     .neon-footer { 
     width: 100%; 
     background-color: #000; 
-    padding: 30px 0 120px 0; /* 플레이어 바 높이를 고려한 하단 여백 */
+    padding: 30px 0 120px 0; 
     border-top: 1px solid #333; 
     text-align: center; 
     font-family: 'Pretendard', sans-serif; 
@@ -27,70 +27,43 @@
 	    gap: 15px;
 	}
 	
-	.footer-copyright {
-	    font-size: 0.85rem;
-	    color: #555;
-	}
-	
-	.footer-nav {
-	    display: flex;
-	    justify-content: center;
-	    align-items: center;
-	    gap: 15px;
-	    font-size: 0.8rem;
-	}
-	
-	/* 네온 링크 스타일 */
-	.neon-link {
-	    color: #888;
-	    text-decoration: none;
-	    transition: all 0.3s ease;
-	}
-	
-	.neon-link:hover {
-	    color: #ff0055; /* 마우스 올리면 핑크 네온 */
-	    text-shadow: 0 0 8px #ff0055;
-	}
-	
-	.sep {
-	    color: #333;
-	    user-select: none;
-	}
+	.footer-copyright { font-size: 0.85rem; color: #555; }
+	.footer-nav { display: flex; justify-content: center; align-items: center; gap: 15px; font-size: 0.8rem; }
+	.neon-link { color: #888; text-decoration: none; transition: all 0.3s ease; }
+	.neon-link:hover { color: #ff0055; text-shadow: 0 0 8px #ff0055; }
+	.sep { color: #333; user-select: none; }
     
     /* [하단 플레이어 바] */
     .fixed-player-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 90px; background: #050505; border-top: 2px solid #ff0055; z-index: 9999; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; box-sizing: border-box; }
     .progress-container { position: absolute; top: -2px; left: 0; width: 100%; height: 4px; background: rgba(255,0,85,0.2); cursor: pointer; }
     .progress-bar { height: 100%; background: #00f2ff; width: 0%; box-shadow: 0 0 5px #00f2ff; transition: width 0.1s linear; }
-    
     .fp-info { display: flex; align-items: center; width: 30%; gap: 15px; min-width: 250px; }
     .fp-art { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; border: 1px solid #333; display: none; }
     .fp-text { display: flex; flex-direction: column; justify-content: center; min-height: 56px; }
     .fp-title { font-weight: bold; font-size: 0.95rem; color: #fff; display: block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .fp-artist { font-size: 0.8rem; color: #888; }
-    
     .fp-ctrl { display: flex; gap: 20px; align-items: center; flex: 1; justify-content: center; }
     .fp-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
     .fp-side { width: 30%; display: flex; align-items: center; justify-content: flex-end; gap: 15px; }
 
-    /* [재생목록 창 - 오른쪽] */
+    /* [재생목록 창] */
     .playlist-window {
 	    position: fixed;
 	    bottom: 110px;
 	    right: 30px;
 	    width: 380px;
-	    height: 450px; /* 고정 높이 유지 */
+	    height: 450px;
 	    background: rgba(10, 10, 10, 0.98);
 	    border: 2px solid #ff0055;
 	    border-radius: 12px;
 	    box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
 	    z-index: 9998;
 	    display: none; 
-	    flex-direction: column; /* 세로 배치 */
-	    overflow: hidden; /* 내부 요소가 경계선을 넘지 않도록 */
+	    flex-direction: column;
+	    overflow: hidden;
 	}
-    .playlist-header { padding: 15px; background: #111; border-bottom: 1px solid #333; display: flex; justify-content: space-between; color: #ff0055; font-weight: bold; }
+    .playlist-header { padding: 15px; background: #111; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; color: #ff0055; font-weight: bold; }
     
-    /* 스크롤바 핵심 수정 */
     .playlist-body { flex: 1; overflow-y: auto !important; padding: 10px; max-height: 380px; }
     .playlist-body::-webkit-scrollbar { width: 8px !important; display: block !important; }
     .playlist-body::-webkit-scrollbar-track { background: #000; }
@@ -102,7 +75,18 @@
     .pl-title { font-size: 0.85rem; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pl-artist { font-size: 0.75rem; color: #666; }
 
-    /* [챗봇 - 왼쪽 이동] */
+    /* [추가: 전체 삭제 버튼 스타일] */
+    .clear-queue-btn {
+        background: none; border: 1px solid #444; color: #888; font-size: 11px;
+        padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        margin-right: 10px;
+    }
+    .clear-queue-btn:hover { border-color: #ff0055; color: #ff0055; box-shadow: 0 0 8px rgba(255,0,85,0.4); }
+
+    /* [추가: 개별 삭제 버튼 마우스 오버] */
+    .pl-remove-btn:hover { color: #ff0055 !important; transform: scale(1.1); }
+
+    /* [챗봇] */
     #chatbot-btn { position: fixed; bottom: 110px; left: 30px; width: 60px; height: 60px; border-radius: 50%; background: #000; border: 2px solid #00f2ff; color: #00f2ff; font-size: 30px; cursor: pointer; z-index: 10001; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 15px rgba(0,242,255,0.5); }
     #chat-window { display: none; flex-direction: column; position: fixed; bottom: 180px; left: 30px; width: 350px; height: 500px; background: rgba(10,10,10,0.98); border: 2px solid #00f2ff; border-radius: 15px; z-index: 10001; overflow: hidden; }
     .chat-header { background: #111; padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; color: #00f2ff; font-weight: bold; }
@@ -120,34 +104,29 @@
 
 <div class="retro-popup-container" id="popup-area"></div>
 
-    <footer class="neon-footer">
-        <div class="footer-container">
-            <div class="footer-copyright">
-                <!-- 현재 날짜 2026년 기준 저작권 표시 -->
-                <p>Copyright © 2026 404Music Inc. 모든 권리 보유.</p>
-            </div>
-            
-            <nav class="footer-nav">
-                <!-- 개인정보처리방침은 법적 고지사항이므로 단독 페이지 유지 권장 -->
-                <a href="${pageContext.request.contextPath}/terms" class="neon-link">개인정보처리방침</a>
-                <span class="sep">|</span>
-                
-                <!-- [수정] 통합 고객 센터의 NOTICE 탭으로 연결 -->
-                <a href="${pageContext.request.contextPath}/support?mode=notice" class="neon-link">공지사항</a>
-                <span class="sep">|</span>
-                
-                <!-- [수정] 통합 고객 센터의 INQUIRY 탭으로 연결 -->
-                <a href="${pageContext.request.contextPath}/support?mode=inquiry" class="neon-link">1:1 문의</a>
-                <span class="sep">|</span>
-                
-                <!-- [추가] 통합 고객 센터의 FAQ 탭으로 연결 -->
-                <a href="${pageContext.request.contextPath}/support?mode=faq" class="neon-link">FAQ</a>
-            </nav>
-        </div>
-    </footer>
+<footer class="neon-footer">
+    <div class="footer-container">
+        <div class="footer-copyright"><p>Copyright © 2026 404Music Inc. 모든 권리 보유.</p></div>
+        <nav class="footer-nav">
+            <a href="${pageContext.request.contextPath}/PrivacyPolicy" class="neon-link">개인정보처리방침</a>
+            <span class="sep">|</span>
+            <a href="${pageContext.request.contextPath}/support?mode=notice" class="neon-link">공지사항</a>
+            <span class="sep">|</span>
+            <a href="${pageContext.request.contextPath}/support?mode=inquiry" class="neon-link">1:1 문의</a>
+            <span class="sep">|</span>
+            <a href="${pageContext.request.contextPath}/support?mode=faq" class="neon-link">FAQ</a>
+        </nav>
+    </div>
+</footer>
 
 <div id="playlist-window" class="playlist-window">
-    <div class="playlist-header"><span>CURRENT QUEUE</span><button onclick="togglePlaylist()" style="background:none; border:none; color:#888; cursor:pointer;">&times;</button></div>
+    <div class="playlist-header">
+        <span>CURRENT QUEUE</span>
+        <div style="display:flex; align-items:center;">
+            <button class="clear-queue-btn" onclick="PlayQueue.clearAll()">CLEAR ALL</button>
+            <button onclick="togglePlaylist()" style="background:none; border:none; color:#888; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+    </div>
     <div class="playlist-body" id="playlist-items"></div>
 </div>
 
@@ -192,25 +171,21 @@
 var player = null;
 var isPlayerReady = false;
 
+// YouTube IFrame API 로드 완료 시 호출
 window.onYouTubeIframeAPIReady = function () {
   player = new YT.Player("youtube-player", {
-    height: "100%",
-    width: "100%",
+    height: "100%", width: "100%",
     playerVars: { autoplay: 1, controls: 1, origin: window.location.origin, enablejsapi: 1 },
     events: {
-      onReady: function () { isPlayerReady = true; console.log("Player Ready"); },
+      onReady: function () { isPlayerReady = true; },
       onStateChange: onPlayerStateChange
     }
   });
 };
 
+// 플레이어 상태 변경 감지
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.ENDED) {
-    PlayQueue.next();
-    return;
-  }
-
-  // PLAYING / PAUSED만 아이콘 확정 (BUFFERING 때문에 깜빡이는 것 방지)
+  if (event.data === YT.PlayerState.ENDED) { PlayQueue.next(); return; }
   if (event.data === YT.PlayerState.PLAYING) {
     PlayQueue.isPlaying = true;
     $("#play-icon").attr("class", "fas fa-pause");
@@ -221,9 +196,7 @@ function onPlayerStateChange(event) {
 }
 
 var PlayQueue = {
-  list: [],
-  currentIndex: -1,
-  isPlaying: false,
+  list: [], currentIndex: -1, isPlaying: false,
 
   init: function () {
     var saved = localStorage.getItem("music_queue");
@@ -234,23 +207,41 @@ var PlayQueue = {
     }
   },
 
-  save: function () {
-    localStorage.setItem("music_queue", JSON.stringify(this.list));
+  save: function () { localStorage.setItem("music_queue", JSON.stringify(this.list)); },
+
+  /* [전체 삭제 기능] */
+  clearAll: function() {
+    if(this.list.length === 0) return;
+    if(!confirm("재생 목록을 모두 비우시겠습니까?")) return;
+    
+    // 재생 중인 비디오 정지
+    if(player && typeof player.stopVideo === "function") player.stopVideo();
+    
+    this.list = [];
+    this.currentIndex = -1;
+    this.isPlaying = false;
+    this.save();
+    
+    // UI 초기화
+    $("#footer-title").text("No Music");
+    $("#footer-artist").text("재생할 곡을 선택하세요");
+    $("#footer-art").hide().removeAttr("src");
+    $("#progress-bar").css("width", "0%");
+    $("#play-icon").attr("class", "fas fa-play");
+    $("#queue-status").text("Queue: 0");
+    renderPlaylist();
   },
 
   addAndPlay: function (mNo, title, artist, img) {
     var exists = this.list.findIndex(function (s) { return s.title === title && s.artist === artist; });
     if (exists !== -1) { this.playIndex(exists); return; }
-
     var query = (artist && artist !== "Unknown") ? (artist + " " + title) : title;
-
     $.get("/api/music/youtube-search", { q: query }, function (res) {
       var vId = (typeof res === "object" && res) ? res.videoId : res;
       if (vId && vId !== "fail") {
         PlayQueue.list.push({ mNo: mNo, title: title, artist: artist, img: img, videoId: vId });
         PlayQueue.save();
         $("#queue-status").text("Queue: " + PlayQueue.list.length);
-
         if (PlayQueue.currentIndex === -1 || !PlayQueue.isPlaying) PlayQueue.retryPlay(PlayQueue.list.length - 1, 0);
         else renderPlaylist();
       }
@@ -269,24 +260,33 @@ var PlayQueue = {
     renderPlaylist();
   },
 
+  updateOrder: function() {
+    var newList = [];
+    var self = this;
+    $("#playlist-items .playlist-item").each(function() {
+        var originalIdx = $(this).data("idx");
+        newList.push(self.list[originalIdx]);
+    });
+    var currentSong = this.list[this.currentIndex];
+    this.list = newList;
+    this.currentIndex = this.list.indexOf(currentSong);
+    this.save();
+    renderPlaylist();
+  },
+
   playIndex: function (idx) {
     if (idx < 0 || idx >= this.list.length) return;
-
     if (!isPlayerReady || !player || typeof player.loadVideoById !== "function") {
-      this.retryPlay(idx, 0);
-      return;
+      this.retryPlay(idx, 0); return;
     }
-
     this.currentIndex = idx;
     var song = this.list[idx];
-
-    // UI 반영
     $("#footer-title").text(song.title || "");
     $("#footer-artist").text(song.artist || "");
     if (song.img) $("#footer-art").attr("src", song.img).show();
     else $("#footer-art").hide().removeAttr("src");
 
-    // 재생 로그 연동
+    // 중복 방지를 위해 MusicApp 존재 여부 확인 후 로그 전송
     if (song.mNo && window.MusicApp && typeof window.MusicApp.sendPlayLog === "function") {
       try { window.MusicApp.sendPlayLog(song.mNo); } catch (e) { console.warn("sendPlayLog fail", e); }
     }
@@ -296,46 +296,24 @@ var PlayQueue = {
         player.loadVideoById(videoId);
         PlayQueue.isPlaying = true;
         renderPlaylist();
-      } catch (e) {
-        console.error("유튜브 재생 중 에러:", e);
-      }
+      } catch (e) { console.error("유튜브 재생 중 에러:", e); }
     };
 
-    // videoId 없으면 서버에서 검색해서 저장 후 재생
     if (!song.videoId) {
       var query = (song.artist && song.artist !== "Unknown") ? (song.artist + " " + song.title) : song.title;
-
-      $.get("/api/music/youtube-search", { q: query })
-        .done(function (res) {
+      $.get("/api/music/youtube-search", { q: query }).done(function (res) {
           var vId = (typeof res === "object" && res) ? res.videoId : res;
           if (vId && vId !== "fail") {
-            PlayQueue.list[idx].videoId = vId;
-            PlayQueue.save();
-            playWithId(vId);
-          } else {
-            console.error("비디오 ID를 찾을 수 없습니다. 다음 곡으로 넘어갑니다.");
-            PlayQueue.next();
-          }
-        })
-        .fail(function (xhr) {
-          console.error("youtube-search 요청 실패:", xhr);
-          PlayQueue.next();
-        });
-
+            PlayQueue.list[idx].videoId = vId; PlayQueue.save(); playWithId(vId);
+          } else { PlayQueue.next(); }
+      }).fail(function () { PlayQueue.next(); });
       return;
     }
-
     playWithId(song.videoId);
   },
 
-  next: function () {
-    if (this.currentIndex < this.list.length - 1) this.playIndex(this.currentIndex + 1);
-  },
-
-  prev: function () {
-    if (this.currentIndex > 0) this.playIndex(this.currentIndex - 1);
-  },
-
+  next: function () { if (this.currentIndex < this.list.length - 1) this.playIndex(this.currentIndex + 1); },
+  prev: function () { if (this.currentIndex > 0) this.playIndex(this.currentIndex - 1); },
   togglePlay: function () {
     if (!isPlayerReady || !player || !player.getPlayerState) return;
     if (player.getPlayerState() === 1) player.pauseVideo();
@@ -344,30 +322,20 @@ var PlayQueue = {
 
   seek: function (e) {
     if (!isPlayerReady || !player || !player.getDuration || !player.seekTo) return;
-
     var dur = player.getDuration();
     if (!dur || dur <= 0) return;
-
-    var el = document.querySelector(".progress-container");
-    if (!el) return;
-
-    var rect = el.getBoundingClientRect();
+    var rect = document.querySelector(".progress-container").getBoundingClientRect();
     var x = (e && e.clientX ? e.clientX : 0) - rect.left;
     var pct = x / rect.width;
-    if (pct < 0) pct = 0;
-    if (pct > 1) pct = 1;
-
-    player.seekTo(dur * pct, true);
+    player.seekTo(dur * Math.max(0, Math.min(1, pct)), true);
   },
 
   remove: function (idx, event) {
     if (event) event.stopPropagation();
     this.list.splice(idx, 1);
     this.save();
-
     if (this.currentIndex >= idx) this.currentIndex--;
     if (this.currentIndex < 0 && this.list.length > 0) this.currentIndex = 0;
-
     $("#queue-status").text("Queue: " + this.list.length);
     renderPlaylist();
   }
@@ -381,59 +349,42 @@ function togglePlaylist() {
 function renderPlaylist() {
   var $container = $("#playlist-items");
   $container.empty();
-
   if (!PlayQueue.list || PlayQueue.list.length === 0) {
     $container.append('<div style="padding:20px; text-align:center; color:#555;">비어 있습니다.</div>');
     return;
   }
-
   PlayQueue.list.forEach(function (song, idx) {
     var isActive = (PlayQueue.currentIndex === idx);
+    var $item = $("<div>").addClass("playlist-item").toggleClass("active", isActive).attr("data-idx", idx)
+                .on("click", function () { PlayQueue.playIndex(idx); });
 
-    var $item = $("<div>")
-      .addClass("playlist-item")
-      .toggleClass("active", isActive)
-      .on("click", function () { PlayQueue.playIndex(idx); });
+    var $handle = $("<div>").css({ "margin-right": "10px", "color": "#333", "cursor": "grab" }).html('<i class="fas fa-grip-lines"></i>');
+    var $info = $("<div>").addClass("pl-info").append($("<span>").addClass("pl-title").text(song.title || ""))
+                .append($("<span>").addClass("pl-artist").text("- " + (song.artist || "")));
+    if (isActive) $info.find(".pl-title").css("color", "#ff0055");
 
-    var $info = $("<div>").addClass("pl-info");
-    var $title = $("<span>").addClass("pl-title").text(song.title || "");
-    if (isActive) $title.css("color", "#ff0055");
+    var $btn = $("<button>").addClass("pl-remove-btn")
+               .css({ background: "none", border: "none", color: "#444", cursor: "pointer", transition: "0.2s" })
+               .html('<i class="fas fa-trash-alt"></i>')
+               .on("click", function (e) { PlayQueue.remove(idx, e); });
 
-    var $artist = $("<span>").addClass("pl-artist").text("- " + (song.artist || ""));
-
-    var $btn = $("<button>")
-      .css({ background: "none", border: "none", color: "#444" })
-      .html('<i class="fas fa-trash-alt"></i>')
-      .on("click", function (e) { PlayQueue.remove(idx, e); });
-
-    $info.append($title).append($artist);
-    $item.append($info).append($btn);
-
+    $item.append($handle).append($info).append($btn);
     $container.append($item);
   });
+  $container.sortable({ axis: "y", handle: ".fa-grip-lines", update: function() { PlayQueue.updateOrder(); } });
 }
 
 function toggleVideo(show) {
-  if (show) {
-    $("#video-overlay").css("display", "flex");
-    $("#youtube-player").removeClass("player-hidden");
-  } else {
-    $("#video-overlay").hide();
-    $("#youtube-player").addClass("player-hidden");
-  }
+  if (show) { $("#video-overlay").css("display", "flex"); $("#youtube-player").removeClass("player-hidden"); }
+  else { $("#video-overlay").hide(); $("#youtube-player").addClass("player-hidden"); }
 }
 
-function toggleChat() {
-  $("#chat-window").fadeToggle(200).css("display", "flex");
-}
+function toggleChat() { $("#chat-window").fadeToggle(200).css("display", "flex"); }
 
 function sendChat() {
-  var msg = $("#chat-input").val().trim();
-  if (!msg) return;
-
+  var msg = $("#chat-input").val().trim(); if (!msg) return;
   $("#chat-body").append('<div class="msg user">' + msg + "</div>");
   $("#chat-input").val("");
-
   $.post("/api/chat/send", { msg: msg }).done(function (res) {
     $("#chat-body").append('<div class="msg bot">' + res + "</div>");
     $("#chat-body").scrollTop($("#chat-body")[0].scrollHeight);
@@ -442,45 +393,20 @@ function sendChat() {
 
 $(document).ready(function () {
   PlayQueue.init();
-
-  // 팝업도 JSP EL 충돌 피하려고 템플릿 리터럴 제거
-  $.get("/api/popup/list")
-    .done(function (list) {
-      if (list && Array.isArray(list)) {
-        list.forEach(function (p) {
-          var $pop = $("<div>").addClass("retro-popup").attr("id", "pop-" + p.pno);
-
-          var $header = $("<div>").addClass("retro-header");
-          $header.append($("<span>").text("NOTICE"));
-
-          var $close = $("<button>")
-            .css({ background: "none", border: "none", color: "white", cursor: "pointer" })
-            .html("&times;")
-            .on("click", function () { $pop.remove(); });
-
-          $header.append($close);
-
-          var $content = $("<div>").addClass("retro-content");
-          $content.append($("<strong>").text(p.ptitle || ""));
-          $content.append("<br>");
-          $content.append(document.createTextNode(p.pcontent || ""));
-
-          $pop.append($header).append($content);
-          $("#popup-area").append($pop);
-        });
-      }
-    })
-    .fail(function () { console.log("ℹ️ 팝업 API 준비 중..."); });
-
+  $.get("/api/popup/list").done(function (list) {
+    if (list && Array.isArray(list)) {
+      list.forEach(function (p) {
+        var $pop = $("<div>").addClass("retro-popup");
+        $pop.append('<div class="retro-header"><span>NOTICE</span><button onclick="$(this).closest(\'.retro-popup\').remove()" style="background:none;border:none;color:white;cursor:pointer">&times;</button></div>');
+        $pop.append('<div class="retro-content"><strong>'+(p.ptitle||'')+'</strong><br>'+(p.pcontent||'')+'</div>');
+        $("#popup-area").append($pop);
+      });
+    }
+  });
   setInterval(function () {
-    if (!isPlayerReady || !player || !player.getCurrentTime || !player.getDuration) return;
-    if (!PlayQueue.isPlaying) return;
-
+    if (!isPlayerReady || !player || !player.getCurrentTime) return;
     var dur = player.getDuration();
-    if (!dur || dur <= 0) return;
-
-    var per = (player.getCurrentTime() / dur) * 100;
-    $("#progress-bar").css("width", per + "%");
+    if (dur > 0) $("#progress-bar").css("width", (player.getCurrentTime() / dur * 100) + "%");
   }, 500);
 });
 </script>

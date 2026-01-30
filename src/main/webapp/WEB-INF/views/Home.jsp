@@ -67,12 +67,11 @@
     <section class="hero-section">
         <div id="top1-bg"></div>
         <div class="hero-content" onclick="playTopOne()">
-            <div class="top1-badge">CURRENT NO.1</div>
-            <img id="top1-jacket" src="" alt="Top Music">
-            <h1 id="top1-title" style="margin: 0; font-size: 2.2rem; text-shadow: 0 0 15px #ff0055;">Loading...</h1>
-            <p id="top1-artist" style="color: #ccc; margin-top: 5px;"></p>
-            <div style="margin-top: 15px; color: #ff0055;"><i class="fas fa-play-circle fa-2x"></i></div>
-        </div>
+		    <div class="top1-badge">CURRENT NO.1</div>
+		    <img id="top1-jacket" src="" alt="Top Music">
+		    <h1 id="top1-title" style="margin: 0; font-size: 2.2rem; text-shadow: 0 0 15px #ff0055;">Loading...</h1>
+		    <p id="top1-artist" style="color: #ccc; margin-top: 5px;"></p>
+		</div>
     </section>
 
     <section class="menu-grid">
@@ -177,13 +176,21 @@ const contextPath = '${pageContext.request.contextPath}';
 const FALLBACK_IMG = 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
 let cachedTopOne = null;
 console.log("현재 MusicApp 상태:", window.MusicApp);
-// 1. MusicApp 연동 재생 함수
+//1. MusicApp 연동 재생 함수 (로그 저장 기능 추가)
 function playLatestYouTube(title, artist, imgUrl) {
-    // 만약 window.MusicApp이 없으면 여기서 강제로 다시 체크
-    if (!window.MusicApp) {
-        console.error("MusicApp 객체가 메모리에 없습니다. 파일 로드 상태를 확인하세요.");
-        return;
-    }
+    if (!window.MusicApp) return;
+
+    // [핵심] 재생 클릭 시 서버에 로그 저장 요청 (비동기)
+    $.ajax({
+	    url: contextPath + '/api/music/logHistoryAuto', // /api 추가!
+	    type: 'POST',
+	    data: { title: title, artist: artist },
+	    success: function(res) {
+	        console.log("로그 저장 결과:", res);
+	    }
+	});
+
+    // 기존 재생 로직 유지
     window.MusicApp.playLatestYouTube(title, artist, imgUrl);
 }
 
@@ -408,7 +415,6 @@ $(document).ready(function() {
         loadItunesMusic();
     }, 200); 
 });
-</script>
 </script>
 </body>
 </html>

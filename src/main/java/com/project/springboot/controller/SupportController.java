@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -46,7 +47,10 @@ public class SupportController {
         }
         return "support/Main";
     }
-    
+    @RequestMapping("/PrivacyPolicy")
+    public String PrivacyPolicy() {
+        return "support/PrivacyPolicy"; 
+    }
     
  // 공지사항 작성 페이지 이동 (관리자 전용)
     @GetMapping("/support/noticeWrite")
@@ -236,4 +240,5 @@ public class SupportController {
         supportDao.updateInquiry(inquiry);
         return "redirect:/support?mode=inquiry";
     }
+    
 }

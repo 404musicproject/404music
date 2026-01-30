@@ -56,85 +56,97 @@
     </style>
 
     <script>
-        $(document).ready(function() {
-            const uNo = "${sessionScope.loginUser.UNo}" || 0;
-            MusicApp.init(Number(uNo));
+    $(document).ready(function() {
+        const uNo = "${sessionScope.loginUser.uNo}" || 0; // 세션 키 uNo 확인 필요
+        const contextPath = '${pageContext.request.contextPath}';
+        
+        // 1. 초기화
+        MusicApp.init(Number(uNo));
 
-            MusicApp.renderRow = function(item, index) {
-                const mNo = item.MNO || item.m_no || 0;
-                const bNo = item.BNO || item.b_no || 0;
-                const aNo = item.ANO || item.a_no || 0;
-                const title = (item.TITLE || item.title || 'Unknown').replace(/'/g, "\\'");
-                const artist = (item.ARTIST || item.artist || 'Unknown').replace(/'/g, "\\'");
-                const albumImg = item.ALBUM_IMG || item.b_image || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
-                const isLiked = item.MY_LIKE > 0;
+        // 2. 렌더링 함수 - Index.jsp와 동일한 스타일/기능 적용
+        MusicApp.renderRow = function(item, index) {
+            const mNo = item.MNO || item.m_no || item.mNo || 0;
+            const bNo = item.BNO || item.b_no || item.bNo || 0;
+            const aNo = item.ANO || item.a_no || item.aNo || 0;
+            
+            const rawTitle = item.TITLE || item.m_title || item.mTitle || 'Unknown';
+            const rawArtist = item.ARTIST || item.a_name || item.aName || 'Unknown';
+            const title = rawTitle.replace(/'/g, "\\'");
+            const artist = rawArtist.replace(/'/g, "\\'");
+            
+            const albumImg = item.ALBUM_IMG || item.b_image || item.bImage || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
+            const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
 
-                return '<tr style="border-bottom: 1px solid #111; transition: 0.3s; cursor: pointer;" ' +
-                       'onclick="MusicApp.playLatestYouTube(\'' + title + '\', \'' + artist + '\', \'' + albumImg + '\')" ' +
-                       'onmouseover="this.style.backgroundColor=\'rgba(255,255,255,0.03)\'" ' +
-                       'onmouseout="this.style.backgroundColor=\'transparent\'">' +
-                    
-                    // 순위 (#) - 중앙 정렬
-                    '<td style="padding: 15px; color: #444; text-align: center;">' + (index + 1) + '</td>' +
-                    
-                    // 곡 정보
-                    '<td>' +
-                        '<div style="display: flex; align-items: center; padding: 10px 0;">' +
-                            '<div onclick="event.stopPropagation(); location.href=\'' + MusicApp.basePath + '/album/detail?b_no=' + bNo + '\'" title="앨범 상세 보기">' +
-                                '<img src="' + albumImg + '" class="album-art" onerror="this.src=\'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png\'">' +
-                            '</div>' +
-                            '<div>' +
-                                '<div style="font-weight: bold; color: #eee; margin-bottom: 4px;">' + (item.TITLE || item.title) + '</div>' +
-                                '<div class="artist-link" style="font-size: 0.85rem; color: #888;" ' +
-                                     'onclick="event.stopPropagation(); location.href=\'' + MusicApp.basePath + '/artist/detail?a_no=' + aNo + '\'" title="아티스트 정보 보기">' +
-                                    (item.ARTIST || item.artist) +
-                                '</div>' +
+            const albumAction = bNo !== 0 ? "location.href='" + contextPath + "/album/detail?b_no=" + bNo + "'" : "alert('정보 없음')";
+            const artistAction = aNo !== 0 ? "location.href='" + contextPath + "/artist/detail?a_no=" + aNo + "'" : "alert('정보 없음')";
+
+            // TR 전체에 호버 효과 및 클릭 재생 적용
+            return '<tr onclick="MusicApp.playLatestYouTube(\'' + title + '\', \'' + artist + '\', \'' + albumImg + '\');" ' +
+                   'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;" ' +
+                   'onmouseover="this.style.backgroundColor=\'rgba(255,255,255,0.03)\'" ' +
+                   'onmouseout="this.style.backgroundColor=\'transparent\'">' +
+                
+                /* 1. 순위 */
+                '<td class="col-rank" style="padding: 20px 15px; color: #444; text-align: center;">' + (index + 1) + '</td>' +
+                
+                /* 2. 곡 정보 (앨범아트 + 타이틀 + 아티스트) */
+                '<td>' +
+                    '<div style="display: flex; align-items: center; padding: 10px 0;">' +
+                        '<div onclick="event.stopPropagation(); ' + albumAction + '" title="' + rawTitle + ' — 앨범 상세보기" style="cursor:pointer;">' +
+                            '<img src="' + albumImg + '" class="album-art">' +
+                        '</div>' +
+                        '<div>' +
+                            '<div style="font-weight: bold; color: #eee; margin-bottom: 4px;" title="' + rawTitle + '">' + rawTitle + '</div>' +
+                            '<div class="artist-link" style="font-size: 0.85rem; color: #888; cursor:pointer;" ' +
+                                 'onclick="event.stopPropagation(); ' + artistAction + '" title="' + rawArtist + ' — 아티스트 정보">' +
+                                rawArtist +
                             '</div>' +
                         '</div>' +
-                    '</td>' +
+                    '</div>' +
+                '</td>' +
 
-                    // LIKE - 중앙 정렬
-                    '<td style="text-align: center;">' +
-                        '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
-                                'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
-                            '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
-                        '</button>' +
-                    '</td>' +
+                /* 3. 좋아요 버튼 */
+                '<td style="text-align: center;">' +
+                    '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
+                            'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
+                        '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
+                    '</button>' +
+                '</td>' +
 
-                    // LIB - 중앙 정렬
-                    '<td style="text-align: center;">' +
-                        '<button style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;" title="라이브러리에 추가" ' +
-                                'onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
-                            '<i class="fa-solid fa-plus-square"></i>' +
-                        '</button>' +
-                    '</td>' +
+                /* 4. 라이브러리 추가 */
+                '<td style="text-align: center;">' +
+                    '<button style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;" ' +
+                            'onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
+                        '<i class="fa-solid fa-plus-square"></i>' +
+                    '</button>' +
+                '</td>' +
 
-                    // [핵심] PLAY 아이콘 - 헤더와 동일하게 오른쪽 정렬 및 패딩 부여
-                    '<td style="text-align: right; padding-right: 30px;">' +
-                        '<i class="fa-solid fa-circle-play play-trigger"></i>' +
-                    '</td>' +
-                '</tr>';
-            };
+                /* 5. 재생 아이콘 */
+                '<td class="col-play">' +
+                    '<i class="fa-solid fa-circle-play play-trigger"></i>' +
+                '</td>' +
+            '</tr>';
+        };
 
-            renderTabs();
-            MusicApp.loadChart();
-        });
+        renderTabs();
+        MusicApp.loadChart();
+    });
 
-        function renderTabs() {
-            const html = '<button class="tab-btn active" onclick="changeTab(\'top100\', this)">Real-time</button>' +
-                         '<button class="tab-btn" onclick="changeTab(\'weekly\', this)">Weekly</button>' +
-                         '<button class="tab-btn" onclick="changeTab(\'monthly\', this)">Monthly</button>' +
-                         '<button class="tab-btn" onclick="changeTab(\'yearly\', this)">Yearly</button>';
-            $('.chart-tabs').html(html);
-        }
+    function renderTabs() {
+        const html = '<button class="tab-btn active" onclick="changeTab(\'top100\', this)">Real-time</button>' +
+                     '<button class="tab-btn" onclick="changeTab(\'weekly\', this)">Weekly</button>' +
+                     '<button class="tab-btn" onclick="changeTab(\'monthly\', this)">Monthly</button>' +
+                     '<button class="tab-btn" onclick="changeTab(\'yearly\', this)">Yearly</button>';
+        $('.chart-tabs').html(html);
+    }
 
-        function changeTab(mode, btn) {
-            $('.tab-btn').removeClass('active');
-            $(btn).addClass('active');
-            MusicApp.currentMode = mode;
-            MusicApp.loadChart();
-        }
-    </script>
+    function changeTab(mode, btn) {
+        $('.tab-btn').removeClass('active');
+        $(btn).addClass('active');
+        MusicApp.currentMode = mode;
+        MusicApp.loadChart();
+    }
+</script>
 </head>
 <body>
     <header><%@ include file="/WEB-INF/views/common/Header.jsp" %></header>

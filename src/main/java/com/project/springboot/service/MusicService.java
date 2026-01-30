@@ -435,4 +435,14 @@ public List<Map<String, Object>> esSuggest(String keyword, int size) {
         return new ArrayList<>();
     }
 	}
+	//MusicService.java 내부에 추가
+	public Integer getMNoByTitleAndArtist(String title, String artist) {
+	 try {
+	     // DAO를 통해 DB에 해당 곡이 있는지 확인
+	     return musicDAO.selectMNoByTitleAndArtist(title, artist);
+	 } catch (Exception e) {
+	     System.err.println("[ERROR] getMNoByTitleAndArtist 실패: " + e.getMessage());
+	     return null;
+	 }
+	}
 }

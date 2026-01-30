@@ -307,9 +307,22 @@ public class MusicController {
  * 헤더 검색창 자동완성(2글자 이상) - Elasticsearch 기반
  * 호출 예: /api/music/es-suggest?q=아이유
  */
-@GetMapping("/es-suggest")
-public ResponseEntity<List<Map<String, Object>>> esSuggest(@RequestParam("q") String q) {
-    List<Map<String, Object>> list = musicService.esSuggest(q, 10);
-    return ResponseEntity.ok(list);
-}
+    @PostMapping("/logHistoryAuto")
+    @ResponseBody
+    public String logHistoryAuto(@RequestParam String title, @RequestParam String artist, HttpSession session) {
+        Integer mNo = musicService.getMNoByTitleAndArtist(title, artist);
+
+        // [추가] DB에 노래가 없으면? 일단 수집부터 시도!
+        if (mNo == null || mNo == 0) {
+            System.out.println(">>> DB에 없는 곡 발견, 자동 수집 시작: " + title);
+            musicService.searchAndSave(title + " " + artist); // 기존 수집 로직 활용
+            mNo = musicService.getMNoByTitleAndArtist(title, artist); // 다시 조회
+        }
+
+        if (mNo != null && mNo > 0) {
+            // ... 히스토리 저장 로직 ...
+            return "SUCCESS";
+        }
+        return "NOT_FOUND_AFTER_RETRY";
+    }
 }

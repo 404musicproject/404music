@@ -76,7 +76,7 @@ public interface IMusicDAO {
 	 // 11. 라이브러리(보관함) 조회
 	 // 유저 번호를 입력받아 해당 유저가 보관함(MY_LIBRARY)에 담은 곡 리스트를 반환합니다.
 	List<MusicDTO> selectMusicByLibrary(@Param("u_no") int u_no);
-	 
+	List<MusicDTO> selectLikedMusic(@Param("u_no") int u_no);
 	void deleteLibraryTrack(@Param("u_no") int uNo, @Param("m_no") int mNo);
 	// 12. 상세 페이지용 메서드 추가
 	// 특정 아티스트의 모든 곡 조회 (좋아요 여부 포함)

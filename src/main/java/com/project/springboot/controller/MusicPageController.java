@@ -128,19 +128,21 @@ public class MusicPageController {
         // 1. 세션 확인
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         
-        // 2. 로그인 안되어 있을 때 (프로젝트의 실제 로그인 페이지 경로로 수정하세요)
+        // 2. 로그인 안되어 있을 때 처리
         if (user == null) {
-            // 만약 로그인 페이지가 /user/login 이라면 아래처럼 수정
             return "redirect:/user/login"; 
         }
 
-        // 3. 데이터 조회 (반드시 u_no를 넘겨야 함)
-        // 여기서 musicDAO.selectMusicByLibrary를 호출해야 보관함 곡이 나옵니다.
-        // 만약 musicService.getTop100() 등을 호출하고 있다면 인덱스 곡이 나옵니다.
-        List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(user.getUNo());
+        // 3. 데이터 조회 (u_no 기준)
+        int uNo = user.getUNo();
+        
+        // [수정된 부분] 보관함 리스트와 좋아요 리스트를 따로 가져옵니다.
+        List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(uNo);
+        List<MusicDTO> likedList = musicDAO.selectLikedMusic(uNo); // DAO에 추가한 그 메서드!
         
         model.addAttribute("libraryList", libraryList);
-        model.addAttribute("keyword", "MY LIBRARY"); // 제목 표시용
+        model.addAttribute("likedList", likedList);
+        model.addAttribute("keyword", "MY LIBRARY"); 
         
         return "user/MyLibrary"; 
     }
