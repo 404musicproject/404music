@@ -432,7 +432,7 @@
 	    USING DUAL ON (p.u_no = #{u_no} AND p.m_no = #{m_no} AND p.t_title = 'MY_LIBRARY')
 	    WHEN NOT MATCHED THEN
 	        INSERT (t_no, u_no, m_no, t_title, t_private, t_saved)
-	        VALUES (playists_seq.NEXTVAL, #{u_no}, #{m_no}, 'MY_LIBRARY', 'Y', TO_CHAR(SYSDATE, 'YYYY-MM-DD'))
+	        VALUES (playlists_seq.NEXTVAL, #{u_no}, #{m_no}, 'MY_LIBRARY', 'Y', TO_CHAR(SYSDATE, 'YYYY-MM-DD'))
 	</insert>
 	
 	<select id="selectMusicByLibrary" resultMap="MusicMap">
