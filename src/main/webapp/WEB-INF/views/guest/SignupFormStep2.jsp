@@ -10,39 +10,77 @@
         .gender-group { margin: 10px 0; }
         .btn-group { margin-top: 20px; }
         .skip-link { color: gray; text-decoration: none; font-size: 14px; margin-left: 15px; }
+		/* 활성화된 라인 스타일 추가 */
+.progress-line.active-line {
+    background: #00f2ff; /* 시안 색상 */
+    box-shadow: 0 0 8px #00f2ff;
+    opacity: 1;
+}   
     </style>
 </head>
 <body>
-    <h2>회원가입 2단계 (선택 정보)</h2>
+<div id="signup-container">
+    <h2>프로필 설정</h2>
+    
+<div class="progress-container">
+    <div class="progress-step active">
+        <span class="step-num">01</span>
+        <span class="step-text">AUTH</span>
+    </div>
+    <div class="progress-line active-line"></div> 
+    
+    <div class="progress-step active">
+        <span class="step-num">02</span>
+        <span class="step-text">INFO</span>
+    </div>
+    
+    <div class="progress-line"></div>
+    
+    <div class="progress-step">
+        <span class="step-num">03</span>
+        <span class="step-text">PHOTO</span>
+    </div>
+</div>
     
     <form id="signupFormStep2">
         <input type="hidden" name="uId" value="${param.email}">
         
-			<label>닉네임:</label>
-			<input type="text" id="uNick" name="uNick" 
-			       value="${loginUser.UNick}" 
-			       placeholder="닉네임 입력">
-			<div id="nickMsg" style="font-size: 12px; margin-top: 5px;"></div>
+        <div class="input-section">
+            <label>닉네임</label>
+            <input type="text" id="uNick" name="uNick" value="${loginUser.UNick}" placeholder="NICKNAME">
+            <div id="nickMsg"></div>
+        </div>
         
-        <div class="gender-group">
-            <label>성별: </label>
-            <input type="radio" name="uGender" value="M"> 남성
-            <input type="radio" name="uGender" value="F"> 여성
-            <input type="radio" name="uGender" value="O" checked> 선택안함 
+        <div class="input-section">
+            <label>성 별 </label>
+            <div class="gender-group">
+                <label><input type="radio" name="uGender" value="M"> MALE</label>
+                <label><input type="radio" name="uGender" value="F"> FEMALE</label>
+                <label><input type="radio" name="uGender" value="O" checked> NONE</label>
+            </div>
         </div>
 
-        <label>생년월일: </label>
-        <input type="date" name="uBirth"><br>
+        <div class="input-section">
+            <label>생 일</label>
+            <input type="date" name="uBirth">
+        </div>
+
+        <div class="input-section">
+            <label>지역</label>
+            <input type="text" name="uRegion" placeholder="CITY (ex: SEOUL)">
+        </div>
         
-        <input type="text" name="uRegion" placeholder="지역 (예: 서울, 부산)"><br>
-        <input type="text" name="uPreferredGenre" placeholder="선호 장르"><br>
+        <div class="input-section">
+            <label>선호하는 장르</label>
+            <input type="text" name="uPreferredGenre" placeholder="GENRE (ex: K-POP, ROCK)">
+        </div>
         
         <div class="btn-group">
-            <button type="button" onclick="submitStep2()">가입 완료하기</button>
-            <button type="button" onclick="location.href='${pageContext.request.contextPath}/user/mypage'">나중에 설정하기</button>
+            <button type="button" onclick="submitStep2()">NEXT STEP</button>
+            <button type="button" onclick="location.href='${pageContext.request.contextPath}/'">SKIP</button>
         </div>
     </form>
-
+</div>
     <script>
     let nickChecked = true; 
     let timer;
@@ -81,6 +119,12 @@
 
     
     function submitStep2() {
+    	if (!nickChecked) {
+            alert("닉네임을 확인해주세요.");
+            $('#uNick').focus();
+            return;
+        }
+    	
         const formData = $('#signupFormStep2').serializeArray();
         const data = {};
         
@@ -101,10 +145,10 @@
             type: 'PUT',
             contentType: 'application/json; charset=UTF-8',
             data: JSON.stringify(data),
-            success: function(res) {
-                alert("가입이 완료되었습니다!");
-                location.href = "/"; 
-            }
+         success: function(res) {
+             // 2단계 데이터 저장 성공 후 3단계로 이동
+             location.href = "/signup/step3?uId=" + $('input[name="uId"]').val();
+         }
         });
     }
     </script>

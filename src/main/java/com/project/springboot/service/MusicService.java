@@ -4,21 +4,23 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.unit.Fuzziness;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.common.unit.Fuzziness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -29,162 +31,142 @@ import org.springframework.web.client.RestTemplate;
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
-import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
 
 @Service
 public class MusicService {
 
-    @Autowired
-    private IMusicDAO musicDAO;
-    
-    @Autowired
-    private RestHighLevelClient esClient; 
-    @Autowired
-    private SpotifyApiService spotifyApiService;
+    @Autowired private IMusicDAO musicDAO;
+    @Autowired private RestHighLevelClient esClient;
+    @Autowired private SpotifyApiService spotifyApiService;
 
- // [1단계] 검색 수집: Spotify(메인) -> iTunes(보조) -> DB & ES
-    public void searchAndSave(String keyword) {
-        System.out.println("[LOG] 검색 수집 시작 (iTunes 기반): " + keyword);
+    // [1단계] 검색: iTunes 정보로 DB 저장 및 ES 색인 (가사X, 특징X)
+    public List<Integer> searchAndSave(String originalKeyword, String normalizedKeyword, String searchType) {
+        // [수정] 두 키워드를 fetchItunesList에 전달
+        List<Map<String, Object>> itunesTracks = fetchItunesList(originalKeyword, normalizedKeyword, searchType);
+        List<Integer> mNoList = new ArrayList<>();
         
-        // 1. 일단 기존에 잘 되던 iTunes에서 검색결과를 가져옵니다.
-        // (limit을 5~10 정도로 늘려서 여러 곡을 가져오게 수정 권장)
-        List<Map<String, Object>> itunesTracks = fetchItunesList(keyword); 
+        System.out.println(">>> iTunes fetch count: " + (itunesTracks != null ? itunesTracks.size() : 0));
 
-        for (Map<String, Object> itunes : itunesTracks) {
-            String trackName = (String) itunes.get("trackName");
-            String artistName = (String) itunes.get("artistName");
+        if (itunesTracks == null || itunesTracks.isEmpty()) return mNoList;
 
-            // [중복 체크] 이미 DB에 있으면 굳이 또 저장 안 함
-            Integer existingMNo = musicDAO.selectMNoByTitleAndArtist(trackName, artistName);
-            if (existingMNo != null) {
-                System.out.println("[SKIP] 이미 존재: " + artistName + " - " + trackName);
-                continue;
-            }
-
-            // 2. 신규 곡이라면 Spotify ID를 찾아서 같이 저장
-            String spotifyId = spotifyApiService.searchTrackId(trackName, artistName);
+        for (Map<String, Object> track : itunesTracks) {
+            String trackName = (String) track.get("trackName");
+            String artistName = (String) track.get("artistName");
             
-            // 3. 저장 로직 실행
-            saveNewMusicInfo(null, itunes, trackName, artistName, spotifyId);
+            Integer mNo = musicDAO.selectMNoWithOriginal(trackName, artistName, originalKeyword);
+
+            
+            if (mNo == null) {
+                // 3. 없으면 새로 저장 (가수/앨범 중복체크 포함된 saveNewMusicInfo 호출)
+                saveNewMusicInfo(null, track, trackName, artistName, null);
+                
+                // 4. [중요] 저장 직후 '방금 들어간 번호'를 다시 조회해서 mNo에 할당!
+                mNo = musicDAO.selectMNoWithOriginal(trackName, artistName, originalKeyword);
+                System.out.println(">>> 신규 저장 후 mNo 재확인: " + mNo);
+            } else {
+                updateElasticSearchIndexOnly(mNo, track);
+            }
+            
+            // 5. 드디어 리스트에 추가 (여기에 담겨야 NCT가 안 나옵니다)
+            if (mNo != null) {
+                mNoList.add(mNo);
+            }
         }
+        
+        System.out.println(">>> Final mNoList size: " + mNoList.size());
+        return mNoList;
     }
     
+    // [ES 전용] 검색 노출을 위한 최소 정보 색인 메서드
+    private void updateElasticSearchIndexOnly(int mNo, Map<String, Object> itunes) {
+        try {
+            Map<String, Object> esDoc = new HashMap<>();
+            esDoc.put("m_no", mNo);
+            esDoc.put("m_title", itunes.get("trackName"));
+            esDoc.put("a_name", itunes.get("artistName"));
+            esDoc.put("b_title", itunes.get("collectionName"));
+            esDoc.put("m_preview_url", itunes.get("previewUrl"));
+
+            esClient.index(new IndexRequest("music_index")
+                    .id(String.valueOf(mNo))
+                    .source(esDoc), RequestOptions.DEFAULT);
+        } catch (Exception e) {
+            System.err.println("ES 색인 에러: " + e.getMessage());
+        }
+    }
+
+    // [DB 전용] iTunes 정보를 기반으로 아티스트/앨범/곡 기본 정보 저장
     @Transactional
     private void saveNewMusicInfo(Map<String, Object> sTrack, Map<String, Object> itunes, 
                                   String trackName, String artistName, String spotifyId) {
-        // 1. Artist 저장
-        ArtistDTO artist = new ArtistDTO();
-        artist.setA_name(artistName);
-        String artistImg = (itunes != null) ? (String) itunes.get("artworkUrl100") : null;
-        artist.setA_image(artistImg);
-        musicDAO.insertArtist(artist); 
-
-        // 2. Album 저장
-        AlbumDTO album = new AlbumDTO();
-        album.setA_no(artist.getA_no());
-        String albumTitle = (itunes != null) ? (String) itunes.getOrDefault("collectionName", "Single") : "Single";
-        album.setB_title(albumTitle);
-        String albumImg = (itunes != null) ? (String) itunes.get("artworkUrl100") : null;
-        if (albumImg != null) albumImg = albumImg.replace("100x100bb", "600x600bb");
-        album.setB_image(albumImg);
-        musicDAO.insertAlbum(album);
-
-        // 3. Music 저장
-        MusicDTO music = new MusicDTO();
-        music.setM_title(trackName);
-        music.setA_no(artist.getA_no());
-        music.setB_no(album.getB_no());
-        music.setIsrc_code(spotifyId); 
-        music.setM_preview_url(itunes != null ? (String) itunes.get("previewUrl") : null);
-        musicDAO.insertMusic(music);
-        
-        System.out.println(">>> 오라클에 저장된 곡 번호: " + music.getM_no());
-
-        // 4. 초기 Elasticsearch 색인 (평면 구조로 시작)
         try {
-            Map<String, Object> esDoc = new HashMap<>();
-            esDoc.put("m_no", music.getM_no());
-            esDoc.put("m_title", trackName);
-            esDoc.put("a_name", artistName);
-            esDoc.put("b_title", albumTitle);
-            esDoc.put("m_preview_url", music.getM_preview_url());
-
-            esClient.index(new IndexRequest("music_index")
-                    .id(String.valueOf(music.getM_no()))
-                    .source(esDoc), RequestOptions.DEFAULT);
-        } catch (Exception e) {
-            System.err.println("초기 ES 색인 에러: " + e.getMessage());
-        }
-    }
-    
-    @Transactional
-    public ArtistDTO getArtistDetailWithImage(int aNo) {
-        ArtistDTO artist = musicDAO.selectArtistByNo(aNo);
-        
-        // 사진이 없다면 iTunes 검색을 통해 보완
-        if (artist != null && (artist.getA_image() == null || artist.getA_image().isEmpty())) {
-            System.out.println("[우회경로] iTunes를 통해 아티스트 사진 보완: " + artist.getA_name());
+            // 1. 가수가 이미 있는지 확인 (이게 핵심!)
+            Integer aNo = musicDAO.selectANoByArtistName(artistName); 
             
-            // fetchItunesList 메서드를 활용해 아티스트 이름으로 검색
-            List<Map<String, Object>> itunesResults = fetchItunesList(artist.getA_name());
-            
-            if (!itunesResults.isEmpty()) {
-                // 가장 첫 번째 결과의 앨범 이미지를 아티스트 이미지로 사용
-                String imageUrl = (String) itunesResults.get(0).get("artworkUrl100");
-                if (imageUrl != null) {
-                    // 고화질로 변환 (100x100 -> 600x600)
-                    imageUrl = imageUrl.replace("100x100bb", "600x600bb");
-                    
-                    // DB 업데이트
-                    musicDAO.updateArtistImage(aNo, imageUrl);
-                    artist.setA_image(imageUrl);
-                }
+            if (aNo == null) {
+                // 가수가 없으면 새로 저장
+                ArtistDTO artist = new ArtistDTO();
+                artist.setA_name(artistName);
+                artist.setA_image((String) itunes.get("artworkUrl100"));
+                musicDAO.insertArtist(artist);
+                aNo = artist.getA_no();
             }
+
+            // 2. 앨범도 같은 방식으로 확인 (중복 저장 방지)
+            String bTitle = (String) itunes.getOrDefault("collectionName", "Single");
+            Integer bNo = musicDAO.selectBNoByTitleAndANo(bTitle, aNo);
+            if (bNo == null) {
+                AlbumDTO album = new AlbumDTO();
+                album.setA_no(aNo);
+                album.setB_title(bTitle);
+                String albumImg = (String) itunes.get("artworkUrl100");
+                if (albumImg != null) albumImg = albumImg.replace("100x100bb", "600x600bb");
+                album.setB_image(albumImg);
+                musicDAO.insertAlbum(album);
+                bNo = album.getB_no();
+            }
+
+            // 3. 이제 안전하게 노래 저장
+            MusicDTO music = new MusicDTO();
+            music.setM_title(trackName);
+            music.setA_no(aNo);
+            music.setB_no(bNo);
+            music.setM_preview_url((String) itunes.get("previewUrl"));
+            musicDAO.insertMusic(music);
+            
+            // 4. 저장 직후 ES 색인 (이게 되어야 키바나에서 보임!)
+            updateElasticSearchIndexOnly(music.getM_no(), itunes);
+
+        } catch (Exception e) {
+            System.err.println(">>> 저장 실패: " + trackName + " / 사유: " + e.getMessage());
         }
-        return artist;
     }
-    
- // [2단계] 클릭 시 상세 정보 보완 (Lazy Loading & ES Update)
+    // [2단계] 상세: 재생 버튼 클릭 시 가사/특징 실시간 수집 (Lazy Loading)
     @Transactional
     public Map<String, Object> getOrFetchMusicDetail(int mNo) {
-        // 1. 기본 곡 정보 조회 (이게 없으면 진짜 404)
         MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
         if (musicInfo == null) return null; 
 
-        // 미리 반환할 맵을 만들어 둠 (API가 실패해도 제목/가수는 돌려줘야 하니까요)
         Map<String, Object> result = new HashMap<>();
         result.put("m_title", musicInfo.getM_title());
         result.put("a_name", musicInfo.getA_name());
         
         String spotifyId = musicInfo.getIsrc_code();
 
-        // 2. Spotify ID가 없으면 검색 시도 (실패해도 에러만 찍고 통과!)
-        if (spotifyId == null || spotifyId.isEmpty()) {
-            try {
-                System.out.println("[INFO] ID 누락 발견. 재검색 시도: " + musicInfo.getM_title());
+        try {
+            // 1. Spotify ID가 없다면 검색해서 채워넣기
+            if (spotifyId == null || spotifyId.isEmpty()) {
                 spotifyId = spotifyApiService.searchTrackId(musicInfo.getM_title(), musicInfo.getA_name());
                 if (spotifyId != null) {
+                    musicDAO.updateMusicIsrc(mNo, spotifyId);
                     musicInfo.setIsrc_code(spotifyId);
                 }
-            } catch (Exception e) {
-                System.err.println("[WARN] Spotify ID 검색 실패(할당량 초과): " + e.getMessage());
             }
-        }
 
-        // 3. Spotify ID가 있을 때 상세 정보 수집 (에러 나도 catch로 잡음)
-        Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
-        Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
-
-        if (spotifyId != null && !spotifyId.isEmpty()) {
-            try {
-                if (feature == null) {
-                    Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
-                    if (raw != null) {
-                        feature = prepareFeatureParams(mNo, raw);
-                        musicDAO.insertMusicFeature(feature);
-                    }
-                }
+            if (spotifyId != null && !spotifyId.isEmpty()) {
+                // 2. 가사 수집 (DB에 없을 때만)
+                Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
                 if (lyrics == null) {
                     String lyricsText = spotifyApiService.getLyrics(spotifyId);
                     if (lyricsText != null) {
@@ -196,81 +178,192 @@ public class MusicService {
                         lyrics = lyricsParam;
                     }
                 }
-                // 수집 성공 시 ES 업데이트
-                updateElasticsearchDetail(mNo, feature, lyrics);
-            } catch (Exception e) {
-                // 여기가 핵심! API가 429(할당량 초과)를 뱉어도 여기서 잡아주면
-                // 아래의 return result까지 무사히 내려갑니다.
-                System.err.println("[WARN] Spotify API 호출 제한으로 상세 정보를 생략합니다.");
-            }
-        }
+                if (lyrics != null) result.putAll(lyrics);
 
-        // 4. 요청하신 '날려먹으면 안 되는' 부분! 
-        // API가 성공했으면 feature/lyrics가 들어있을 거고, 실패했으면 null인 상태로 진행됩니다.
-        if (feature != null) result.putAll(feature);
-        if (lyrics != null) result.putAll(lyrics);
-        
-        return result; // 이제 무조건 200 OK와 함께 기본 정보라도 반환됩니다!
+                // 3. 오디오 특징 수집 (DB에 없을 때만)
+                Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
+                if (feature == null) {
+                    Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
+                    if (raw != null) {
+                        feature = prepareFeatureParams(mNo, raw);
+                        musicDAO.insertMusicFeature(feature);
+                    }
+                }
+                if (feature != null) result.putAll(feature);
+
+                // 4. ES 업데이트 (가사/특징 최신화)
+                updateElasticsearchDetail(mNo, feature, lyrics, musicInfo.getA_genres());
+            }
+        } catch (Exception e) {
+            System.err.println("상세 수집 에러: " + e.getMessage());
+        }
+        return result;
     }
     
-    private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics) {
-        try {
-            // 0. 기본 정보를 가져오기 위해 DB 재조회 (이미 musicInfo가 있다면 활용 가능)
-            MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
-            
-            Map<String, Object> esUpdateDoc = new HashMap<>();
-            
-            // 1. [핵심] 기본 정보 추가 (이게 있어야 검색이 됨!)
-            if (musicInfo != null) {
-                esUpdateDoc.put("m_no", musicInfo.getM_no());
-                esUpdateDoc.put("m_title", musicInfo.getM_title());
-                esUpdateDoc.put("a_name", musicInfo.getA_name());
-                // 필요한 경우 앨범 제목 등도 추가
-            }
 
-            // 2. Feature 데이터 추가 (기존 로직)
+    // ES 업데이트 통합 메서드 (상세 수집 시 호출)
+    private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics, String genres) {
+        try {
+            Map<String, Object> doc = new HashMap<>();
+            
+            // 1. 장르 업데이트
+            if (genres != null) doc.put("genres", genres);
+            
+            // 2. 오디오 특징(energy, tempo 등) 업데이트
             if (feature != null) {
                 String[] fields = {"energy", "valence", "tempo", "danceability", "acousticness"};
                 for (String f : fields) {
+                    // DB에서 가져온 맵 키가 대문자일 수도 있어 getValue 보조메서드 사용
                     Object val = getValue(feature, f.toUpperCase(), f.toLowerCase());
-                    if (val != null) esUpdateDoc.put(f.toLowerCase(), val);
+                    if (val != null) doc.put(f, val);
                 }
             }
 
-            // 3. 가사 데이터 추가 (기존 로직)
+            // 3. 가사 업데이트 (HTML 태그나 시간 태그 제거 후 저장)
             if (lyrics != null) {
                 Object lText = getValue(lyrics, "LYRICS_TEXT", "lyrics_text");
                 if (lText != null) {
-                    String rawLyrics = (lText instanceof java.sql.Clob) 
-                        ? clobToString((java.sql.Clob) lText) : lText.toString();
-                    String cleanLyrics = rawLyrics.replaceAll("\\[\\d{2}:\\d{2}\\.\\d{2,3}\\]", "").trim();
-                    esUpdateDoc.put("lyrics_text", cleanLyrics);
+                    String raw = (lText instanceof java.sql.Clob) ? clobToString((java.sql.Clob) lText) : lText.toString();
+                    // [00:12.34] 같은 시간 태그 제거
+                    doc.put("lyrics_text", raw.replaceAll("\\[\\d{2}:\\d{2}\\.\\d{2,3}\\]", "").trim());
                 }
             }
 
-            // 4. ES 전송 (upsert)
-            if (!esUpdateDoc.isEmpty()) {
-                UpdateRequest request = new UpdateRequest("music_index", String.valueOf(mNo))
-                        .doc(esUpdateDoc)
-                        .docAsUpsert(true);
-                esClient.update(request, RequestOptions.DEFAULT);
-                System.out.println("[ES SUCCESS] 제목/가수/특징/가사 통합 색인 완료: " + musicInfo.getM_title());
+            // 4. 변경사항이 있을 때만 ES 갱신
+            if (!doc.isEmpty()) {
+                esClient.update(new UpdateRequest("music_index", String.valueOf(mNo))
+                        .doc(doc)
+                        .docAsUpsert(true), RequestOptions.DEFAULT);
+                System.out.println(">>> [ES 상세 업데이트 완료] m_no: " + mNo);
             }
         } catch (Exception e) {
+            System.err.println("[ES 상세 UPDATE 에러] " + e.getMessage());
+        }
+    }
+    
+    // [중요] ES 검색 로직 개선 (ITZY 검색 안되는 문제 해결)
+    public List<Map<String, Object>> esSuggest(String keyword, String searchType, int size) {
+        if (keyword == null || keyword.trim().length() < 1) return new ArrayList<>();
+        String q = keyword.trim();
+        if (searchType == null) searchType = "ALL";
+
+        try {
+            SearchRequest request = new SearchRequest("music_index");
+            SearchSourceBuilder source = new SearchSourceBuilder();
+            source.size(size > 0 ? size : 10);
+
+            BoolQueryBuilder qb = QueryBuilders.boolQuery();
+
+            // [핵심] searchType에 따라 쿼리를 날릴 필드를 결정합니다.
+            if (searchType.equals("ARTIST")) {
+                qb.should(QueryBuilders.matchPhraseQuery("a_name", q).boost(100.0f));
+                qb.should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
+            } else if (searchType.equals("TITLE")) {
+                qb.should(QueryBuilders.matchPhraseQuery("m_title", q).boost(100.0f));
+                qb.should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
+            } else if (searchType.equals("ALBUM")) {
+                qb.should(QueryBuilders.matchPhraseQuery("b_title", q).boost(100.0f));
+            } else {
+                // ALL (전체 검색) - 기존 로직 유지
+                qb.should(QueryBuilders.matchPhraseQuery("a_name", q).boost(100.0f));
+                qb.should(QueryBuilders.matchPhraseQuery("m_title", q).boost(80.0f));
+                qb.should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
+                qb.should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO).boost(30.0f));
+            }
+
+            source.query(qb);
+            source.fetchSource(new String[]{"m_no", "m_title", "a_name", "b_title"}, null);
+            request.source(source);
+
+            SearchResponse resp = esClient.search(request, RequestOptions.DEFAULT);
+            List<Map<String, Object>> out = new ArrayList<>();
+            for (SearchHit hit : resp.getHits().getHits()) {
+                out.add(hit.getSourceAsMap());
+            }
+            return out;
+        } catch (Exception e) {
             System.err.println("[ES ERROR] " + e.getMessage());
+            return new ArrayList<>();
         }
     }
 
-    // Clob 변환 보조 메서드
-    private String clobToString(java.sql.Clob clob) throws Exception {
-        return clob.getSubString(1, (int) clob.length());
+    // --- 기타 보조 메서드들 ---
+    
+    public List<MusicDTO> getMusicListByES(String keyword, String searchType, int uNo) {
+        String normalizedKeyword = getNormalizedKeyword(keyword); 
+        
+        System.out.println(">>> 검색 시작: " + keyword + " -> 정규화: " + normalizedKeyword);
+
+        // [수정] 원본 키워드(keyword)와 정규화 키워드(normalizedKeyword)를 모두 전달
+        List<Integer> itunesMNoList = searchAndSave(keyword, normalizedKeyword, searchType);
+
+
+        if (itunesMNoList != null && !itunesMNoList.isEmpty()) {
+            return musicDAO.selectMusicByMNoList(itunesMNoList, uNo);
+        }
+
+        // 2. 결과 없을 시 ES 검색 (인자 3개 전달 필수!)
+        List<Map<String, Object>> esResults = esSuggest(keyword, searchType, 30);
+        
+        if (esResults.isEmpty()) return new ArrayList<>();
+        
+        List<Integer> mNoList = esResults.stream()
+                .map(m -> Integer.parseInt(m.get("m_no").toString()))
+                .collect(Collectors.toList());
+                
+        return musicDAO.selectMusicByMNoList(mNoList, uNo);
     }
- // --- 보조 메서드: Spotify 데이터 정제 ---
+    
+    private List<Map<String, Object>> fetchItunesList(String original, String normalized, String searchType) {
+        try {
+            // [핵심 수정] "백예린 thevolunteers" 형태로 합침
+            String combinedKeyword;
+            if (original.equals(normalized)) {
+                combinedKeyword = original;
+            } else {
+                combinedKeyword = original + " " + normalized;
+            }
+
+            String encoded = URLEncoder.encode(combinedKeyword, StandardCharsets.UTF_8.toString());
+            String attribute = "";
+            if ("ARTIST".equals(searchType)) attribute = "&attribute=artistTerm";
+            else if ("TITLE".equals(searchType)) attribute = "&attribute=songTerm";
+            else if ("ALBUM".equals(searchType)) attribute = "&attribute=albumTerm";
+
+            String url = "https://itunes.apple.com/search?term=" + encoded 
+                    + "&country=KR&media=music&entity=song&limit=30" + attribute; // limit을 30정도로 늘려주는 게 좋습니다.
+         
+         System.out.println(">>> iTunes API Request: " + url);
+
+            RestTemplate rt = new RestTemplate();
+            
+            // [중요!] iTunes 특유의 응답 타입을 처리하기 위한 설정
+            MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+            converter.setSupportedMediaTypes(Arrays.asList(
+                MediaType.APPLICATION_JSON, 
+                new MediaType("text", "javascript", StandardCharsets.UTF_8)
+            ));
+            rt.getMessageConverters().add(0, converter);
+
+            Map<String, Object> resp = rt.getForObject(url, Map.class);
+            
+            // 결과 꺼내기
+            List<Map<String, Object>> results = (List<Map<String, Object>>) resp.get("results");
+            
+            // 여기에 로그를 하나 추가해서 실제로 몇 개 넘어오는지 확인하세요!
+            System.out.println(">>> iTunes API Actual Results Count: " + (results != null ? results.size() : 0));
+            
+            return results != null ? results : new ArrayList<>();
+        } catch (Exception e) {
+            System.err.println(">>> iTunes API Error: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
     private Map<String, Object> prepareFeatureParams(int mNo, Map<String, Object> raw) {
         Map<String, Object> params = new HashMap<>();
         Object fObj = raw.get("audio_features");
         Map<String, Object> data = (fObj instanceof Map) ? (Map<String, Object>) fObj : raw;
-        
         params.put("m_no", mNo);
         params.put("danceability", data.get("danceability"));
         params.put("energy", data.get("energy"));
@@ -279,170 +372,54 @@ public class MusicService {
         params.put("acousticness", data.get("acousticness"));
         return params;
     }
+
+    private Object getValue(Map<String, Object> map, String upper, String lower) {
+        return map.containsKey(upper) ? map.get(upper) : map.get(lower);
+    }
+
+    private String clobToString(java.sql.Clob clob) throws Exception {
+        return clob.getSubString(1, (int) clob.length());
+    }
+
+    public List<MusicDTO> getMusicListByTitle(String k, int u) { return musicDAO.selectMusicByTitle(k, u); }
+    public List<MusicDTO> getMusicListByArtist(String k, int u) { return musicDAO.selectMusicByArtist(k, u); }
+    public List<MusicDTO> getMusicListByAlbum(String k, int u) { return musicDAO.selectMusicByAlbum(k, u); }
+    public List<MusicDTO> getMusicListByLyrics(String k, int u) { return musicDAO.selectMusicByLyrics(k, u); }
+
+    public Integer getMNoByTitleAndArtist(String t, String a) {
+        return musicDAO.selectMNoByTitleAndArtist(t, a);
+    }
     
-    private Object getValue(Map<String, Object> map, String upperKey, String lowerKey) {
-        if (map == null) return null;
-        return map.containsKey(upperKey) ? map.get(upperKey) : map.get(lowerKey);
-    }
-    
- // 1. 통합 키워드 검색 (이미 작성하신 부분)
-    public List<MusicDTO> getMusicListByKeyword(String keyword, int uNo) {
-        return musicDAO.selectMusicByKeyword(keyword, uNo);
-    }
-
-    // 2. 제목 검색 (uNo 추가)
-    public List<MusicDTO> getMusicListByTitle(String keyword, int uNo) {
-        return musicDAO.selectMusicByTitle(keyword, uNo);
-    }
-
-    // 3. 아티스트 검색 (uNo 추가)
-    public List<MusicDTO> getMusicListByArtist(String keyword, int uNo) {
-        return musicDAO.selectMusicByArtist(keyword, uNo);
-    }
-
-    // 4. 앨범 검색 (추가: 이 부분이 누락되어 에러가 났을 확률이 높습니다)
-    public List<MusicDTO> getMusicListByAlbum(String keyword, int uNo) {
-        return musicDAO.selectMusicByAlbum(keyword, uNo);
-    }
-
-    // 5. 가사 검색 (추가)
-    public List<MusicDTO> getMusicListByLyrics(String keyword, int uNo) {
-        return musicDAO.selectMusicByLyrics(keyword, uNo);
-    }
-
-    
- // [보조] iTunes 검색 API 호출 (검색어 기반 1차 수집)
-    private List<Map<String, Object>> fetchItunesList(String keyword) {
+ // [추가] Elasticsearch를 이용한 키워드 정규화 (동의어 처리)
+    public String getNormalizedKeyword(String keyword) {
         try {
-            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString());
-            // limit을 20으로 늘려서 여러 곡을 가져옵니다.
-            String url = "https://itunes.apple.com/search"
-                    + "?term=" + encodedKeyword
-                    + "&country=KR"
-                    + "&lang=ko_kr"
-                    + "&media=music"
-                    + "&entity=song"
-                    + "&limit=20";
+            org.elasticsearch.client.indices.AnalyzeRequest request = 
+                org.elasticsearch.client.indices.AnalyzeRequest.withIndexAnalyzer("music_index", "ko_search_analyzer", keyword);
 
+            org.elasticsearch.client.indices.AnalyzeResponse response = 
+                esClient.indices().analyze(request, RequestOptions.DEFAULT);
 
-            RestTemplate restTemplate = new RestTemplate();
-            
-            MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-            converter.setSupportedMediaTypes(Arrays.asList(
-                MediaType.valueOf("text/javascript;charset=utf-8"), 
-                MediaType.APPLICATION_JSON
-            ));
-            restTemplate.getMessageConverters().add(0, converter);
+            List<org.elasticsearch.client.indices.AnalyzeResponse.AnalyzeToken> tokens = response.getTokens();
+            if (tokens == null || tokens.isEmpty()) return keyword;
 
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+            // 명시적으로 우리가 등록한 동의어(SYNONYM) 타입만 추출
+            List<String> synonyms = tokens.stream()
+                    .filter(t -> "SYNONYM".equals(t.getType()))
+                    .map(t -> t.getTerm())
+                    .collect(Collectors.toList());
 
-            return (results != null) ? results : new ArrayList<>();
-        } catch (Exception e) {
-            System.err.println("[iTunes List Search 에러] " + keyword + " : " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-    /**
-    * [3단계] 재생 히스토리 저장
-    * @param params {m_no, u_no, h_location, h_weather, h_lat, h_lon}
-    */
-
-    @Transactional
-    public void insertPlayHistory(Map<String, Object> params) {
-        try {
-            HistoryDTO history = new HistoryDTO();
-            
-            // 1. 필수 데이터 매핑 (m_no, u_no)
-            history.setM_no(Integer.parseInt(params.get("m_no").toString()));
-            
-            // u_no가 0이면 게스트이므로 DB 무결성을 위해 0 그대로 두거나, 
-            // Mapper에서 처리하도록 넘깁니다.
-            int uNo = Integer.parseInt(params.getOrDefault("u_no", "0").toString());
-            history.setU_no(uNo);
-
-            // 2. 부가 정보 매핑 (위치, 날씨 등)
-            history.setH_location((String) params.getOrDefault("h_location", "UNKNOWN"));
-            
-            if (params.get("h_weather") != null) {
-                history.setH_weather(Integer.parseInt(params.get("h_weather").toString()));
+            if (!synonyms.isEmpty()) {
+                // 가장 긴 단어를 대표 키워드로 선택 (ex: 레벨 -> redvelvet)
+                return synonyms.stream().max(Comparator.comparingInt(String::length)).get();
             }
-            
-            // 좌표 정보가 있다면 추가 (DTO에 필드가 있는 경우)
-            // history.setH_lat(Double.parseDouble(params.getOrDefault("h_lat", "0").toString()));
-            // history.setH_lon(Double.parseDouble(params.getOrDefault("h_lon", "0").toString()));
 
-            // 3. DAO 호출
-            musicDAO.insertHistory(history);
-            
-            System.out.println("[SUCCESS] 재생 기록 저장 완료: 곡 번호 " + history.getM_no());
-            
+            // 동의어가 아니라면 (예: 인명 '강다니엘'이 'daniel'로 분석된 경우 등)
+            // 분석된 토큰을 무시하고 사용자 입력 원본(강다니엘)을 그대로 사용
+            return keyword; 
+
         } catch (Exception e) {
-            System.err.println("[ERROR] insertPlayHistory 실패: " + e.getMessage());
-            // 에러가 나더라도 음악 재생은 되어야 하므로 런타임 예외를 던지지 않고 로그만 남깁니다.
+            System.err.println(">>> 키워드 정규화 실패: " + e.getMessage());
+            return keyword;
         }
     }
-
-
-/**
- * ES 자동완성/연관검색어용
- * - 2글자 이상 입력 시만 동작
- * - title/artist/album/lyrics 등을 대상으로 ngram_analyzer(인덱스) 기반 매칭
- */
-public List<Map<String, Object>> esSuggest(String keyword, int size) {
-    try {
-        if (keyword == null) return new ArrayList<>();
-        String q = keyword.trim();
-        if (q.length() < 2) return new ArrayList<>();
-        if (size <= 0) size = 10;
-
-        SearchRequest request = new SearchRequest("music_index");
-        SearchSourceBuilder source = new SearchSourceBuilder();
-        source.size(size);
-
-        // title/artist/album/lyrics 대상으로 OR 검색
-        BoolQueryBuilder qb = QueryBuilders.boolQuery()
-                .should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO))
-                .should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO))
-                .should(QueryBuilders.matchQuery("b_title", q).fuzziness(Fuzziness.AUTO))
-                .should(QueryBuilders.matchQuery("lyrics_text", q).fuzziness(Fuzziness.AUTO))
-                .minimumShouldMatch(1);
-
-        source.query(qb);
-
-        // 필요한 필드만 반환 (payload 최소화)
-        source.fetchSource(new String[]{"m_no","m_title","a_name","b_title","b_image"}, null);
-
-        request.source(source);
-
-        SearchResponse resp = esClient.search(request, RequestOptions.DEFAULT);
-
-        List<Map<String, Object>> out = new ArrayList<>();
-        for (SearchHit hit : resp.getHits().getHits()) {
-            Map<String, Object> src = hit.getSourceAsMap();
-            // 화면에서 쓰기 편하게 key 이름 통일
-            Map<String, Object> row = new HashMap<>();
-            row.put("mNo", src.get("m_no"));
-            row.put("title", src.get("m_title"));
-            row.put("artist", src.get("a_name"));
-            row.put("album", src.get("b_title"));
-            row.put("img", src.get("b_image"));
-            out.add(row);
-        }
-        return out;
-    } catch (Exception e) {
-        System.err.println("[ES SUGGEST ERROR] " + e.getMessage());
-        return new ArrayList<>();
-    }
-	}
-	//MusicService.java 내부에 추가
-	public Integer getMNoByTitleAndArtist(String title, String artist) {
-	 try {
-	     // DAO를 통해 DB에 해당 곡이 있는지 확인
-	     return musicDAO.selectMNoByTitleAndArtist(title, artist);
-	 } catch (Exception e) {
-	     System.err.println("[ERROR] getMNoByTitleAndArtist 실패: " + e.getMessage());
-	     return null;
-	 }
-	}
 }

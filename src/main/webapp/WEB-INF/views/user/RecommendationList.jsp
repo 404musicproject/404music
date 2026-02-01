@@ -6,158 +6,237 @@
     <meta charset="UTF-8">
     <title>404Music | 추천 음악</title>
     
-    <style>
-        /* 네온 탭 스타일 추가 */
-        .chart-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding: 10px 0; }
-        .tab-btn { 
-            padding: 10px 25px; background: transparent; border: 1px solid #444; color: #888; 
-            cursor: pointer; border-radius: 20px; font-weight: bold; transition: 0.3s; white-space: nowrap;
-        }
-        .tab-btn.active { border-color: #00f2ff; color: #00f2ff; box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
-        .tag-hero { 
-            height: 300px; background: #050505; display: flex; align-items: center; justify-content: center; 
-            position: relative; border-bottom: 2px solid #00f2ff; overflow: hidden;
-        }
-        #hero-bg { position: absolute; width: 100%; height: 100%; background-size: cover; filter: blur(30px) brightness(0.3); opacity: 0.7; }
-        .hero-content { position: relative; z-index: 2; text-align: center; }
-        #hero-tag-name { font-size: 4rem; color: #ff0055; text-shadow: 0 0 20px #ff0055; text-transform: uppercase; }
-    </style>
-    
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/music-chart.css">
-    <!-- 기타 CSS 및 JS 파일 포함 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/music-service.js"></script> 
+
+<style>
+    /* 기본 레이아웃 - 너비를 1100px로 제한하여 집중도 향상 */
+    body { background-color: #050505; color: #fff; margin: 0; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 30px; }
+
+    /* 1. Hero 섹션: 높이와 텍스트 크기 축소 */
+    .tag-hero { 
+        height: 400px; background: #000; display: flex; 
+        align-items: flex-end; position: relative; 
+        overflow: hidden; padding: 0; 
+    }
+    
+/* 2중 배경 레이어 */
+#hero-bg-blur, #hero-bg-clear {
+    position: absolute; top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background-size: cover; 
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 1s ease-in-out;
+}
+
+#hero-bg-blur {
+    filter: brightness(0.3) blur(20px); /* 배경을 더 어둡고 흐리게 */
+    transform: scale(1.1);
+    z-index: 0;
+}
+
+#hero-bg-clear {
+    filter: brightness(0.5); 
+    z-index: 1;
+    mask-image: radial-gradient(circle, black 25%, transparent 75%);
+}
+
+/* 검은 안개 오버레이 (텍스트 가독성용) */
+.hero-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to top, #050505 10%, transparent 80%);
+    z-index: 2; /* 배경들보다 위 */
+}
+    .hero-content-wrapper {
+        width: 100%;
+        max-width: 1100px; /* 컨테이너와 통일 */
+        margin: 0 auto;
+        padding: 0 30px;
+        padding-bottom: 60px;
+        position: relative;
+        z-index: 3;
+    }
+    #hero-tag-name { 
+        font-size: 5rem; font-weight: 900; margin: 0; line-height: 1.15;
+        text-transform: uppercase; letter-spacing: -2px;
+        background: linear-gradient(to bottom, #fff, #888);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        margin-left: -3px;
+
+    }
+    #hero-tag-desc {
+        font-size: 0.9rem; color: #00f2ff; font-family: monospace;
+        letter-spacing: 4px; opacity: 0.8;
+    }
+
+    /* 2. 플로팅 탭 메뉴 - 더 콤팩트하게 */
+    .chart-tabs { 
+        position: sticky; top: 15px; z-index: 100;
+        background: rgba(15, 15, 15, 0.8); backdrop-filter: blur(15px);
+        margin-top: -30px; padding: 8px 20px;
+        border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex; align-items: center; gap: 5px;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    }
+    .tab-btn { 
+        padding: 8px 18px; background: transparent; border: none; 
+        color: #777; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-radius: 20px; 
+        transition: 0.3s;
+    }
+    .tab-btn:hover { color: #fff; }
+    .tab-btn.active { background: #00f2ff; color: #000 !important; }
+
+    /* 3. 뮤직 카드 그리드 - 보기 편한 5열/4열 구성 */
+    .music-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px; margin: 40px 0;
+    }
+    .music-card {
+        background: #111; border-radius: 10px; padding: 12px;
+        transition: 0.3s ease; border: 1px solid #1a1a1a; cursor: pointer;
+    }
+    .music-card:hover { transform: translateY(-7px); background: #181818; border-color: #333; }
+    .card-img-wrap {
+        position: relative; width: 100%; aspect-ratio: 1/1; 
+        border-radius: 6px; overflow: hidden; margin-bottom: 12px;
+    }
+    .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .card-play-overlay {
+        position: absolute; top:0; left:0; width:100%; height:100%;
+        background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center;
+        opacity:0; transition: 0.3s;
+    }
+    .music-card:hover .card-play-overlay { opacity: 1; }
+    .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 4px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-artist { color: #888; font-size: 0.85rem; }
+    .card-actions { display: flex; justify-content: space-between; margin-top: 12px; color: #444; font-size: 0.9rem; }
+
+    /* 하단 배너 - 너비 밸런스 최적화 */
+    .recommend-banner {
+        display: flex; align-items: center; justify-content: space-between; 
+        background: linear-gradient(90deg, #00f2ff 0%, #0066ff 100%); 
+        color: black; padding: 30px; border-radius: 15px; 
+        text-decoration: none; margin: 60px 0;
+        transition: transform 0.3s ease;
+    }
+    .recommend-banner:hover { transform: translateY(-5px); }
+    .recommend-banner h4 { margin: 0; font-size: 1.3rem; letter-spacing: -0.5px; }
+    .recommend-banner p { margin: 5px 0 0 0; opacity: 0.8; font-size: 0.95rem; }
+    .recommend-banner span { background: #000; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 0.9rem; font-weight: bold; }
+</style>
+
+</head>
+<body>
+<header><%@ include file="/WEB-INF/views/common/Header.jsp" %></header>
+
+<section class="tag-hero">
+	<div id="hero-bg-blur"></div>
+    <div id="hero-bg-clear"></div>
+    <div class="hero-overlay"></div> 
+    <div class="hero-content-wrapper"> <div id="hero-tag-desc">CURATED PLAYLIST FOR</div>
+        <h1 id="hero-tag-name">MOOD</h1>
+    </div>
+</section>
+
+<main class="container">
+    <div class="chart-tabs">
+        <c:forEach var="t" items="${topTags}">
+            <button class="tab-btn ${t == tagName ? 'active' : ''}" onclick="changeTag('${t}', this)">#${t}</button>
+        </c:forEach>
+        <button class="tab-btn" onclick="location.href='${pageContext.request.contextPath}/home'" style="margin-left: auto; color: #ff0055;">BACK ✕</button>
+    </div>
+
+    <div class="music-grid" id="chart-body"></div>
+
+    <a href="${pageContext.request.contextPath}/recommendationCategories" class="recommend-banner">
+        <div>
+            <h4 style="margin: 0; font-size: 1.6rem; letter-spacing: -1px;">원하는 분위기가 없나요? 🤔</h4>
+            <p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 1.1rem;">날씨, 장소, 장르별 상세 카테고리에서 추천받아보세요.</p>
+        </div>
+        <span style="background: #000; color: #fff; padding: 15px 30px; border-radius: 40px; font-size: 1rem;">
+            카테고리 전체보기 >
+        </span>
+    </a>
+</main>
+
+<footer><%@ include file="/WEB-INF/views/common/Footer.jsp" %></footer>
+
 
 <script>
 $(document).ready(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const paramTag = urlParams.get('tagName');
-    // 컨트롤러에서 넘어온 tagName이 있으면 그걸 쓰고, 없으면 JSTL topTags의 첫 번째 사용
     let currentTag = paramTag || "${topTags[0]}"; 
 
-    // 초기 로딩: 현재 태그와 일치하는 버튼을 찾아 클릭 효과를 줌
     const $targetBtn = $('.tab-btn').filter(function() {
-        return $(this).text().trim() === currentTag;
+        return $(this).text().replace('#', '').trim() === currentTag;
     });
 
-    if ($targetBtn.length > 0) {
-        changeTag(currentTag, $targetBtn);
-    } else {
-        // 일치하는 버튼이 없더라도 데이터는 불러오도록 처리
-        changeTag(currentTag, null);
-    }
+    changeTag(currentTag, $targetBtn.length > 0 ? $targetBtn[0] : null);
 });
 
-// [중요] 함수를 $(document).ready 바깥으로 꺼내야 HTML onclick에서 인식합니다.
 function changeTag(tagName, btn) {
     $('.tab-btn').removeClass('active');
     if(btn) $(btn).addClass('active');
     
-    $('#hero-tag-name').text(tagName);
-    $('#hero-tag-desc').text("Listing tracks for mood: " + tagName);
+    $('#hero-tag-name').stop().fadeOut(200, function() {
+        $(this).text(tagName).fadeIn(200);
+    });
     
+    const cp = '${pageContext.request.contextPath}';
     const uNo = "${sessionScope.loginUser.uNo}" || 0;
 
     $.ajax({
-        url: '${pageContext.request.contextPath}/api/recommendations/tag/' + encodeURIComponent(tagName) + '?u_no=' + uNo,
+        url: cp + '/api/recommendations/tag/' + encodeURIComponent(tagName) + '?u_no=' + uNo,
         method: 'GET',
         success: function(data) {
             renderMusicList(data);
             if(data && data.length > 0) {
-                const bgImg = data[0].b_image || data[0].B_IMAGE || '';
-                if(bgImg) $('#hero-bg').css('background-image', 'url(' + bgImg + ')');
+                let bgImg = data[0].b_image || data[0].B_IMAGE || '';
+                if(bgImg) {
+                    const fullPath = bgImg.startsWith('http') ? bgImg : cp + (bgImg.startsWith('/') ? '' : '/') + bgImg;
+                    // 두 레이어 모두에 이미지 적용
+                    $(' #hero-bg-clear').css('background-image', 'url("' + fullPath + '")');
+                }
             }
-        },
-        error: function() {
-            $('#chart-body').html('<tr><td colspan="5" style="text-align:center;">데이터를 가져오는 중 오류가 발생했습니다.</td></tr>');
         }
     });
 }
 
 function renderMusicList(musicList) {
     let html = '';
+    const cp = '${pageContext.request.contextPath}';
+    
     if (!musicList || musicList.length === 0) {
-        html = '<tr><td colspan="5" style="text-align:center; padding:50px;">추천 음악이 없습니다.</td></tr>';
+        html = '<div style="grid-column: 1/-1; text-align:center; padding:100px; color:#666;">추천 음악이 없습니다.</div>';
     } else {
         $.each(musicList, function(index, music) {
-            const mNo = music.m_no || music.M_NO;
-            const title = (music.m_title || music.M_TITLE || 'Unknown').replace(/'/g, "\\'");
-            const artist = (music.a_name || music.A_NAME || 'Unknown').replace(/'/g, "\\'");
-            const albumImg = music.b_image || music.B_IMAGE || '${pageContext.request.contextPath}/images/default_album.png';
+            const title = (music.m_title || music.M_TITLE || 'Unknown');
+            const artist = (music.a_name || music.A_NAME || 'Unknown');
+            const imgPath = music.b_image || music.B_IMAGE || '';
+            
+            let albumImg = imgPath.startsWith('http') ? imgPath : cp + (imgPath.startsWith('/') ? '' : '/') + imgPath;
+            if(!imgPath) albumImg = 'https://placehold.co/400x400/111/00f2ff?text=No+Image';
 
-            html += '<tr style="cursor:pointer;" onclick="MusicApp.playLatestYouTube(\'' + title + '\', \'' + artist + '\', \'' + albumImg + '\')">';
-            html += '<td>' + (index + 1) + '</td>';
-            html += '<td>';
-            html += '    <div style="display: flex; align-items: center; gap: 15px;">';
-            html += '        <img src="' + albumImg + '" width="50" height="50" style="border-radius: 4px; object-fit:cover;">';
-            html += '        <div>';
-            html += '            <strong style="display: block; color: #fff;">' + title + '</strong>';
-            html += '            <span style="color: #ccc; font-size: 0.9em;">' + artist + '</span>';
-            html += '        </div>';
-            html += '    </div>';
-            html += '</td>';
-            html += '<td style="text-align: center;"><i class="fa-regular fa-heart"></i></td>';
-            html += '<td style="text-align: center;"><i class="fa-solid fa-plus-square" style="color:#00f2ff;"></i></td>';
-            html += '<td style="text-align: right; padding-right: 20px; color: #ff0055;"><i class="fa-solid fa-play"></i></td>';
-            html += '</tr>';
+            html += '<div class="music-card" onclick="handlePlay(\'' + title.replace(/'/g, "\\'") + '\', \'' + artist.replace(/'/g, "\\'") + '\', \'' + albumImg + '\')">';
+            html += '<div class="card-img-wrap"><img src="' + albumImg + '" onerror="this.src=\'https://placehold.co/400x400/111/00f2ff?text=Error\'">';
+            html += '<div class="card-play-overlay"><i class="fa-solid fa-play" style="font-size: 2rem; color: #00f2ff;"></i></div></div>';
+            html += '<div class="card-title">' + title + '</div>';
+            html += '<div class="card-artist">' + artist + '</div>';
+            html += '</div>';
         });
     }
     $('#chart-body').html(html);
 }
+
+function handlePlay(title, artist, img) {
+    if(typeof MusicApp !== 'undefined') {
+        MusicApp.playLatestYouTube(title, artist, img);
+    }
+}
 </script>
-</head>
-<body>
-<header><%@ include file="/WEB-INF/views/common/Header.jsp" %></header>
-
-<section class="tag-hero">
-    <div id="hero-bg"></div>
-    <div class="hero-content">
-        <h1 id="hero-tag-name">MOOD</h1>
-        <div id="hero-tag-desc">Analyzing your music taste...</div>
-    </div>
-</section>
-
-<main>
-    <div class="container">
-        <!-- 태그 탭 영역 (동적으로 5~10개 배치) -->
-        <div class="chart-tabs">
-            <c:forEach var="t" items="${topTags}">
-                <button class="tab-btn ${t == tagName ? 'active' : ''}" onclick="changeTag('${t}', this)">${t}</button>
-            </c:forEach>
-            <button class="tab-btn" onclick="location.href='${pageContext.request.contextPath}/home'" style="margin-left: auto; border-color: #444; color: #888 !important;">← BACK</button>
-        </div>
-
-        <div class="section">
-            <div class="chart-header">
-                <h2 style="margin:0; color:#00f2ff;">RECOMMENDED LIST</h2>
-            </div>
-            <table class="chart-table">
-                <thead>
-                    <tr><th>RANK</th><th>SONG INFO</th><th style="text-align: center;">LIKE</th><th style="text-align: center;">LIB</th><th style="text-align: right; padding-right: 20px;">PLAY</th></tr>
-                </thead>
-                <tbody id="chart-body"></tbody>
-            </table>
-        </div>
-    </div>
-</main>
-
-<div id="player-container" style="position: fixed; bottom: 30px; right: 30px; background: #000; padding: 12px; border-radius: 12px; display: none; z-index: 1001; border: 2px solid #00f2ff;">
-    <div id="player"></div>
-</div>
-
-	<a href="${pageContext.request.contextPath}/recommendationCategories" 
-   style="display: flex; align-items: center; justify-content: space-between; 
-          background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); 
-          color: white; padding: 20px; border-radius: 12px; text-decoration: none; margin: 20px 0;">
-    <div>
-        <h4 style="margin: 0; font-size: 1.2rem;">어떤 음악을 들을지 고민인가요? 🤔</h4>
-        <p style="margin: 5px 0 0 0; opacity: 0.8;">지금 기분과 날씨에 딱 맞는 곡을 추천해 드려요.</p>
-    </div>
-    <span style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; font-weight: bold;">
-        보러가기 >
-    </span>
-	</a>
-
-<footer><%@ include file="/WEB-INF/views/common/Footer.jsp" %></footer>
 </body>
 </html>

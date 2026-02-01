@@ -1,183 +1,196 @@
-/* 404Music Cyberpunk System Theme - Step 2 */
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
+
 body {
-    background-color: #000000;
-    color: #00ffff;
-    font-family: 'Courier New', Courier, monospace;
+    background-color: #050505;
+    color: #fff;
+    font-family: 'Pretendard', sans-serif;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    /* 사이버펑크 스캔라인 효과 */
-    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    background-size: 100% 2px, 3px 100%;
+    /* 스캔라인은 유지하되 투명도를 낮춰 세련되게 변경 */
+    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 0, 85, 0.02) 50%);
+    background-size: 100% 4px;
 }
 
-/* 타이틀 디자인 */
 h2 {
-    color: #00ffff;
-    text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    color: #fff;
+    text-shadow: 0 0 15px #ff0055;
     text-transform: uppercase;
     text-align: center;
-    margin: 20px 0 10px 0;
-    font-size: 28px;
+    margin-bottom: 30px;
+    font-size: 32px;
     letter-spacing: 4px;
-    width: 450px;
+    font-weight: 800;
 }
 
-body > p {
-    color: #00ffff;
-    font-size: 13px;
-    margin-bottom: 25px;
-    text-shadow: 0 0 5px #00ffff;
-    opacity: 0.8;
-    text-align: center;
-}
-
-/* 메인 폼 박스: 핑크 네온 이중 테두리 */
+/* 메인 폼 박스: 홈의 카드 스타일 계승 */
 #signupFormStep2 {
-    background-color: #000000;
-    border: 1px solid #ff007f;
+    background-color: #0a0a0a;
+    border: 1px solid #ff0055;
     padding: 40px;
-    width: 450px;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.6), inset 0 0 10px rgba(255, 0, 127, 0.2);
+    width: 480px; /* 입력 요소가 많으므로 약간 넓게 */
+    border-radius: 16px;
+    box-shadow: 0 0 30px rgba(255, 0, 85, 0.1);
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
     position: relative;
 }
 
-/* 이미지의 상단 ✕ 장식 재현 */
+/* 장식용 ✕ 버튼 (홈 화면 스타일) */
 #signupFormStep2::after {
-    content: '✕';
+    content: '×';
     position: absolute;
     top: 15px;
     right: 20px;
-    color: #ff007f;
-    font-size: 20px;
-    opacity: 0.7;
+    color: #ff0055;
+    font-size: 22px;
+    opacity: 0.5;
+    cursor: pointer;
 }
 
-/* 라벨 스타일 */
+/* 레이블: 홈의 포인트 컬러(시안) 활용 */
 label {
-    font-size: 12px;
+    font-size: 0.8rem;
     margin-bottom: 8px;
-    color: #00ffff;
+    color: #00f2ff;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     display: block;
+    font-weight: bold;
 }
 
-/* 입력 필드 (text, date) */
+/* 입력 필드 */
 input[type="text"], 
 input[type="date"] {
-    background: #000000;
-    border: 1px solid #00ffff;
+    background: #111;
+    border: 1px solid #222;
     color: #ffffff;
     padding: 12px;
     margin-bottom: 15px;
     width: 100%;
+    border-radius: 8px;
     box-sizing: border-box;
     outline: none;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+    transition: 0.3s;
 }
 
 input:focus {
-    box-shadow: 0 0 10px #00ffff;
-    border-color: #ffffff;
+    border-color: #00f2ff;
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
 }
 
-/* 날짜 입력창(Date) 아이콘 색상 변경 (브라우저 지원용) */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg);
-    cursor: pointer;
-}
-
-/* 성별 선택 그룹 (Radio) */
+/* 성별 선택 그룹 */
 .gender-group {
     margin: 10px 0 20px 0;
-    padding: 10px;
-    border: 1px solid rgba(0, 255, 255, 0.2);
-    color: #ffffff;
-    font-size: 14px;
+    padding: 15px;
+    background: #050505;
+    border-radius: 8px;
+    border: 1px solid #222;
+    display: flex;
+    justify-content: space-around;
 }
 
 .gender-group label {
-    display: inline-block;
-    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 0;
+    color: #aaa;
     text-transform: none;
-    letter-spacing: 0;
-    color: #ffffff;
+    font-weight: normal;
 }
 
 input[type="radio"] {
-    accent-color: #ff007f; /* 네온 핑크 강조색 */
-    margin-right: 5px;
-    cursor: pointer;
+    accent-color: #ff0055;
+    transform: scale(1.1);
 }
 
-/* 버튼 그룹 및 가입 완료 버튼 */
+/* 버튼 그룹: 그리드 대신 플렉스나 단일 열 그리드로 변경 */
 .btn-group {
     margin-top: 10px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column; /* 세로로 쌓기 */
+    gap: 12px;
+}
+
+/* 첫 번째 버튼 (다음 단계로 - 핑크) */
+.btn-group button:first-child {
+    background-color: #ff0055;
+    border: none;
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+    width: 100%; /* 가로 꽉 채우기 */
+    /* span 2는 제거해도 무방 (flex 환경) */
+}
+
+/* 두 번째 버튼 (나중에 하기 - 다크/테두리) */
+.btn-group button:last-child {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    font-size: 14px;
+    width: 100%; /* 가로 꽉 채우기 */
 }
 
 .btn-group button {
-    background-color: #ff007f;
     color: #ffffff;
-    border: none;
-    width: 100%;
     padding: 16px;
-    font-size: 18px;
+    border-radius: 8px;
     font-weight: bold;
-    letter-spacing: 3px;
+    letter-spacing: 1px;
     cursor: pointer;
     text-transform: uppercase;
-    transition: 0.2s;
-}
-
-.btn-group button:hover {
-    box-shadow: 0 0 20px #ff007f;
-    background-color: #ff3399;
-}
-
-/* 건너뛰기 링크 */
-.skip-link {
-    color: #00ffff !important; /* JSP 내장 스타일 무력화 */
-    text-decoration: none;
-    font-size: 12px;
-    letter-spacing: 1px;
-    opacity: 0.6;
     transition: 0.3s;
-    margin-left: 0 !important; /* 중앙 정렬을 위해 리셋 */
+}
+/* 진행 바 컨테이너 */
+.progress-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    gap: 10px;
 }
 
-.skip-link:hover {
+/* 단계 아이템 (01, 02, 03) */
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0.3; /* 평소에는 흐리게 */
+    transition: 0.5s;
+}
+
+/* 현재 활성화된 단계 */
+.progress-step.active {
     opacity: 1;
-    text-decoration: underline;
-    text-shadow: 0 0 8px #00ffff;
 }
 
-/* 닉네임 중복 메시지 */
-#nickMsg {
-    font-size: 11px;
-    margin-top: -10px;
-    margin-bottom: 15px;
-    letter-spacing: 1px;
+.step-num {
+    font-family: 'Courier Prime', monospace;
+    font-size: 18px;
+    font-weight: bold;
+    color: #00f2ff; /* 시안 색상 */
+    text-shadow: 0 0 10px #00f2ff;
 }
 
-/* 하단 카피라이트 장식 */
-body::after {
-    content: 'SYSTEM STATUS: DATA INPUT REQUIRED // 2026';
-    margin-top: 30px;
+.progress-step.active .step-num {
+    color: #ff0055; /* 현재 단계는 핑크로 강조 */
+    text-shadow: 0 0 15px #ff0055;
+}
+
+.step-text {
     font-size: 10px;
-    color: rgba(0, 255, 255, 0.2);
-    letter-spacing: 3px;
+    letter-spacing: 2px;
+    margin-top: 5px;
+    color: #fff;
+}
+
+/* 연결 라인 */
+.progress-line {
+    width: 50px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px; /* 텍스트 높이 고려 */
 }

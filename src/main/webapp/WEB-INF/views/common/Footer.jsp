@@ -106,7 +106,6 @@
 
 <footer class="neon-footer">
     <div class="footer-container">
-        <div class="footer-copyright"><p>Copyright © 2026 404Music Inc. 모든 권리 보유.</p></div>
         <nav class="footer-nav">
             <a href="${pageContext.request.contextPath}/PrivacyPolicy" class="neon-link">개인정보처리방침</a>
             <span class="sep">|</span>
@@ -116,6 +115,7 @@
             <span class="sep">|</span>
             <a href="${pageContext.request.contextPath}/support?mode=faq" class="neon-link">FAQ</a>
         </nav>
+        <div class="footer-copyright"><p>Copyright © 2026 404Music Inc. 모든 권리 보유.</p></div>
     </div>
 </footer>
 

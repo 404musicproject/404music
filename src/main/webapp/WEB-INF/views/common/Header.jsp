@@ -258,6 +258,7 @@
         </a>
     </div>
 
+<!--검색차아아아아아아아아아앙  -->
     <div class="header-center">
         <form action="${pageContext.request.contextPath}/musicSearch" method="get" class="search-form" id="headerSearchForm">
             <select name="searchType" class="search-select" id="headerSearchType">
@@ -277,15 +278,15 @@
     
     <div class="header-right">
         <div class="user-status-group">
-            <c:choose>
-                <c:when test="${empty sessionScope.loginUser}">
-                    <a href="javascript:void(0)" onclick="openLoginModal()" class="login-text-btn">LOGIN</a>
-                    <span class="auth-divider">|</span>
-                    <a href="/signup" class="login-text-btn">SIGN UP</a>
-                </c:when>
-                <c:otherwise>
-                    <div class="auth-info">
-                        <span class="user-greeting"><strong>${sessionScope.loginUser.UNick}</strong>님</span>
+<c:choose>
+    <c:when test="${empty loginUser}"> <%-- sessionScope 생략 가능 --%>
+        <a href="javascript:void(0)" onclick="openLoginModal()" class="login-text-btn">LOGIN</a>
+        <span class="auth-divider">|</span>
+        <a href="/signup" class="login-text-btn">SIGN UP</a>
+    </c:when>
+    <c:otherwise>
+        <div class="auth-info">
+            <span class="user-greeting"><strong>${loginUser.UNick}</strong>님</span>
                         <a href="${pageContext.request.contextPath}/music/myLibrary" class="lib-link">
                             <i class="fa-solid fa-box-archive"></i> LIBRARY
                         </a>

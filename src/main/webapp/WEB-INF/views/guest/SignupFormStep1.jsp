@@ -9,6 +9,26 @@
 </head>
 <body>
 <h2>회원가입</h2>
+
+
+<div class="progress-container">
+    <div class="progress-step active">
+        <span class="step-num">01</span>
+        <span class="step-text">AUTH</span>
+    </div>
+    <div class="progress-line"></div>
+    <div class="progress-step">
+        <span class="step-num">02</span>
+        <span class="step-text">INFO</span>
+    </div>
+    <div class="progress-line"></div>
+    <div class="progress-step">
+        <span class="step-num">03</span>
+        <span class="step-text">PHOTO</span>
+    </div>
+</div>
+
+
     <form id="signupForm">
         <div style="margin-bottom:10px;">
             <input type="email" id="uId" name="uId" placeholder="이메일 주소" required>
@@ -49,9 +69,13 @@
                 if(res === "success") {
                     alert("인증되었습니다.");
                     verified = true;
-                    $('#authMsg').text("✅ 인증 완료").css("color", "green");
+                    
+                    // ✅ 추가된 코드: 인증 완료 시 관련 UI 정리
+                    $('#btnSendMail').hide();      // 인증번호 받기 버튼 숨기기
+                    $('#authDiv').hide();          // 인증번호 입력칸과 확인 버튼 숨기기
+                    
+                    $('#authMsg').text("✅ 이메일 인증 완료").css("color", "green");
                     $('#btnSubmit').attr('disabled', false); // 가입 버튼 활성화
-                    $('#authDiv').hide();
                 } else {
                     alert("번호가 틀렸습니다.");
                 }

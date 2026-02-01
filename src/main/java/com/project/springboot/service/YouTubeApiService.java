@@ -1,5 +1,6 @@
 package com.project.springboot.service;
 
+import org.springframework.beans.factory.annotation.Value; // 추가
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.Map;
@@ -8,12 +9,14 @@ import java.util.List;
 @Service
 public class YouTubeApiService {
 
-    // 보내주신 API 키를 직접 변수에 할당 (보안상 properties 권장이나 우선 확실한 동작을 위해)
-    private final String apiKey = "AIzaSyB0OKEB5SlyJG9pEDUfM1kZedj6TQ7yAn4"; // 여기에 보내주신 키가 들어있다고 가정합니다.
+    // ${} 문법을 사용하여 properties의 키 값을 가져옵니다.
+    @Value("${youtube.api.key}")
+    private String apiKey;
 
     public String searchYouTube(String query) {
         try {
-            // 검색어 최적화 (곡 제목 뒤에 'official'을 붙이면 더 정확합니다)
+            // URL을 만들 때 query가 공백이나 특수문자를 포함할 수 있으므로 
+            // 실제 서비스에서는 URLEncoder 등을 사용하는 것이 더 안전합니다.
             String url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" 
                          + query + " official&key=" + apiKey + "&type=video&maxResults=1";
 

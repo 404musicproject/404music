@@ -67,7 +67,7 @@
     <div class="container">
         <div class="chart-tabs" style="display: flex; align-items: center; margin-bottom: 30px;">
             <button class="tab-btn active" style="background: none; border: none; color: #ff0055; font-weight: bold; font-size: 1.2rem; border-bottom: 2px solid #ff0055; padding-bottom: 5px;">
-                SEARCH RESULT
+                SEARCH RESULT  
             </button>
             <button class="tab-btn" onclick="location.href='/music/Index'" 
                     style="margin-left: auto; border: 1px solid #444; color: #888; background: transparent; padding: 5px 15px; cursor: pointer;">
@@ -186,14 +186,23 @@ $(document).ready(function() {
 	});
 	
 function handlePlay(mNo, title, artist, img) {
+    console.log("재생 데이터 수신:", {mNo, title, artist, img}); // <-- 데이터가 찍히는지 확인!
+
+    if (!title || title === "") {
+        alert("곡 정보를 가져올 수 없습니다. (데이터 매핑 에러)");
+        return;
+    }
+
     if (typeof MusicApp !== 'undefined' && typeof MusicApp.playLatestYouTube === 'function') {
-        // MusicApp의 통합 재생 로직 호출 (유튜브 검색 + 로그 기록 포함)
-        MusicApp.playLatestYouTube(title, artist, img);
+        // 작은따옴표 에러 방지용 가공
+        const cleanTitle = title.replace(/'/g, "\\'");
+        const cleanArtist = artist.replace(/'/g, "\\'");
+        
+        MusicApp.playLatestYouTube(cleanTitle, cleanArtist, img);
     } else {
         console.error("MusicApp을 로드할 수 없습니다.");
     }
 }
-
     function addToLibrary(mNo) {
         const uNo = "${sessionScope.loginUser.UNo}";
         if (!uNo || uNo == "0") {

@@ -12,9 +12,6 @@
 body {
     background-color: #050505;
     color: #00f2ff;
-    font-family: 'Courier New', monospace;
-    margin: 0;
-    font-size: 13px;
 }
 
 .main-container {
@@ -22,6 +19,9 @@ body {
     max-width: 1000px;
     margin: 0 auto;
     background-color: #050505;
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    font-size: 13px;
 }
 
 /* =========================

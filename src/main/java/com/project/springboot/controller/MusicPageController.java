@@ -37,18 +37,13 @@ public class MusicPageController {
     public String searchPage(
             @RequestParam(value = "searchType", required = false, defaultValue = "TITLE") String searchType,
             @RequestParam(value = "searchKeyword", required = false) String keyword,
-            HttpSession session, // 1. 세션 추가
+            HttpSession session, 
             Model model
     ) {
-        // 2. 로그인한 유저 정보 가져오기
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         int uNo = (user != null) ? user.getUNo() : 0; 
 
         String type = (searchType == null) ? "TITLE" : searchType.trim().toUpperCase();
-        if (!List.of("TITLE", "ARTIST", "ALBUM", "LYRICS", "ALL").contains(type)) {
-            type = "TITLE";
-        }
-
         model.addAttribute("searchType", type);
         model.addAttribute("keyword", keyword);
 
@@ -57,24 +52,24 @@ public class MusicPageController {
         }
 
         List<MusicDTO> searchResults;
-        // 3. DAO 호출 시 uNo를 두 번째 인자로 반드시 전달!
-        switch (type) {
-            case "ARTIST" -> searchResults = musicDAO.selectMusicByArtist(keyword, uNo);
-            case "ALBUM" -> searchResults = musicDAO.selectMusicByAlbum(keyword, uNo);
-            case "LYRICS" -> searchResults = musicDAO.selectMusicByLyrics(keyword, uNo);
-            case "ALL" -> searchResults = musicDAO.selectMusicByKeyword(keyword, uNo);
-            default -> searchResults = musicDAO.selectMusicByTitle(keyword, uNo);
-        }
 
-        // 결과 없을 때 재수집 로직에서도 마찬가지로 uNo 추가
-        if ((searchResults == null || searchResults.isEmpty()) && !"LYRICS".equals(type)) {
-            musicService.searchAndSave(keyword);
+        if ("LYRICS".equals(type)) {
+            searchResults = musicDAO.selectMusicByLyrics(keyword, uNo);
+        } else {
+            // [1] 먼저 정규화 키워드를 가져옵니다 (예: 백예린 -> thevolunteers)
+            // MusicService에 public으로 getNormalizedKeyword가 있어야 합니다.
+            String normalized = musicService.getNormalizedKeyword(keyword);
 
-            switch (type) {
-                case "ARTIST" -> searchResults = musicDAO.selectMusicByArtist(keyword, uNo);
-                case "ALBUM" -> searchResults = musicDAO.selectMusicByAlbum(keyword, uNo);
-                case "ALL" -> searchResults = musicDAO.selectMusicByKeyword(keyword, uNo);
-                default -> searchResults = musicDAO.selectMusicByTitle(keyword, uNo);
+            // [2] ES 검색 (keyword, type, uNo 순서 확인)
+            searchResults = musicService.getMusicListByES(keyword, type, uNo);
+
+            // [3] ES 결과가 없거나 백예린처럼 솔로곡을 더 긁어와야 하는 상황일 때
+            if (searchResults == null || searchResults.isEmpty()) {
+                // [수정 핵심] 인자 3개를 정확히 전달: (원본, 정규화, 타입)
+                musicService.searchAndSave(keyword, normalized, type);
+                
+                // 다시 조회
+                searchResults = musicService.getMusicListByES(keyword, type, uNo);
             }
         }
 
@@ -94,22 +89,25 @@ public class MusicPageController {
     @GetMapping({"/", "/home"}) 
     public String home(HttpSession session, Model model) {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        // 로그인 안 했으면 0L을 넘겨서 '전체 인기 순위'를 가져오게 함
         Long uNo = (user != null) ? (long)user.getUNo() : 0L; 
         
-        // 5번째 섹션용: 유저 선호 태그
+        // [수정된 부분] 서비스가 알아서 로그인 유저면 개인 취향, 비로그인이면 전체 트렌드를 가져옵니다.
         List<String> topTags = recommendationService.getUserTopTags(uNo);
+        
+        // 혹시나 DB에 데이터가 단 하나도 없을 때를 대비한 최후의 방어막만 남깁니다.
         if (topTags == null || topTags.isEmpty()) {
             topTags = Arrays.asList("행복한 기분", "카페/작업", "운동", "새벽 감성", "휴식");
         }
         model.addAttribute("topTags", topTags);
 
-        // 4번째 섹션용: 주변 장소/상황 태그 (날씨 칸을 제외한 4개)
-        // 이 리스트는 DB에서 가져오거나, 고정된 대표 장소 태그로 구성합니다.
+        // [팁] 장소 태그도 나중에는 DB에서 LOCATION 타입만 긁어오도록 바꿀 수 있어요!
         List<String> placeTags = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉");
         model.addAttribute("placeTags", placeTags);
         
         return "Home"; 
     }
+    
     // 음악 메인 인덱스 (실시간 차트 등)
     @GetMapping("/music/Index")
     public String mainIndex() {

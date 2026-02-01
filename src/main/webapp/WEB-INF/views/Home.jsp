@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="${pageContext.request.contextPath}/js/music-service.js"></script>
-	<script src="/js/music-service.js"></script>
     <style>
         body { background-color: #050505; color: #fff; font-family: 'Pretendard', sans-serif; overflow-x: hidden; margin: 0; }
         
@@ -57,6 +56,28 @@
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
         }
         
+         /* 번호별 태그 이미지 등록 */
+		.tag-1 { background-image: url('${pageContext.request.contextPath}/img/Tag/1.png'); }
+		.tag-2 { background-image: url('${pageContext.request.contextPath}/img/Tag/2.png'); }
+		.tag-3 { background-image: url('${pageContext.request.contextPath}/img/Tag/3.png'); }
+		.tag-4 { background-image: url('${pageContext.request.contextPath}/img/Tag/4.png'); }
+		.tag-5 { background-image: url('${pageContext.request.contextPath}/img/Tag/5.png'); }
+		.tag-6 { background-image: url('${pageContext.request.contextPath}/img/Tag/6.png'); }
+		.tag-7 { background-image: url('${pageContext.request.contextPath}/img/Tag/7.png'); }
+		.tag-8 { background-image: url('${pageContext.request.contextPath}/img/Tag/8.png'); }
+		.tag-9 { background-image: url('${pageContext.request.contextPath}/img/Tag/9.png'); }
+		.tag-10 { background-image: url('${pageContext.request.contextPath}/img/Tag/10.png'); }
+		.tag-11 { background-image: url('${pageContext.request.contextPath}/img/Tag/11.png'); }
+		.tag-12 { background-image: url('${pageContext.request.contextPath}/img/Tag/12.png'); }
+		.tag-13 { background-image: url('${pageContext.request.contextPath}/img/Tag/13.png'); }
+		.tag-14 { background-image: url('${pageContext.request.contextPath}/img/Tag/14.png'); }
+		.tag-15 { background-image: url('${pageContext.request.contextPath}/img/Tag/15.png'); }
+		.tag-16 { background-image: url('${pageContext.request.contextPath}/img/Tag/16.png'); }
+		.tag-17 { background-image: url('${pageContext.request.contextPath}/img/Tag/17.png'); }
+		.tag-18 { background-image: url('${pageContext.request.contextPath}/img/Tag/18.png'); }
+		.tag-19 { background-image: url('${pageContext.request.contextPath}/img/Tag/19.png'); }
+		.tag-20 { background-image: url('${pageContext.request.contextPath}/img/Tag/20.png'); }
+		.tag-21 { background-image: url('${pageContext.request.contextPath}/img/Tag/21.png'); }
         
     </style>
 </head>
@@ -135,37 +156,18 @@
         </div>
     </section>
     
+<%-- 섹션 4: Today's Context --%>
 <section class="Weather-section">
     <div class="section-title">Today's Context</div>
-    <div class="location-grid">
-        <div class="location-card card-weather" id="geo-weather-card" onclick="goContext('weather')">
-            <span class="city-name" id="geo-city">LOCATING...</span>
-            <div id="geo-weather-title" class="city-top-song">날씨 확인 중</div>
-            <div id="geo-weather-desc" class="city-top-artist">잠시만 기다려주세요</div>
+    <div class="location-grid" id="context-list">
         </div>
-
-        <c:forEach var="ptag" items="${placeTags}" varStatus="vs">
-            <div class="location-card tag-card-p${vs.index}" onclick="goTag('${ptag}')">
-                <span class="city-name">NEARBY PLACE</span>
-                <div class="city-top-song">${ptag}</div>
-                <div class="city-top-artist">지금 위치에 어울리는 추천</div>
-            </div>
-        </c:forEach>
-    </div>
 </section>
-    
-    
+
+<%-- 섹션 5: Personalized Mood Tags --%>
 <section class="activity-section">
     <div class="section-title">Personalized Mood Tags</div>
-    <div class="location-grid">
-        <c:forEach var="tag" items="${topTags}" varStatus="status">
-            <div class="location-card tag-card-${status.index}" onclick="goTag('${tag}')">
-                <span class="city-name">MY TAG #${status.index + 1}</span>
-                <div class="city-top-song">${tag} 스타일</div>
-                <div class="city-top-artist">당신이 자주 찾는 감성</div>
-            </div>
-        </c:forEach>
-    </div>
+    <div class="location-grid" id="personalized-list">
+        </div>
 </section>
 </main>
 
@@ -175,22 +177,40 @@
 const contextPath = '${pageContext.request.contextPath}';
 const FALLBACK_IMG = 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
 let cachedTopOne = null;
-console.log("현재 MusicApp 상태:", window.MusicApp);
-//1. MusicApp 연동 재생 함수 (로그 저장 기능 추가)
+
+// 태그 이름 -> 이미지 번호 매핑
+const tagNoMap = {
+  "행복한 기분": 1, "파티": 2, "더운 여름": 3, "자신감 뿜뿜": 4, "운동": 5,
+  "스트레스 해소": 6, "슬픔": 7, "비 오는 날": 8, "새벽 감성": 9, "로맨틱": 10,
+  "휴식": 11, "요리할 때": 12, "집중": 13, "맑음": 14, "흐림": 15,
+  "눈 오는 날": 16, "바다": 17, "산/등산": 18, "카페/작업": 19, "헬스장": 20, "공원/피크닉": 21
+};
+
+// 1. 유틸리티 함수
+function toHighResArtwork(url) {
+    if (!url) return FALLBACK_IMG;
+    return String(url).replace(/100x100bb/g, '600x600bb').replace(/100x100/g, '600x600');
+}
+
+function goTag(tagName) {
+    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(tagName);
+}
+
+function goRegional(city) { 
+    location.href = contextPath + '/music/regional?city=' + city; 
+}
+
+// 2. 음악 재생 및 로그 기록
 function playLatestYouTube(title, artist, imgUrl) {
     if (!window.MusicApp) return;
 
-    // [핵심] 재생 클릭 시 서버에 로그 저장 요청 (비동기)
     $.ajax({
-	    url: contextPath + '/api/music/logHistoryAuto', // /api 추가!
-	    type: 'POST',
-	    data: { title: title, artist: artist },
-	    success: function(res) {
-	        console.log("로그 저장 결과:", res);
-	    }
-	});
+        url: contextPath + '/api/music/logHistoryAuto',
+        type: 'POST',
+        data: { title: title, artist: artist },
+        success: function(res) { console.log("로그 기록 완료"); }
+    });
 
-    // 기존 재생 로직 유지
     window.MusicApp.playLatestYouTube(title, artist, imgUrl);
 }
 
@@ -198,12 +218,7 @@ function playTopOne() {
     if (cachedTopOne) playLatestYouTube(cachedTopOne.TITLE, cachedTopOne.ARTIST, cachedTopOne.ALBUM_IMG);
 }
 
-function toHighResArtwork(url) {
-    if (!url) return FALLBACK_IMG;
-    return String(url).replace(/100x100bb/g, '600x600bb').replace(/100x100/g, '600x600');
-}
-
-// 2. 데이터 로딩 로직
+// 3. 데이터 로딩 함수들
 function loadTopOne() {
     $.get(contextPath + '/api/music/top100', function(data) {
         if (data && data.length > 0) {
@@ -246,175 +261,101 @@ function loadItunesMusic() {
     });
 }
 
-function goRegional(city) { location.href = contextPath + '/music/regional?city=' + city; }
+// 4. 태그 및 날씨 렌더링
+function drawTagCards() {
+    // 1. 장소 태그 (안전하게 배열 생성)
+    const placeTags = [];
+    <c:if test="${not empty placeTags}">
+        <c:forEach var="pt" items="${placeTags}">
+            placeTags.push("${pt}");
+        </c:forEach>
+    </c:if>
 
-$(document).ready(function() {
-    // ERR_INCOMPLETE_CHUNKED_ENCODING 방지를 위해 아주 약간의 지연 후 실행
-    setTimeout(function() {
-        if (window.MusicApp) {
-            MusicApp.init(${loginUser.uNo != null ? loginUser.uNo : 0});
-        }
-        loadTopOne();
-        loadRegionalPreviews();
-        loadItunesMusic();
-    }, 100);
-});
-
-function goTag(tagName) {
-    // 기존에 만드신 추천 리스트 페이지로 이동
-    location.href = "${pageContext.request.contextPath}/music/recommendationList?tagName=" + encodeURIComponent(tagName);
-}
-
-function goContext(type) {
-    let tagName = "";
+    let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/location/default.jpg\')">'
+                    + '  <span class="city-name" id="geo-city">LOCATION</span>'
+                    + '  <div class="city-top-song" id="geo-weather-title">날씨 확인 중...</div>'
+                    + '  <div class="city-top-artist" id="geo-weather-desc">데이터를 불러오고 있습니다.</div>'
+                    + '</div>';
     
-    switch(type) {
-        case 'weather':
-            // MusicApp이 수집한 weatherId 활용 (로그에 찍혔던 800 등)
-            const weatherId = (window.MusicApp && window.MusicApp.lastWeatherId) || 800;
-            
-            if (weatherId === 800) {
-                tagName = "맑음"; // 태그 ID 14
-            } else if (weatherId >= 200 && weatherId < 600) {
-                tagName = "비 오는 날"; // 태그 ID 8
-            } else if (weatherId >= 600 && weatherId < 700) {
-                tagName = "눈 오는 날"; // 태그 ID 16
-            } else if (weatherId > 800 && weatherId < 900) {
-                tagName = "흐림"; // 태그 ID 15
-            } else {
-                tagName = "행복한 기분"; // 기본값
-            }
-            break;
-
-        case 'cafe':
-            // 현재 위치나 상황에 따라 LOCATION 태그 매핑
-            tagName = "카페/작업"; // 태그 ID 19
-            break;
-
-        case 'night':
-            // 현재 시간대(Hour)를 체크해서 동적으로 변경도 가능
-            const hour = new Date().getHours();
-            if (hour >= 22 || hour <= 5) {
-                tagName = "새벽 감성"; // 태그 ID 9
-            } else {
-                tagName = "휴식"; // 낮 시간대라면 태그 ID 11
-            }
-            break;
-
-        case 'workout':
-            tagName = "운동"; // 태그 ID 5
-            break;
-
-        case 'drive':
-            // 드라이브에 어울리는 기분이나 날씨 태그로 연결
-            tagName = "자신감 뿜뿜"; // 태그 ID 4 (드라이브엔 신나는 곡)
-            break;
-
-        default:
-            tagName = "휴식";
+    // 데이터가 있을 때만 forEach 실행
+    if (placeTags.length > 0) {
+        placeTags.forEach(name => {
+            const no = tagNoMap[name] || 11;
+            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                         + '  <span class="city-name">NEARBY PLACE</span>'
+                         + '  <div class="city-top-song">' + name + '</div>'
+                         + '  <div class="city-top-artist">지금 위치에 어울리는 추천</div>'
+                         + '</div>';
+        });
     }
+    $('#context-list').html(contextHtml);
 
-    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(tagName);
-}
+    // 2. 개인화 태그 (안전하게 배열 생성)
+    const topTags = [];
+    <c:if test="${not empty topTags}">
+        <c:forEach var="tt" items="${topTags}">
+            topTags.push("${tt}");
+        </c:forEach>
+    </c:if>
 
-
-// 날씨 UI를 업데이트하는 함수
-function updateWeatherUI() {
-    // MusicApp에 저장된 날씨 데이터가 있는지 확인
-    if (window.MusicApp && window.MusicApp.lastWeatherData) {
-        const data = window.MusicApp.lastWeatherData; // music-service.js에서 저장한다고 가정
-        const city = data.name || "Unknown";
-        const desc = data.weather[0].description;
-        const temp = Math.round(data.main.temp);
-
-        $('#weather-city').text(city.toUpperCase());
-        $('#weather-desc').text(temp + "°C, " + desc);
-        $('#weather-status').text("이 날씨에 딱 맞는 추천 곡 보기");
-        
-        // 날씨에 따른 배경 이미지 변경 (선택 사항)
-        const weatherId = data.weather[0].id;
-        if (weatherId === 800) {
-            $('.card-weather').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/sunny.jpg")');
-        } else if (weatherId >= 200 && weatherId < 600) {
-            $('.card-weather').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/rainy.jpg")');
-        }
-    } else {
-        // 아직 데이터를 못 가져왔다면 0.5초 뒤 재시도
-        setTimeout(updateWeatherUI, 500);
+    let personalHtml = '';
+    if (topTags.length > 0) {
+        topTags.forEach((name, idx) => {
+            const no = tagNoMap[name] || 11;
+            personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                          + '  <span class="city-name">MY TAG #' + (idx + 1) + '</span>'
+                          + '  <div class="city-top-song">' + name + ' 스타일</div>'
+                          + '  <div class="city-top-artist">당신이 자주 찾는 감성</div>'
+                          + '</div>';
+        });
     }
+    $('#personalized-list').html(personalHtml);
+    
+    renderContextWeather();
 }
-
-$(document).ready(function() {
-    setTimeout(function() {
-        if (window.MusicApp) {
-            MusicApp.init(${loginUser.uNo != null ? loginUser.uNo : 0});
-            // 초기화 후 날씨 정보 UI 반영 시작
-            updateWeatherUI(); 
-        }
-        loadTopOne();
-        loadRegionalPreviews();
-        loadItunesMusic();
-    }, 100);
-});
 
 function renderContextWeather() {
-    console.log("날씨 데이터 수집 시작...");
     if (!window.MusicApp) return;
-
-    // MusicApp의 getWeatherData를 호출하면서 콜백으로 UI 업데이트
     window.MusicApp.getWeatherData(function(data) {
-        if (!data) {
-            console.error("날씨 데이터를 가져오지 못했습니다.");
-            $('#geo-weather-title').text("날씨 정보 오류");
-            return;
-        }
-
+        if (!data) return;
         const city = data.name.toUpperCase();
         const weatherId = data.weather[0].id;
-        
-        // 1. 보유 태그 매핑
         let tagName = "맑음";
-        if (weatherId < 600) tagName = "비 오는 날";
-        else if (weatherId < 700) tagName = "눈 오는 날";
-        else if (weatherId > 800) tagName = "흐림";
+        let bgImg = "${pageContext.request.contextPath}/img/weather/sunny.jpg";
 
-        // 2. HTML 텍스트 교체 (ID 정확히 매칭)
+        if (weatherId < 600) { tagName = "비 오는 날"; bgImg = "${pageContext.request.contextPath}/img/weather/rainy.jpg"; }
+        else if (weatherId < 700) { tagName = "눈 오는 날"; bgImg = "${pageContext.request.contextPath}/img/weather/snowy.jpg"; }
+        else if (weatherId > 800) { tagName = "흐림"; bgImg = "${pageContext.request.contextPath}/img/weather/cloudy.jpg"; }
+
         $('#geo-city').text(city);
         $('#geo-weather-title').text(tagName);
-        $('#geo-weather-desc').text("실시간 기상 맞춤 선곡");
-        
-        // 3. 배경 이미지 변경 (날씨별 피드백)
-        if (weatherId < 600) {
-            $('#geo-weather-card').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/rainy.jpg")');
-        } else {
-            $('#geo-weather-card').css('background-image', 'url("${pageContext.request.contextPath}/img/weather/sunny.jpg")');
-        }
-        
-        // 4. 클릭 이벤트 연결 (Controller의 recommendationList 경로)
-        $('#geo-weather-card').attr('onclick', "goTag('" + tagName + "')");
-        
-        console.log("날씨 UI 업데이트 완료: " + tagName);
+        $('#geo-weather-desc').text(Math.round(data.main.temp) + "°C, 현재 날씨 맞춤형");
+        $('#geo-weather-card').css('background-image', 'url(' + bgImg + ')').attr('onclick', "goTag('" + tagName + "')");
     });
 }
 
-// [최종] 단 하나의 document.ready에서 모든 로드 관리
+// [통합] 초기화 및 실행
 $(document).ready(function() {
-    setTimeout(function() {
-        // 1. MusicApp 초기화
-        if (window.MusicApp) {
-            const uNo = "${loginUser.uNo}" != "" ? "${loginUser.uNo}" : 0;
-            window.MusicApp.init(parseInt(uNo));
-            
-            // 2. 날씨 정보 로드 실행 (이게 호출되어야 '확인 중'이 바뀝니다)
-            renderContextWeather(); 
-        }
+    const uNo = "${loginUser.uNo}" != "" ? parseInt("${loginUser.uNo}") : 0;
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // 로그인 에러 체크 (이전 모달 연동용)
+    if (urlParams.has('loginError')) {
+        if(typeof openLoginModal === 'function') openLoginModal();
+        alert("아이디 또는 비밀번호가 틀렸습니다.");
+    }
 
-        // 3. 나머지 차트 및 프리뷰 로드
+    setTimeout(function() {
+        if (window.MusicApp) {
+            window.MusicApp.init(uNo);
+        }
         loadTopOne();
         loadRegionalPreviews();
         loadItunesMusic();
-    }, 200); 
+        drawTagCards(); 
+    }, 200);
 });
+</script>
 </script>
 </body>
 </html>

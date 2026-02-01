@@ -4,8 +4,8 @@
 <head>
 <style>
 
- body { background-color: #050505; color: #00f2ff; font-family: 'Courier New', monospace; }
-    .main-container { min-height: auto; padding: 40px; max-width: 900px; margin: 0 auto; }
+ body { background-color: #050505; color: #00f2ff;}
+    .main-container { min-height: auto; padding: 40px; max-width: 900px; margin: 0 auto; font-family: 'Courier New', monospace;  }
     .glitch-title { text-shadow: 2px 2px #ff0055; border-left: 5px solid #ff0055; padding-left: 15px; margin-bottom: 30px; font-size: 30px; }
     .faq-container { border-top: 1px solid #333; margin-top: 20px; }
     .faq-item { border-bottom: 1px solid #222; }

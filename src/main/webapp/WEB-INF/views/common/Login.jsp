@@ -115,17 +115,18 @@
         <span class="close-btn" onclick="closeLoginModal()">&times;</span>
         <h3>SYSTEM LOGIN</h3>
         
-        <form id="modalLoginForm" class="modal-login-form">
-            <input type="email" id="modalId" placeholder="ID (EMAIL)" required>
-            <input type="password" id="modalPw" placeholder="PASSWORD" 
-                   onkeyup="if(window.event.keyCode==13){requestLogin()}"> 
-            
-            <button type="button" class="login-submit-btn" onclick="requestLogin()">ACCESS START</button>
-        </form>
+<form id="modalLoginForm" class="modal-login-form">
+    <input type="hidden" id="csrfToken" value="${_csrf.token}"/>
+    
+    <input type="text" id="modalId" placeholder="ID (EMAIL)" required>
+    <input type="password" id="modalPw" placeholder="PASSWORD" required> 
+    
+    <button type="button" class="login-submit-btn" onclick="ajaxLogin()">ACCESS START</button>
+</form>
 
         <div class="social-login-title">───── SNS LOGIN ─────</div>
         <div class="social-btns-container">
-            <a href="/oauth2/authorization/kakao" class="btn-social btn-kakao">카카오 로그인</a>
+            <a href="${pageContext.request.contextPath}/oauth2/authorization/kakao" class="btn-social btn-kakao">카카오 로그인</a>
             <a href="/oauth2/authorization/naver" class="btn-social btn-naver">네이버 로그인</a>
             <a href="/oauth2/authorization/google" class="btn-social btn-google">구글 로그인</a>
         </div>
@@ -148,24 +149,36 @@
             closeLoginModal();
         }
     });
-
-    function requestLogin() {
-        const loginData = { 
-            "uId": $('#modalId').val(), 
-            "uPassword": $('#modalPw').val() 
+    $(document).ready(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('loginError')) {
+            alert("아이디 또는 비밀번호가 틀렸습니다.");
+            openLoginModal(); // 에러 시 다시 팝업 띄우기
+        }
+    });
+    
+    function ajaxLogin() {
+        const loginData = {
+            uId: $('#modalId').val(),
+            uPassword: $('#modalPw').val()
         };
-        
+
         $.ajax({
             url: '/api/user/login',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(loginData),
-            success: function(user) {
-                alert(user.uNick + "님 환영합니다!");
-                location.reload();
+            beforeSend: function(xhr) {
+                // CSRF 토큰 헤더 추가 (Security 설정 때문)
+                xhr.setRequestHeader("X-CSRF-TOKEN", $('#csrfToken').val());
             },
-            error: function(xhr) { 
-                alert("로그인 실패: " + xhr.responseText); 
+            success: function(res) {
+                alert("환영합니다!");
+                // 현재 페이지를 유지하면서 서버 세션만 새로 읽어오려면 reload가 가장 깔끔합니다.
+                location.reload(); 
+            },
+            error: function(xhr) {
+                alert("비밀번호가 틀렸거나 없는 계정입니다.");
             }
         });
     }

@@ -52,7 +52,15 @@
     FROM SCOTT.history h
     JOIN SCOTT.music_tag_map mtm ON h.m_no = mtm.m_no
     JOIN SCOTT.tags t ON mtm.g_no = t.g_no
-    WHERE h.u_no = #{uNo}
+    <where>
+        <choose>
+            <when test="uNo != 0">
+                h.u_no = #{uNo}
+            </when>
+            <otherwise>
+                </otherwise>
+        </choose>
+    </where>
     GROUP BY t.g_name
     ORDER BY COUNT(*) DESC
     OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY

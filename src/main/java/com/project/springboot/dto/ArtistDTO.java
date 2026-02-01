@@ -9,6 +9,6 @@ public class ArtistDTO {
     private String a_image;
     private String a_genres;
     private String a_debut_date;
-    private int a_followers;
+    private Long a_followers;
     private String a_spotify_id;
 }

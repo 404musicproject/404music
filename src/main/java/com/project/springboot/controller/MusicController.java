@@ -40,30 +40,44 @@ public class MusicController {
     private RestTemplate restTemplate;
     // 1. 검색 및 수집
     @GetMapping("/search")
-    public ResponseEntity<List<MusicDTO>> searchMusic(@RequestParam("keyword") String keyword, HttpSession session) {
+    public ResponseEntity<List<MusicDTO>> searchMusic(
+            @RequestParam("keyword") String keyword, 
+            @RequestParam(value="searchType", defaultValue="ALL") String searchType,
+            HttpSession session) {
+        
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         int uNo = (user != null) ? user.getUNo() : 0; 
 
-        musicService.searchAndSave(keyword); // 수집 로직
-        List<MusicDTO> list = musicService.getMusicListByKeyword(keyword, uNo); // uNo 전달!
+        // [중요 수정] 서비스의 getMusicListByES 안에서 
+        // "백예린"과 "thevolunteers"를 합치도록 설계했으므로, 
+        // 여기서는 keyword만 던지면 서비스 내부의 getNormalizedKeyword가 알아서 처리합니다.
+        List<MusicDTO> list = musicService.getMusicListByES(keyword, searchType, uNo); 
+        
         return ResponseEntity.ok(list);
     }
-
-    // 1-1. (SearchResult.jsp의 AUTO REGISTER 버튼용) 키워드 기반 수집만 수행
+    
+ // 1-1. 수집 전용 버튼용
     @PostMapping("/register")
-    public ResponseEntity<String> registerMusic(@RequestParam("keyword") String keyword) {
+    public ResponseEntity<String> registerMusic(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value="searchType", defaultValue="ALL") String searchType) {
         try {
             if (keyword == null || keyword.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("empty");
             }
-            musicService.searchAndSave(keyword);
+            
+            // [수정] Service의 searchAndSave가 (original, normalized, type) 3개를 받도록 고쳤다면:
+            // 여기서도 두 번 인자를 넣어줍니다. (정규화는 서비스 내부에서 처리하거나 직접 호출)
+            // 일단 안전하게 searchAndSave 내부에서 정규화 로직을 타게 하려면 아래처럼 수정하세요.
+            musicService.searchAndSave(keyword, keyword, searchType); 
+            
             return ResponseEntity.ok("success");
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("fail");
         }
     }
-
+    
     // 2. 노래 상세 조회 (중요: 여기서 가사, 수치, ES 업데이트가 처리됨)
     @GetMapping("/detail")
     public ResponseEntity<Map<String, Object>> getMusicDetail(@RequestParam("m_no") int m_no) {
@@ -246,9 +260,11 @@ public class MusicController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.ok(List.of());
+            System.err.println("Apple API 호출 실패(무시하고 진행): " + e.getMessage());
+            return ResponseEntity.ok(java.util.Collections.emptyList());
         }
     }
+    
     @GetMapping("/youtube-search")
     public ResponseEntity<Map<String, Object>> youtubeSearch(
             @RequestParam("q") String q,
@@ -307,22 +323,71 @@ public class MusicController {
  * 헤더 검색창 자동완성(2글자 이상) - Elasticsearch 기반
  * 호출 예: /api/music/es-suggest?q=아이유
  */
+    @GetMapping("/es-suggest")
+    public ResponseEntity<List<Map<String, Object>>> getEsSuggest(
+            @RequestParam("q") String q,
+            @RequestParam(value = "searchType", defaultValue = "ALL") String searchType, // ← 파라미터 추가!
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        // Service 호출 시 searchType도 같이 넘겨줍니다.
+        return ResponseEntity.ok(musicService.esSuggest(q, searchType, size));
+    }
+    
     @PostMapping("/logHistoryAuto")
     @ResponseBody
     public String logHistoryAuto(@RequestParam String title, @RequestParam String artist, HttpSession session) {
+        // 1. 먼저 DB에 있는지 확인
         Integer mNo = musicService.getMNoByTitleAndArtist(title, artist);
 
-        // [추가] DB에 노래가 없으면? 일단 수집부터 시도!
         if (mNo == null || mNo == 0) {
             System.out.println(">>> DB에 없는 곡 발견, 자동 수집 시작: " + title);
-            musicService.searchAndSave(title + " " + artist); // 기존 수집 로직 활용
-            mNo = musicService.getMNoByTitleAndArtist(title, artist); // 다시 조회
+            
+            // 검색어 생성 (예: "Square 백예린")
+            String query = title + " " + artist;
+            
+            // [핵심 수정] 3개 인자 체계에 맞게 호출
+            // 상세 검색 시에는 original과 normalized를 굳이 나눌 필요 없이 
+            // 합쳐진 쿼리를 두 곳에 모두 넣어주어 iTunes가 정확한 결과를 찾게 합니다.
+            musicService.searchAndSave(query, query, "ALL"); 
+            
+            // 재조회
+            mNo = musicService.getMNoByTitleAndArtist(title, artist); 
         }
 
         if (mNo != null && mNo > 0) {
-            // ... 히스토리 저장 로직 ...
+            // [추가 작업] 세션에서 uNo 가져와서 history insert 로직 진행
+            UserDTO user = (UserDTO) session.getAttribute("loginUser");
+            if (user != null) {
+                HistoryDTO dto = new HistoryDTO();
+                dto.setU_no(user.getUNo());
+                dto.setM_no(mNo);
+                // ... 나머지 필드 세팅 및 musicDAO.insertHistory(dto) 호출 ...
+            }
             return "SUCCESS";
         }
         return "NOT_FOUND_AFTER_RETRY";
     }
+    
+ // MusicController.java 내부에 추가
+    @GetMapping("/weather")
+    public ResponseEntity<?> getWeather(@RequestParam("lat") String lat, @RequestParam("lon") String lon) {
+        try {
+            // 클라이언트에서 넘겨준 좌표로 OpenWeatherMap 호출
+            String url = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat 
+                       + "&lon=" + lon + "&appid=" + weatherApiKey + "&units=metric";
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response == null) {
+                return ResponseEntity.badRequest().body("날씨 정보를 가져올 수 없습니다.");
+            }
+            
+            // 브라우저로 날씨 데이터 반환
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("날씨 API 호출 실패");
+        }
+    }
+    
 }

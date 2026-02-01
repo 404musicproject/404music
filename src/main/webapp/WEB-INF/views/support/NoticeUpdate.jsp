@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/47.4.0/ckeditor5.css" crossorigin>
 <style>
     /* 기존 스타일 유지하면서 수치만 수정 */
-    body { background-color: #050505; color: #00f2ff; font-family: 'Courier New', monospace; font-size: 13px; margin: 0; }
+    body { background-color: #050505; color: #00f2ff;  margin: 0; }
     
-    .main-container { padding: 60px 40px; max-width: 1000px; margin: 0 auto; background-color: #050505; color: #00f2ff; }
+    .main-container { padding: 60px 40px; max-width: 1000px; margin: 0 auto; background-color: #050505; color: #00f2ff; font-family: 'Courier New', monospace; font-size: 13px;}
     
     .label-text { color: #ff0055; font-weight: bold; display: block; margin-bottom: 10px; font-size: 13px; }
     

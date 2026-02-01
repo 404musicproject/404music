@@ -18,6 +18,11 @@ public class MusicDTO {
     private String b_image;
     private String isLiked; // 'Y' 또는 'N'을 담을 변수 추가
     
+    
+ // [중요] 상세 수집 및 장르 활용을 위해 추가
+    private String a_spotify_id; 
+    private String a_genres;
+    
     public String getIsLiked() { return isLiked; }
     public void setIsLiked(String isLiked) { this.isLiked = isLiked; }
     

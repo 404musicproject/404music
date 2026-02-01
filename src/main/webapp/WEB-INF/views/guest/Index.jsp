@@ -57,79 +57,93 @@
 
     <script>
     $(document).ready(function() {
+    	
+    	console.log("1. Document Ready 시작");
         const uNo = "${sessionScope.loginUser.uNo}" || 0; // 세션 키 uNo 확인 필요
         const contextPath = '${pageContext.request.contextPath}';
         
+        
+        console.log("2. uNo 확인:", uNo);
         // 1. 초기화
         MusicApp.init(Number(uNo));
 
         // 2. 렌더링 함수 - Index.jsp와 동일한 스타일/기능 적용
-        MusicApp.renderRow = function(item, index) {
-            const mNo = item.MNO || item.m_no || item.mNo || 0;
-            const bNo = item.BNO || item.b_no || item.bNo || 0;
-            const aNo = item.ANO || item.a_no || item.aNo || 0;
-            
-            const rawTitle = item.TITLE || item.m_title || item.mTitle || 'Unknown';
-            const rawArtist = item.ARTIST || item.a_name || item.aName || 'Unknown';
-            const title = rawTitle.replace(/'/g, "\\'");
-            const artist = rawArtist.replace(/'/g, "\\'");
-            
-            const albumImg = item.ALBUM_IMG || item.b_image || item.bImage || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
-            const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
+MusicApp.renderRow = function(item, index) {
+    // [로그 추가] 개별 아이템 데이터 확인
+    console.log("4. 렌더링 시작 (아이템):", item);
 
-            const albumAction = bNo !== 0 ? "location.href='" + contextPath + "/album/detail?b_no=" + bNo + "'" : "alert('정보 없음')";
-            const artistAction = aNo !== 0 ? "location.href='" + contextPath + "/artist/detail?a_no=" + aNo + "'" : "alert('정보 없음')";
+    // 1. 키값 매핑 보강 (서버 응답에 맞춰 대/소문자 모두 체크)
+    const mNo = item.m_no || item.MNO || item.mNo || 0;
+    const bNo = item.b_no || item.BNO || item.bNo || 0;
+    const aNo = item.a_no || item.ANO || item.aNo || 0;
+    
+    // 제목과 가수가 비어있으면 '' 대신 '제목 없음' 표시
+    const rawTitle = item.m_title || item.TITLE || item.mTitle || 'Unknown Title';
+    const rawArtist = item.a_name || item.ARTIST || item.aName || 'Unknown Artist';
+    
+    // 2. 재생을 위한 이스케이프 처리
+    const titleForJS = String(rawTitle).replace(/'/g, "\\'");
+    const artistForJS = String(rawArtist).replace(/'/g, "\\'");
+    
+    // 3. 이미지 처리 (b_image가 비어있을 경우 대비)
+    let albumImg = item.b_image || item.ALBUM_IMG || item.bImage || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
+    // 고화질 변환 로직 적용
+    if(albumImg.includes('100x100')) {
+        albumImg = albumImg.replace('100x100bb', '600x600bb').replace('100x100', '600x600');
+    }
 
-            // TR 전체에 호버 효과 및 클릭 재생 적용
-            return '<tr onclick="MusicApp.playLatestYouTube(\'' + title + '\', \'' + artist + '\', \'' + albumImg + '\');" ' +
-                   'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;" ' +
-                   'onmouseover="this.style.backgroundColor=\'rgba(255,255,255,0.03)\'" ' +
-                   'onmouseout="this.style.backgroundColor=\'transparent\'">' +
-                
-                /* 1. 순위 */
-                '<td class="col-rank" style="padding: 20px 15px; color: #444; text-align: center;">' + (index + 1) + '</td>' +
-                
-                /* 2. 곡 정보 (앨범아트 + 타이틀 + 아티스트) */
-                '<td>' +
-                    '<div style="display: flex; align-items: center; padding: 10px 0;">' +
-                        '<div onclick="event.stopPropagation(); ' + albumAction + '" title="' + rawTitle + ' — 앨범 상세보기" style="cursor:pointer;">' +
-                            '<img src="' + albumImg + '" class="album-art">' +
-                        '</div>' +
-                        '<div>' +
-                            '<div style="font-weight: bold; color: #eee; margin-bottom: 4px;" title="' + rawTitle + '">' + rawTitle + '</div>' +
-                            '<div class="artist-link" style="font-size: 0.85rem; color: #888; cursor:pointer;" ' +
-                                 'onclick="event.stopPropagation(); ' + artistAction + '" title="' + rawArtist + ' — 아티스트 정보">' +
-                                rawArtist +
-                            '</div>' +
-                        '</div>' +
+    const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
+
+    const albumAction = bNo !== 0 ? "location.href='" + contextPath + "/album/detail?b_no=" + bNo + "'" : "alert('앨범 정보가 없습니다.')";
+    const artistAction = aNo !== 0 ? "location.href='" + contextPath + "/artist/detail?a_no=" + aNo + "'" : "alert('아티스트 정보가 없습니다.')";
+
+    return '<tr onclick="MusicApp.playLatestYouTube(\'' + titleForJS + '\', \'' + artistForJS + '\', \'' + albumImg + '\');" ' +
+           'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;" ' +
+           'onmouseover="this.style.backgroundColor=\'rgba(255,255,255,0.03)\'" ' +
+           'onmouseout="this.style.backgroundColor=\'transparent\'">' +
+        '<td class="col-rank" style="padding: 20px 15px; color: #444; text-align: center;">' + (index + 1) + '</td>' +
+        '<td>' +
+            '<div style="display: flex; align-items: center; padding: 10px 0;">' +
+                '<div onclick="event.stopPropagation(); ' + albumAction + '" title="앨범 상세보기" style="cursor:pointer;">' +
+                    '<img src="' + albumImg + '" class="album-art" onerror="this.src=\'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png\'">' +
+                '</div>' +
+                '<div style="margin-left:10px;">' +
+                    '<div style="font-weight: bold; color: #eee; margin-bottom: 4px;">' + rawTitle + '</div>' +
+                    '<div class="artist-link" style="font-size: 0.85rem; color: #888; cursor:pointer;" ' +
+                         'onclick="event.stopPropagation(); ' + artistAction + '">' +
+                        rawArtist +
                     '</div>' +
-                '</td>' +
-
-                /* 3. 좋아요 버튼 */
-                '<td style="text-align: center;">' +
-                    '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
-                            'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
-                        '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
-                    '</button>' +
-                '</td>' +
-
-                /* 4. 라이브러리 추가 */
-                '<td style="text-align: center;">' +
-                    '<button style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;" ' +
-                            'onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
-                        '<i class="fa-solid fa-plus-square"></i>' +
-                    '</button>' +
-                '</td>' +
-
-                /* 5. 재생 아이콘 */
-                '<td class="col-play">' +
-                    '<i class="fa-solid fa-circle-play play-trigger"></i>' +
-                '</td>' +
-            '</tr>';
-        };
+                '</div>' +
+            '</div>' +
+        '</td>' +
+        '<td style="text-align: center;">' +
+            '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
+                    'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
+                '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
+            '</button>' +
+        '</td>' +
+        '<td style="text-align: center;">' +
+            '<button style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;" ' +
+                    'onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
+                '<i class="fa-solid fa-plus-square"></i>' +
+            '</button>' +
+        '</td>' +
+        '<td class="col-play" style="text-align:right; padding-right:30px;">' +
+            '<i class="fa-solid fa-circle-play play-trigger" style="color:#00f2ff; font-size:1.5rem;"></i>' +
+        '</td>' +
+    '</tr>';
+};
 
         renderTabs();
-        MusicApp.loadChart();
+        MusicApp.loadChart = function() {
+            const endpoint = this.selectedCity ? 'regional' : this.currentMode;
+            $.get(this.basePath + '/api/music/' + endpoint, { u_no: this.currentUserNo }, (data) => {
+                console.log("🔥 서버 응답 데이터 샘플:", data[0]); // 첫 번째 데이터 구조 확인
+                let html = '';
+                data.forEach((item, index) => { html += this.renderRow(item, index); });
+                $('#chart-body').html(html);
+            });
+        };
     });
 
     function renderTabs() {

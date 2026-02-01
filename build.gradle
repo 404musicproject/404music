@@ -46,8 +46,13 @@ dependencies {
 	 // 이메일인증
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     
+    //엘리스틱연동
 	implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.10.1'
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    //보안
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+	testImplementation 'org.springframework.security:spring-security-test'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 

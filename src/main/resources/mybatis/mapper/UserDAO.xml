@@ -1,56 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper 
-	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.project.springboot.dao.IUserDAO">
-
-<select id="findById" resultType="com.project.springboot.dto.UserDTO">
-    SELECT u_no, u_id, u_password, u_nick, u_gender, u_birth, u_region, u_signup_step, u_social_type, u_email_verified, u_create_at, u_auth FROM "USER" WHERE u_id = #{uId, jdbcType=VARCHAR}
-</select>
-
+    <select id="findById" resultType="com.project.springboot.dto.UserDTO">
+        SELECT * FROM "USER" WHERE u_id = #{uId}
+    </select>
+    
     <insert id="insertUser" parameterType="com.project.springboot.dto.UserDTO">
         INSERT INTO "USER" (
-            u_no, u_id, u_password, u_nick, u_signup_step, u_social_type, u_email_verified, u_create_at, u_auth
-        ) VALUES (
-            USER_SEQ.NEXTVAL,
-            #{uId, jdbcType=VARCHAR},
-            #{uPassword, jdbcType=VARCHAR},
-            #{uNick, jdbcType=VARCHAR},
-            #{uSignupStep, jdbcType=INTEGER},
-            #{uSocialType, jdbcType=VARCHAR},
-            'Y', SYSDATE,
-            'user'
+            u_no, u_id, u_password, u_nick, u_signup_step, 
+            u_social_type, u_social_id, u_email_verified, u_create_at, u_auth
+        ) 
+        VALUES (
+            USER_SEQ.NEXTVAL, #{uId}, #{uPassword}, #{uNick}, #{uSignupStep}, 
+            #{uSocialType}, #{uSocialId}, 'Y', SYSDATE, 'USER'
         )
     </insert>
 
     <update id="updateUserStep2" parameterType="com.project.springboot.dto.UserDTO">
-        UPDATE "USER"
-        SET u_nick = #{uNick, jdbcType=VARCHAR},
-            u_gender = #{uGender, jdbcType=VARCHAR},
-            u_birth = #{uBirth, jdbcType=DATE},
-            u_region = #{uRegion, jdbcType=VARCHAR}
-        WHERE u_id = #{uId, jdbcType=VARCHAR}
+        UPDATE "USER" SET u_nick = #{uNick}, u_gender = #{uGender}, u_birth = #{uBirth}, u_region = #{uRegion} WHERE u_id = #{uId}
     </update>
 
     <update id="updateEmailVerification">
-        UPDATE "USER" SET u_email_verified = 'Y' WHERE u_id = #{uId, jdbcType=VARCHAR}
+        UPDATE "USER" SET u_email_verified = 'Y' WHERE u_id = #{uId}
     </update>
-    
-	<!--닉네임 중복확인-->
-	<select id="countByNick" resultType="int">
-		SELECT COUNT(*) FROM "USER" WHERE u_nick = #{uNick, jdbcType=VARCHAR}
-	</select>
-	
-		<!-- 비밀번호 변경 SQL -->
-	<update id="updatePassword">
-	    UPDATE "USER"
-	    SET u_password = #{uPassword}
-	    WHERE u_id = #{uId}
-	</update>
-	
-	<delete id="deleteUser">
-    DELETE FROM "USER" WHERE u_id = #{uId, jdbcType=VARCHAR}
-</delete>
 
+    <select id="countByNick" resultType="int">
+        SELECT COUNT(*) FROM "USER" WHERE u_nick = #{uNick}
+    </select>
+
+    <update id="updatePassword">
+        UPDATE "USER" SET u_password = #{uPassword} WHERE u_id = #{uId}
+    </update>
+
+    <delete id="deleteUser">
+        DELETE FROM "USER" WHERE u_id = #{uId}
+    </delete>
+
+    <update id="updateProfileImage">
+        UPDATE "USER" SET u_profile_img = #{uProfileImg} WHERE u_id = #{uId}
+    </update>
+
+    <select id="findBySocialInfo" resultType="com.project.springboot.dto.UserDTO">
+        SELECT * FROM "USER" WHERE u_social_type = #{param1} AND u_social_id = #{param2}
+    </select>
 </mapper>

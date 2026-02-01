@@ -10,6 +10,7 @@
         <result property="b_no" column="b_no" />
         <result property="a_name" column="a_name" />
         <result property="a_image" column="a_image" /> 
+        <result property="a_spotify_id" column="a_spotify_id" /> 
         <result property="a_genres" column="a_genres" />
         <result property="isrc_code" column="isrc_code" />
         <result property="m_youtube_id" column="m_youtube_id" />
@@ -82,7 +83,11 @@
         UPDATE album SET b_image = #{b_image} 
         WHERE b_no = (SELECT b_no FROM music WHERE m_no = #{m_no})
     </update>
-    
+    <update id="updateMusicIsrc">
+    UPDATE music 
+    SET isrc_code = #{isrc_code} 
+    WHERE m_no = #{m_no}
+</update>
     <update id="updateArtistGenre">
         UPDATE artists SET a_genres = #{a_genres} 
         WHERE a_no = (SELECT a_no FROM music WHERE m_no = #{m_no})
@@ -364,27 +369,22 @@
       ORDER BY m.m_no DESC
     </select>
 
-    <select id="selectMNoByTitleAndArtist" resultType="Integer">
-	    SELECT m_no FROM (
-	        SELECT m.m_no 
-	        FROM music m 
-	        JOIN artists a ON m.a_no = a.a_no
-	        WHERE (
-	            -- 제목 비교: 공백 제거 및 대소문자 무시
-	            REPLACE(UPPER(m.m_title), ' ', '') = REPLACE(UPPER(#{title}), ' ', '')
-	            OR m.m_title LIKE '%' || #{title} || '%'
-	        )
-	        AND (
-	            -- 가수명 비교: DB의 'KiiiKiii'와 입력된 '키키'가 달라도 찾을 수 있게 LIKE 사용
-	            -- 혹은 제목이 확실하다면 가수명 조건은 조금 더 느슨하게 설정
-	            REPLACE(UPPER(a.a_name), ' ', '') LIKE '%' || REPLACE(UPPER(#{artist}), ' ', '') || '%'
-	            OR REPLACE(UPPER(#{artist}), ' ', '') LIKE '%' || REPLACE(UPPER(a.a_name), ' ', '') || '%'
-	            -- 최후의 보루: 제목이 일치하면 가수는 일단 pass (선택 사항)
-	            OR REPLACE(UPPER(m.m_title), ' ', '') = REPLACE(UPPER(#{title}), ' ', '')
-	        )
-	        ORDER BY m.m_no DESC
-	    ) WHERE ROWNUM = 1
-	</select>
+<select id="selectMNoByTitleAndArtist" resultType="Integer">
+    SELECT m_no FROM (
+        SELECT m.m_no 
+        FROM music m 
+        JOIN artists a ON m.a_no = a.a_no
+        WHERE 
+            REPLACE(UPPER(m.m_title), ' ', '') = REPLACE(UPPER(#{title}), ' ', '')
+            AND 
+            (
+                REPLACE(UPPER(a.a_name), ' ', '') = REPLACE(UPPER(#{artist}), ' ', '')
+                OR REPLACE(UPPER(a.a_name), ' ', '') LIKE '%' || REPLACE(UPPER(#{artist}), ' ', '') || '%'
+                OR REPLACE(UPPER(#{artist}), ' ', '') LIKE '%' || REPLACE(UPPER(a.a_name), ' ', '') || '%'
+            )
+        ORDER BY m.m_no DESC
+    ) WHERE ROWNUM = 1
+</select>
 
     <insert id="insertLyrics" parameterType="map">
         MERGE INTO music_lyrics l
@@ -426,17 +426,109 @@
             INSERT (mapping_no, m_no, g_no) VALUES (mapping_no_seq.NEXTVAL, #{m_no}, #{g_no})
     </insert>
 
-    <select id="selectMusicByNo" resultMap="MusicMap">
-        SELECT m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title
-        FROM music m
-        JOIN artists a ON m.a_no = a.a_no
-        JOIN album b ON m.b_no = b.b_no
-        WHERE m.m_no = #{m_no}
-    </select>
+<select id="selectMusicByNo" resultMap="MusicMap">
+    SELECT 
+        m.m_no, 
+        m.m_title, 
+        m.a_no, 
+        m.b_no, 
+        m.isrc_code, 
+        m.m_youtube_id, 
+        m.m_preview_url, 
+        a.a_name, 
+        a.a_spotify_id,  a.a_genres,      b.b_title,
+        b.b_image        FROM music m
+    JOIN artists a ON m.a_no = a.a_no
+    JOIN album b ON m.b_no = b.b_no
+    WHERE m.m_no = #{m_no}
+</select>
 
     <select id="selectMusicFeature" resultType="map">
         SELECT music_id as "m_no", danceability, energy, valence, acousticness, instrumentalness, liveness, speechiness, tempo
         FROM music_feature WHERE music_id = #{m_no}
     </select>
+    
+<select id="selectMusicByMNoList" resultMap="MusicMap">
+    SELECT 
+        m.m_no, 
+        m.m_title, 
+        m.a_no, 
+        m.b_no, 
+        a.a_name, 
+        b.b_title, 
+        b.b_image,  
+        m.m_preview_url,
+        (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
+         FROM likes l 
+         WHERE l.l_target_type = 'MUSIC' 
+           AND l.l_target_no = m.m_no 
+           AND l.u_no = #{uNo}) as isLiked
+    FROM music m
+    JOIN artists a ON m.a_no = a.a_no
+    JOIN album b ON m.b_no = b.b_no  
+    WHERE m.m_no IN 
+    <foreach item="id" collection="mNoList" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+    ORDER BY DECODE(m.m_no, 
+    <foreach item="id" collection="mNoList" index="index" separator=", ">
+        #{id}, #{index}
+    </foreach>
+    )
+</select>
+<update id="updateArtistSpotifyId">
+    UPDATE artists 
+    SET a_spotify_id = #{spotifyId} 
+    WHERE a_no = #{aNo}
+</update>
+
+<update id="updateArtistGenres">
+    UPDATE artists 
+    SET a_genres = #{genres} 
+    WHERE a_no = #{aNo}
+</update>
+<update id="updateArtistDetails" parameterType="com.project.springboot.dto.ArtistDTO">
+    UPDATE artists
+    SET 
+        a_genres = #{a_genres},
+        a_followers = #{a_followers},
+        a_image = #{a_image}
+    WHERE a_no = #{a_no}
+</update>
+<select id="selectANoByArtistName" resultType="Integer">
+    SELECT a_no 
+    FROM artists 
+    WHERE a_name = #{a_name}
+</select>
+
+<select id="selectBNoByTitleAndANo" resultType="Integer">
+    SELECT b_no 
+    FROM album 
+    WHERE b_title = #{b_title} 
+      AND a_no = #{a_no}
+</select>
+<select id="selectMNoWithOriginal" resultType="Integer">
+    SELECT m_no FROM (
+        SELECT m.m_no,
+               -- 검색어와 정확히 일치하는 가수를 찾았을 때 가중치를 줌
+               CASE 
+                 WHEN REPLACE(UPPER(a.a_name), ' ', '') = REPLACE(UPPER(#{artist}), ' ', '') THEN 1
+                 WHEN REPLACE(UPPER(a.a_name), ' ', '') = REPLACE(UPPER(#{original}), ' ', '') THEN 2
+                 ELSE 3 
+               END as priority
+        FROM music m 
+        JOIN artists a ON m.a_no = a.a_no
+        WHERE 
+            REPLACE(UPPER(m.m_title), ' ', '') = REPLACE(UPPER(#{title}), ' ', '')
+            AND 
+            (
+                REPLACE(UPPER(a.a_name), ' ', '') = REPLACE(UPPER(#{artist}), ' ', '')
+                OR REPLACE(UPPER(a.a_name), ' ', '') = REPLACE(UPPER(#{original}), ' ', '')
+            )
+        -- 1순위: 이름이 정확히 맞는 것, 2순위: 최신 곡(번호가 큰 것)
+        ORDER BY priority ASC, m.m_no DESC
+    ) WHERE ROWNUM = 1
+</select>
+
 
 </mapper>

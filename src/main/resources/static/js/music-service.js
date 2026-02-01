@@ -102,41 +102,53 @@ window.MusicApp = {
         });
     },
 
-    renderRow: function(item, index) {
-        const isLiked = item.MY_LIKE > 0;
-        const cleanTitle = (item.TITLE || '').replace(/'/g, "\\'");
-        const cleanArtist = (item.ARTIST || '').replace(/'/g, "\\'");
-        const imgUrl = this.toHighResArtwork(item.ALBUM_IMG || '');
+	renderRow: function(item, index) {
+	    // [수정] 데이터 키값 통합 (대소문자/언더바 대응)
+	    const mNo = item.m_no || item.MNO || item.mNo || 0;
+	    const rawTitle = item.m_title || item.TITLE || item.mTitle || 'Unknown';
+	    const rawArtist = item.a_name || item.ARTIST || item.aName || 'Unknown';
+	    
+	    // 재생 시 전달할 이스케이프 문자 처리
+	    const cleanTitle = rawTitle.replace(/'/g, "\\'");
+	    const cleanArtist = rawArtist.replace(/'/g, "\\'");
+	    
+	    // 이미지 경로 처리
+	    const imgUrl = item.b_image || item.ALBUM_IMG || item.bImage || '';
+	    const highResImg = this.toHighResArtwork(imgUrl);
 
-        return `
-            <tr onclick="MusicApp.playLatestYouTube('${cleanTitle}', '${cleanArtist}', '${item.ALBUM_IMG}')">
-                <td class="rank">${index + 1}</td>
-                <td>
-                    <div style="display:flex; align-items:center;">
-                        <img src="${imgUrl}" class="album-art" onerror="this.src='${this.FALLBACK_IMG}'">
-                        <div class="song-info">
-                            <div class="song-title">${item.TITLE}</div>
-                            <div class="artist-name">${item.ARTIST}</div>
-                        </div>
-                    </div>
-                </td>
-                <td style="text-align: center;">
-                    <button class="btn-like ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); MusicApp.toggleLike(${item.MNO}, this)">
-                        ${isLiked ? '♥' : '♡'}
-                    </button>
-                </td>
-				<td style="text-align: center;">
-													    <button class="btn-add-lib" title="라이브러리에 추가"
-													            style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;"
-													            onclick="event.stopPropagation(); MusicApp.addToLibrary(${item.MNO}, this)">
-													        <i class="fa-solid fa-plus-square"></i>
-													    </button>
-													</td>
-                <td style="text-align: right; padding-right: 20px;">
-                    <span class="play-cnt">${Number(item.CNT).toLocaleString()}</span>
-                </td>
-            </tr>`;
-    },
+	    const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
+
+	    return `
+	        <tr onclick="MusicApp.playLatestYouTube('${cleanTitle}', '${cleanArtist}', '${imgUrl}')">
+	            <td class="rank">${index + 1}</td>
+	            <td>
+	                <div style="display:flex; align-items:center;">
+	                    <img src="${highResImg}" class="album-art" onerror="this.src='${this.FALLBACK_IMG}'">
+	                    <div class="song-info">
+	                        <div class="song-title">${rawTitle}</div>
+	                        <div class="artist-name">${rawArtist}</div>
+	                    </div>
+	                </div>
+	            </td>
+	            <td style="text-align: center;">
+	                <button class="btn-like ${isLiked ? 'active' : ''}" 
+	                        style="color: ${isLiked ? '#ff0055' : '#666'}"
+	                        onclick="event.stopPropagation(); MusicApp.toggleLike(${mNo}, this)">
+	                    <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
+	                </button>
+	            </td>
+	            <td style="text-align: center;">
+	                <button class="btn-add-lib" 
+	                        style="background:none; border:none; color:#00f2ff; cursor:pointer;"
+	                        onclick="event.stopPropagation(); MusicApp.addToLibrary(${mNo}, this)">
+	                    <i class="fa-solid fa-plus-square"></i>
+	                </button>
+	            </td>
+	            <td style="text-align: right; padding-right: 20px;">
+	                <span class="play-cnt">${Number(item.CNT || 0).toLocaleString()}</span>
+	            </td>
+	        </tr>`;
+	},
 
     // ---------------------------------------------------------
     // 2. 좋아요 기능 (보관함 삭제 로직 제거)
@@ -223,56 +235,56 @@ window.MusicApp = {
 	    });
 	},
 
-    sendPlayLog: async function(mNo) { 
-		// 서버가 필요한 최소한의 정보(사용자, 곡ID, 위치)만 준비
-		    const postData = {
-		        u_no: this.currentUserNo, 
-		        m_no: mNo,
-		        h_lat: 0, 
-		        h_lon: 0
-		    };
-		    
-			   const API_KEY = '9021ce9b1f7a9ae39654c4cb2f33250a'; // 본인의 API Key 입력
+	// MusicApp 객체 내부의 sendPlayLog 함수 수정
+	sendPlayLog: async function(mNo) { 
+	    // this가 유실되지 않도록 미리 잡아둠
+	    const self = this; 
+	    
+	    const postData = {
+	        u_no: this.currentUserNo, 
+	        m_no: mNo,
+	        h_lat: 0, 
+	        h_lon: 0,
+	        h_weather: 800, // 기본값 설정
+	        h_location: 'Unknown'
+	    };
 
-			    // 1. 위치 정보 가져오기 (Promise화)
-			    const getPosition = () => {
-			        return new Promise((resolve, reject) => {
-			            navigator.geolocation.getCurrentPosition(resolve, reject, {
-			                enableHighAccuracy: true,
-			                timeout: 5000
-			            });
-			        });
-			    };
+	    const getPosition = () => {
+	        return new Promise((resolve, reject) => {
+	            navigator.geolocation.getCurrentPosition(resolve, reject, {
+	                enableHighAccuracy: true,
+	                timeout: 5000
+	            });
+	        });
+	    };
 
-			    try {
-			        // 위치 획득 시도
-			        const pos = await getPosition();
-			        postData.h_lat = pos.coords.latitude;
-			        postData.h_lon = pos.coords.longitude;
+	    try {
+	        const pos = await getPosition();
+	        postData.h_lat = pos.coords.latitude;
+	        postData.h_lon = pos.coords.longitude;
 
-			        // 2. 획득한 좌표로 OpenWeather API 호출
-			        // [OpenWeather Current Weather API](https://openweathermap.org) 사용
-					const weatherUrl =
-					  `https://api.openweathermap.org/data/2.5/weather`
-					  + `?lat=${postData.h_lat}`
-					  + `&lon=${postData.h_lon}`
-					  + `&appid=${API_KEY}`;
-					  
-			        const response = await fetch(weatherUrl);
-			        if (response.ok) {
-			            const weatherData = await response.json();
-			            postData.h_weather = weatherData.weather[0].id; // 날씨 상태 코드 (예: 800)
-			            postData.h_location = weatherData.name; // 도시 이름 (예: Seoul)
-			        }
+	        // [중요] 외부 API 대신 우리 서버의 /api/music/weather 호출
+	        // (MusicController에 @GetMapping("/weather")를 추가한 상태여야 함)
+	        const response = await fetch(`${this.basePath}/api/music/weather?lat=${postData.h_lat}&lon=${postData.h_lon}`);
+	        
+	        if (response.ok) {
+	            const weatherData = await response.json();
+	            // weatherData 구조는 OpenWeatherMap 응답 기준
+	            postData.h_weather = weatherData.weather[0].id; 
+	            postData.h_location = weatherData.name;
+	        }
 
-			    } catch (error) {
-			        console.warn("위치 또는 날씨 정보를 가져오는데 실패했습니다.", error);
-			        // 실패해도 초기 설정된 기본값(800, 0, 0)으로 로그는 남깁니다.
-			    } finally {
-			        // 3. 최종 로그 전송
-			        this._submitLog(postData, mNo);
-			    }
-			},
+	    } catch (error) {
+	        console.warn("위치/날씨 정보 획득 실패:", error);
+	    } finally {
+	        // [수정 포인트] this 대신 위에서 정의한 self를 사용
+	        if (typeof self._submitLog === 'function') {
+	            self._submitLog(postData, mNo);
+	        } else {
+	            console.error("_submitLog 함수를 찾을 수 없습니다.");
+	        }
+	    }
+	},
 
     _submitLog: function(data, mNo) {
         $.post(this.basePath + '/api/music/history', data, () => {

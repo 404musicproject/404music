@@ -13,10 +13,10 @@
     body { 
         background-color: #050505; 
         color: #00f2ff; 
-        font-family: 'Courier New', monospace; 
     }
     
     .main-container { 
+     		font-family: 'Courier New', monospace;
 		    min-height: auto;
 		    padding: 40px;
 		    max-width: 900px; 

@@ -90,5 +90,33 @@ public interface IMusicDAO {
 	AlbumDTO selectAlbumByNo(@Param("b_no") int bNo);
 	void updateArtistImage(@Param("a_no") int aNo, @Param("a_image") String aImage);
 	
-   
+	List<MusicDTO> selectMusicByMNoList(
+		    @Param("mNoList") List<Integer> mNoList, 
+		    @Param("uNo") int uNo  // 여기서 "uNo"라고 명시해주면 XML의 #{uNo}와 연결됩니다.
+		);
+	
+	// 아티스트의 Spotify ID 업데이트 (ID가 null일 때 보정용)
+    void updateArtistSpotifyId(@Param("aNo") int aNo, @Param("spotifyId") String spotifyId);
+
+    // 아티스트의 장르 정보 업데이트
+    void updateArtistGenres(@Param("aNo") int aNo, @Param("genres") String genres);
+ 
+    // 13. 상세 데이터 보정용 추가 메서드
+ // MusicService에서 spotifyId를 찾았을 때 isrc_code 컬럼에 저장하기 위함
+ void updateMusicIsrc(@Param("m_no") int mNo, @Param("isrc_code") String isrcCode);
+
+//아티스트 상세 정보(장르, 팔로워, 이미지)를 한꺼번에 업데이트
+void updateArtistDetails(ArtistDTO artist);
+
+//14. 데이터 중복 체크 및 번호 조회용
+// 아티스트 이름으로 번호 조회
+Integer selectANoByArtistName(@Param("a_name") String aName);
+
+// 앨범 제목과 아티스트 번호로 앨범 번호 조회
+Integer selectBNoByTitleAndANo(@Param("b_title") String bTitle, @Param("a_no") Integer aNo);
+
+//신규 (안전하게 추가)
+Integer selectMNoWithOriginal(@Param("title") String title, 
+                          @Param("artist") String artist, 
+                          @Param("original") String original);
 }
