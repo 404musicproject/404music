@@ -274,16 +274,16 @@ window.MusicApp = {
 	            postData.h_location = weatherData.name;
 	        }
 
-	    } catch (error) {
-	        console.warn("위치/날씨 정보 획득 실패:", error);
-	    } finally {
-	        // [수정 포인트] this 대신 위에서 정의한 self를 사용
-	        if (typeof self._submitLog === 'function') {
-	            self._submitLog(postData, mNo);
-	        } else {
-	            console.error("_submitLog 함수를 찾을 수 없습니다.");
-	        }
-	    }
+		} catch (error) {
+		        console.warn("위치/날씨 정보 획득 실패:", error);
+		    } finally {
+		        // self 대신 MusicApp으로 직접 조준하면 더 확실합니다.
+		        if (typeof MusicApp._submitLog === 'function') {
+		            MusicApp._submitLog(postData, mNo);
+		        } else {
+		            console.error("_submitLog 함수를 찾을 수 없습니다.");
+		        }
+		    }
 	},
 
     _submitLog: function(data, mNo) {

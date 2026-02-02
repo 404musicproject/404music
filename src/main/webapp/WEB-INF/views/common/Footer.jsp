@@ -107,7 +107,7 @@
 <footer class="neon-footer">
     <div class="footer-container">
         <nav class="footer-nav">
-            <a href="${pageContext.request.contextPath}/PrivacyPolicy" class="neon-link">개인정보처리방침</a>
+            <a href="${pageContext.request.contextPath}/support/PrivacyPolicy" class="neon-link">개인정보처리방침</a>
             <span class="sep">|</span>
             <a href="${pageContext.request.contextPath}/support?mode=notice" class="neon-link">공지사항</a>
             <span class="sep">|</span>

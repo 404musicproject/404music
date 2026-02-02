@@ -47,7 +47,7 @@ public class SupportController {
         }
         return "support/Main";
     }
-    @RequestMapping("/PrivacyPolicy")
+    @RequestMapping("/support/PrivacyPolicy")
     public String PrivacyPolicy() {
         return "support/PrivacyPolicy"; 
     }

@@ -19,19 +19,60 @@
         #top1-jacket { width: 250px; height: 250px; border-radius: 12px; box-shadow: 0 0 30px rgba(255, 0, 85, 0.5); border: 2px solid #ff0055; margin-bottom: 20px; object-fit: cover; }
         .top1-badge { background: #ff0055; padding: 4px 12px; font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; letter-spacing: 2px; }
 
+		/* TOP 10 섹션 스타일 (2열 그리드 적용) */
+		.top10-container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+		.top10-wrapper { 
+		    background: #0a0a0a; 
+		    border: 1px solid #333; 
+		    border-radius: 12px; 
+		    padding: 10px; 
+		}
+		/* 중요: 2열 배치를 위한 그리드 설정 */
+		.top10-list { 
+		    display: grid; 
+		    grid-template-columns: 1fr 1fr; 
+		    gap: 10px 20px; 
+		}
+		
+		.top10-item { 
+		    display: flex; 
+		    align-items: center; 
+		    padding: 10px; 
+		    border-radius: 8px; 
+		    transition: 0.2s; 
+		    cursor: pointer;
+		    background: rgba(255, 255, 255, 0.03);
+		}
+		.top10-item:hover { background: rgba(255, 0, 85, 0.15); transform: translateX(5px); }
+		
+		.top10-rank { 
+		    font-size: 1.2rem; 
+		    font-weight: 900; 
+		    color: #ff0055; 
+		    width: 30px; 
+		    text-align: center; 
+		    font-style: italic;
+		    margin-right: 15px;
+		}
+		.top10-img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 15px; }
+		.top10-info { flex-grow: 1; min-width: 0; overflow: hidden; }
+		.top10-title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.top10-artist { font-size: 0.8rem; color: #888; }
+		.top10-play { color: #ff0055; font-size: 1.2rem; padding: 0 10px; }
+
         /* 2. 메뉴 그리드 */
         .menu-grid { max-width: 1000px; margin: -50px auto 50px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 0 20px; position: relative; z-index: 10; }
         .menu-card { background: #0a0a0a; border: 1px solid #00f2ff; padding: 30px 10px; text-align: center; text-decoration: none; color: #00f2ff; transition: all 0.3s; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
         .menu-card:hover { background: rgba(0, 242, 255, 0.1); transform: translateY(-10px); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); color: #fff; border-color: #fff; }
         
-        /* 3. 최신 음악 섹션 (4x2 그리드) */
+        /* 3. 최신 음악 섹션 */
         .container { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
         .chart-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
         #itunes-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; justify-content: center; }
         .itunes-card { background: #111; padding: 15px; border-radius: 12px; border: 1px solid #222; transition: 0.3s; cursor: pointer; }
         .itunes-card:hover { transform: translateY(-5px); border-color: #ff0055 !important; box-shadow: 0 0 15px rgba(255, 0, 85, 0.3); background: #1a1a1a !important; }
 
-        /* 4. 지역별 섹션 이미지 스타일 (완벽 복구) */
+        /* 4. 지역별 섹션 이미지 스타일 */
         .location-section, .Weather-section, .activity-section { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
         .section-title { color: #ff0055; font-size: 1.5rem; font-weight: bold; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; border-left: 4px solid #ff0055; padding-left: 15px; }
         .location-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
@@ -54,9 +95,10 @@
             #itunes-list { grid-template-columns: repeat(2, 1fr); }
             .location-grid { grid-template-columns: repeat(2, 1fr); }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
+            .top10-list { grid-template-columns: 1fr; } /* 모바일은 1열 */
         }
         
-         /* 번호별 태그 이미지 등록 */
+        /* 태그 이미지 (생략 가능하면 유지) */
 		.tag-1 { background-image: url('${pageContext.request.contextPath}/img/Tag/1.png'); }
 		.tag-2 { background-image: url('${pageContext.request.contextPath}/img/Tag/2.png'); }
 		.tag-3 { background-image: url('${pageContext.request.contextPath}/img/Tag/3.png'); }
@@ -78,7 +120,6 @@
 		.tag-19 { background-image: url('${pageContext.request.contextPath}/img/Tag/19.png'); }
 		.tag-20 { background-image: url('${pageContext.request.contextPath}/img/Tag/20.png'); }
 		.tag-21 { background-image: url('${pageContext.request.contextPath}/img/Tag/21.png'); }
-        
     </style>
 </head>
 <body>
@@ -89,13 +130,13 @@
         <div id="top1-bg"></div>
         <div class="hero-content" onclick="playTopOne()">
 		    <div class="top1-badge">CURRENT NO.1</div>
-		    <img id="top1-jacket" src="" alt="Top Music">
+		    <img id="top1-jacket" src="${pageContext.request.contextPath}/img/location/default.jpg" alt="Top Music">
 		    <h1 id="top1-title" style="margin: 0; font-size: 2.2rem; text-shadow: 0 0 15px #ff0055;">Loading...</h1>
 		    <p id="top1-artist" style="color: #ccc; margin-top: 5px;"></p>
 		</div>
     </section>
-
-    <section class="menu-grid">
+	
+	<section class="menu-grid">
         <a href="${pageContext.request.contextPath}/music/Index?type=top100" class="menu-card">
             <span style="font-size: 0.7rem; opacity: 0.7;">REAL-TIME</span>
             <span style="font-weight: bold; letter-spacing: 1px;">DAILY</span>
@@ -113,6 +154,14 @@
             <span style="font-weight: bold; letter-spacing: 1px;">YEARLY</span>
         </a>
     </section>
+	
+	<section class="top10-container">
+	    <div class="section-title">Real-time Top 10</div>
+	    <div class="top10-wrapper">
+	        <div id="top10-list" class="top10-list">
+                </div>
+	    </div>
+	</section>
 
     <section class="container">
         <div class="chart-header">
@@ -156,19 +205,15 @@
         </div>
     </section>
     
-<%-- 섹션 4: Today's Context --%>
-<section class="Weather-section">
-    <div class="section-title">Today's Context</div>
-    <div class="location-grid" id="context-list">
-        </div>
-</section>
+    <section class="Weather-section">
+        <div class="section-title">Today's Context</div>
+        <div class="location-grid" id="context-list"></div>
+    </section>
 
-<%-- 섹션 5: Personalized Mood Tags --%>
-<section class="activity-section">
-    <div class="section-title">Personalized Mood Tags</div>
-    <div class="location-grid" id="personalized-list">
-        </div>
-</section>
+    <section class="activity-section">
+        <div class="section-title">Personalized Mood Tags</div>
+        <div class="location-grid" id="personalized-list"></div>
+    </section>
 </main>
 
 <footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
@@ -178,7 +223,6 @@ const contextPath = '${pageContext.request.contextPath}';
 const FALLBACK_IMG = 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
 let cachedTopOne = null;
 
-// 태그 이름 -> 이미지 번호 매핑
 const tagNoMap = {
   "행복한 기분": 1, "파티": 2, "더운 여름": 3, "자신감 뿜뿜": 4, "운동": 5,
   "스트레스 해소": 6, "슬픔": 7, "비 오는 날": 8, "새벽 감성": 9, "로맨틱": 10,
@@ -186,7 +230,6 @@ const tagNoMap = {
   "눈 오는 날": 16, "바다": 17, "산/등산": 18, "카페/작업": 19, "헬스장": 20, "공원/피크닉": 21
 };
 
-// 1. 유틸리티 함수
 function toHighResArtwork(url) {
     if (!url) return FALLBACK_IMG;
     return String(url).replace(/100x100bb/g, '600x600bb').replace(/100x100/g, '600x600');
@@ -200,7 +243,25 @@ function goRegional(city) {
     location.href = contextPath + '/music/regional?city=' + city; 
 }
 
-// 2. 음악 재생 및 로그 기록
+//클릭 시 히어로 변경 + MusicApp을 통한 재생 및 로그 기록
+function changeHeroAndPlay(title, artist, imgUrl) {
+    // 1. 히어로 섹션 비주얼 업데이트 (기존 동일)
+    const highImg = toHighResArtwork(imgUrl);
+    $('#top1-bg').css('background-image', 'url(' + highImg + ')');
+    $('#top1-jacket').attr('src', highImg);
+    $('#top1-title').text(title);
+    $('#top1-artist').text(artist);
+
+    // 2. MusicApp 서비스 호출 (이 함수가 내부적으로 로그/위치/날씨를 다 처리함)
+    if (window.MusicApp && typeof window.MusicApp.playLatestYouTube === 'function') {
+        // 이미 music-service.js에 정의된 이 함수가 
+        // 1) 유튜브 검색 -> 2) 상세정보 업데이트 -> 3) 재생로그(sendPlayLog)를 순서대로 실행합니다.
+        window.MusicApp.playLatestYouTube(title, artist, imgUrl);
+    } else {
+        console.error("MusicApp을 찾을 수 없습니다. js파일 로드 확인 필요");
+    }
+}
+
 function playLatestYouTube(title, artist, imgUrl) {
     if (!window.MusicApp) return;
 
@@ -215,19 +276,49 @@ function playLatestYouTube(title, artist, imgUrl) {
 }
 
 function playTopOne() {
-    if (cachedTopOne) playLatestYouTube(cachedTopOne.TITLE, cachedTopOne.ARTIST, cachedTopOne.ALBUM_IMG);
+    if (cachedTopOne) {
+        changeHeroAndPlay(cachedTopOne.TITLE || cachedTopOne.m_title, cachedTopOne.ARTIST || cachedTopOne.a_name, cachedTopOne.ALBUM_IMG || cachedTopOne.B_IMAGE);
+    }
 }
 
-// 3. 데이터 로딩 함수들
-function loadTopOne() {
-    $.get(contextPath + '/api/music/top100', function(data) {
+function loadTop10() {
+    var userNo = "${loginUser != null ? loginUser.UNo : 0}";
+
+    $.get(contextPath + '/api/music/top100', { u_no: userNo }, function(data) {
         if (data && data.length > 0) {
+            // --- [1] 초기 Hero 설정 (1위곡) ---
             cachedTopOne = data[0];
-            const img = toHighResArtwork(cachedTopOne.ALBUM_IMG);
-            $('#top1-bg').css('background-image', 'url(' + img + ')');
-            $('#top1-jacket').attr('src', img);
-            $('#top1-title').text(cachedTopOne.TITLE);
-            $('#top1-artist').text(cachedTopOne.ARTIST);
+            var heroImgRaw = cachedTopOne.ALBUM_IMG || cachedTopOne.B_IMAGE || cachedTopOne.album_img || FALLBACK_IMG;
+            var heroImg = toHighResArtwork(heroImgRaw);
+
+            $('#top1-bg').css('background-image', 'url(' + heroImg + ')');
+            $('#top1-jacket').attr('src', heroImg);
+            $('#top1-title').text(cachedTopOne.TITLE || cachedTopOne.m_title);
+            $('#top1-artist').text(cachedTopOne.ARTIST || cachedTopOne.a_name);
+
+            // --- [2] 리스트 생성 (2열 그리드) ---
+            var top10Html = '';
+            var displayData = data.slice(0, 10);
+            
+            for (var i = 0; i < displayData.length; i++) {
+                var m = displayData[i];
+                var title = (m.TITLE || m.m_title || 'Unknown').replace(/'/g, "\\'");
+                var artist = (m.ARTIST || m.a_name || 'Unknown').replace(/'/g, "\\'");
+                var imgRaw = m.ALBUM_IMG || m.B_IMAGE || m.album_img || FALLBACK_IMG;
+                var img = toHighResArtwork(imgRaw);
+                
+                // 클릭 시 changeHeroAndPlay 호출
+                top10Html += '<div class="top10-item" onclick="changeHeroAndPlay(\'' + title + '\', \'' + artist + '\', \'' + img + '\')">';
+                top10Html += '  <div class="top10-rank">' + (i + 1) + '</div>';
+                top10Html += '  <img src="' + img + '" class="top10-img" onerror="this.src=\'' + FALLBACK_IMG + '\'">';
+                top10Html += '  <div class="top10-info">';
+                top10Html += '    <div class="top10-title">' + (m.TITLE || m.m_title) + '</div>';
+                top10Html += '    <div class="top10-artist">' + (m.ARTIST || m.a_name) + '</div>';
+                top10Html += '  </div>';
+                top10Html += '  <div class="top10-play"><i class="fa-solid fa-play"></i></div>';
+                top10Html += '</div>';
+            }
+            $('#top10-list').html(top10Html);
         }
     });
 }
@@ -238,8 +329,8 @@ function loadRegionalPreviews() {
         $.get(contextPath + '/api/music/regional', { city: city }, function(data) {
             if (data && data.length > 0) {
                 const idPrefix = city.toLowerCase();
-                $('#' + idPrefix + '-title').text(data[0].TITLE || '-');
-                $('#' + idPrefix + '-artist').text(data[0].ARTIST || '-');
+                $('#' + idPrefix + '-title').text(data[0].TITLE || data[0].m_title || '-');
+                $('#' + idPrefix + '-artist').text(data[0].ARTIST || data[0].a_name || '-');
             }
         });
     });
@@ -251,8 +342,9 @@ function loadItunesMusic() {
         data.forEach(function(m) {
             const t = (m.TITLE || 'Unknown').replace(/'/g, "\\'");
             const a = (m.ARTIST || 'Unknown').replace(/'/g, "\\'");
-            html += '<div class="itunes-card" onclick="playLatestYouTube(\'' + t + '\', \'' + a + '\', \'' + m.ALBUM_IMG + '\')">'
-                + '  <img src="' + toHighResArtwork(m.ALBUM_IMG) + '" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;">'
+            const img = m.ALBUM_IMG || FALLBACK_IMG;
+            html += '<div class="itunes-card" onclick="changeHeroAndPlay(\'' + t + '\', \'' + a + '\', \'' + img + '\')">'
+                + '  <img src="' + toHighResArtwork(img) + '" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;">'
                 + '  <div class="city-top-song" style="margin-top:10px;">' + m.TITLE + '</div>'
                 + '  <div class="city-top-artist" style="color:#00f2ff;">' + m.ARTIST + '</div>'
                 + '</div>';
@@ -261,14 +353,10 @@ function loadItunesMusic() {
     });
 }
 
-// 4. 태그 및 날씨 렌더링
 function drawTagCards() {
-    // 1. 장소 태그 (안전하게 배열 생성)
     const placeTags = [];
     <c:if test="${not empty placeTags}">
-        <c:forEach var="pt" items="${placeTags}">
-            placeTags.push("${pt}");
-        </c:forEach>
+        <c:forEach var="pt" items="${placeTags}">placeTags.push("${pt}");</c:forEach>
     </c:if>
 
     let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/location/default.jpg\')">'
@@ -277,40 +365,31 @@ function drawTagCards() {
                     + '  <div class="city-top-artist" id="geo-weather-desc">데이터를 불러오고 있습니다.</div>'
                     + '</div>';
     
-    // 데이터가 있을 때만 forEach 실행
-    if (placeTags.length > 0) {
-        placeTags.forEach(name => {
-            const no = tagNoMap[name] || 11;
-            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
-                         + '  <span class="city-name">NEARBY PLACE</span>'
-                         + '  <div class="city-top-song">' + name + '</div>'
-                         + '  <div class="city-top-artist">지금 위치에 어울리는 추천</div>'
-                         + '</div>';
-        });
-    }
+    placeTags.forEach(name => {
+        const no = tagNoMap[name] || 11;
+        contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                     + '  <span class="city-name">NEARBY PLACE</span>'
+                     + '  <div class="city-top-song">' + name + '</div>'
+                     + '  <div class="city-top-artist">지금 위치에 어울리는 추천</div>'
+                     + '</div>';
+    });
     $('#context-list').html(contextHtml);
 
-    // 2. 개인화 태그 (안전하게 배열 생성)
     const topTags = [];
     <c:if test="${not empty topTags}">
-        <c:forEach var="tt" items="${topTags}">
-            topTags.push("${tt}");
-        </c:forEach>
+        <c:forEach var="tt" items="${topTags}">topTags.push("${tt}");</c:forEach>
     </c:if>
 
     let personalHtml = '';
-    if (topTags.length > 0) {
-        topTags.forEach((name, idx) => {
-            const no = tagNoMap[name] || 11;
-            personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
-                          + '  <span class="city-name">MY TAG #' + (idx + 1) + '</span>'
-                          + '  <div class="city-top-song">' + name + ' 스타일</div>'
-                          + '  <div class="city-top-artist">당신이 자주 찾는 감성</div>'
-                          + '</div>';
-        });
-    }
+    topTags.forEach((name, idx) => {
+        const no = tagNoMap[name] || 11;
+        personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                      + '  <span class="city-name">MY TAG #' + (idx + 1) + '</span>'
+                      + '  <div class="city-top-song">' + name + ' 스타일</div>'
+                      + '  <div class="city-top-artist">당신이 자주 찾는 감성</div>'
+                      + '</div>';
+    });
     $('#personalized-list').html(personalHtml);
-    
     renderContextWeather();
 }
 
@@ -321,11 +400,11 @@ function renderContextWeather() {
         const city = data.name.toUpperCase();
         const weatherId = data.weather[0].id;
         let tagName = "맑음";
-        let bgImg = "${pageContext.request.contextPath}/img/weather/sunny.jpg";
+        let bgImg = "${pageContext.request.contextPath}/img/Tag/14.png";
 
-        if (weatherId < 600) { tagName = "비 오는 날"; bgImg = "${pageContext.request.contextPath}/img/weather/rainy.jpg"; }
-        else if (weatherId < 700) { tagName = "눈 오는 날"; bgImg = "${pageContext.request.contextPath}/img/weather/snowy.jpg"; }
-        else if (weatherId > 800) { tagName = "흐림"; bgImg = "${pageContext.request.contextPath}/img/weather/cloudy.jpg"; }
+        if (weatherId < 600) { tagName = "비 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/8.png"; }
+        else if (weatherId < 700) { tagName = "눈 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/16.png"; }
+        else if (weatherId > 800) { tagName = "흐림"; bgImg = "${pageContext.request.contextPath}/img/Tag/15.png"; }
 
         $('#geo-city').text(city);
         $('#geo-weather-title').text(tagName);
@@ -334,28 +413,18 @@ function renderContextWeather() {
     });
 }
 
-// [통합] 초기화 및 실행
 $(document).ready(function() {
-    const uNo = "${loginUser.uNo}" != "" ? parseInt("${loginUser.uNo}") : 0;
-    const urlParams = new URLSearchParams(window.location.search);
+    const uNoStr = "${loginUser.UNo}"; // 필드명 확인 필요 (UNo 인지 uNo인지)
+    const uNo = uNoStr !== "" ? parseInt(uNoStr) : 0;
     
-    // 로그인 에러 체크 (이전 모달 연동용)
-    if (urlParams.has('loginError')) {
-        if(typeof openLoginModal === 'function') openLoginModal();
-        alert("아이디 또는 비밀번호가 틀렸습니다.");
-    }
-
     setTimeout(function() {
-        if (window.MusicApp) {
-            window.MusicApp.init(uNo);
-        }
-        loadTopOne();
+        if (window.MusicApp) window.MusicApp.init(uNo);
+        loadTop10();
         loadRegionalPreviews();
         loadItunesMusic();
         drawTagCards(); 
     }, 200);
 });
-</script>
 </script>
 </body>
 </html>

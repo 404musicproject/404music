@@ -110,8 +110,13 @@ public class MusicController {
     // 4. 실시간 TOP 100 조회 (신규 추가)
     @GetMapping("/top100")
     public ResponseEntity<List<Map<String, Object>>> getTop100(@RequestParam(value="u_no", defaultValue="0") int u_no) {
-        // JSP에서 던져준 u_no를 DAO의 selectTop100Music(u_no)에 전달합니다.
         List<Map<String, Object>> top100 = musicDAO.selectTop100Music(u_no);
+        
+        // DB 데이터가 부족하면 Apple RSS 데이터를 가져와서 합쳐줌
+        if (top100 == null || top100.size() < 5) {
+            return getRssMostPlayed("kr", 10); // 하단에 이미 만드신 Apple API 호출
+        }
+        
         return ResponseEntity.ok(top100);
     }
     @GetMapping("/weekly")
