@@ -82,11 +82,35 @@ public class UserRestController {
 
     // Step 3 & 프로필 수정 공통 업로드
     @PostMapping("/guest/signup/step3") 
-    public ResponseEntity<?> uploadProfileSignup(@RequestParam("profileFile") MultipartFile file, @RequestParam("uId") String uId, HttpSession session) {
+    public ResponseEntity<?> uploadProfileSignup(
+            @RequestParam(value="profileFile", required=false) MultipartFile file,
+            @RequestParam(value="profilePreset", required=false) String profilePreset,
+            @RequestParam("uId") String uId,
+            HttpSession session) {
+
+        // ✅ 1) 프리셋 선택이 우선 (파일 업로드 없이도 저장 가능)
+        if (profilePreset != null && !profilePreset.trim().isEmpty()) {
+            String preset = profilePreset.trim();
+
+            // ✅ 간단 화이트리스트: profile01.png ~ profile08.png 만 허용
+            if (!preset.matches("^profile0[1-8]\\\\.png$")) {
+                return ResponseEntity.badRequest().body("잘못된 프리셋 파일명");
+            }
+
+            String webPath = "/img/Profile/" + preset;
+            userDAO.updateProfileImage(uId, webPath);
+
+            UserDTO user = userDAO.findById(uId);
+            if (user != null) session.setAttribute("loginUser", user);
+
+            return ResponseEntity.ok(webPath);
+        }
+
+        // ✅ 2) 프리셋이 없으면 기존 파일 업로드 로직 유지
         return processProfileUpload(file, uId, session);
     }
 
-    @PostMapping("/update/profile") 
+@PostMapping("/update/profile") 
     public ResponseEntity<?> updateProfileImage(@RequestParam("profileFile") MultipartFile file, HttpSession session) {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         if (loginUser == null) return ResponseEntity.status(401).body("로그인 필요");
@@ -94,17 +118,23 @@ public class UserRestController {
     }
 
     private ResponseEntity<?> processProfileUpload(MultipartFile file, String uId, HttpSession session) {
-        if (file.isEmpty()) return ResponseEntity.ok("skip");
+        // ✅ 파일이 아예 안 왔거나(프론트가 preset만 보낼 때) 비어있으면 스킵
+        if (file == null || file.isEmpty()) return ResponseEntity.ok("skip");
+
         try {
             File dir = new File(UPLOAD_DIR);
             if (!dir.exists()) dir.mkdirs();
+
             String savedFileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path path = Paths.get(UPLOAD_DIR + savedFileName);
             Files.write(path, file.getBytes());
+
             String webPath = "/images/profile/" + savedFileName;
             userDAO.updateProfileImage(uId, webPath);
+
             UserDTO user = userDAO.findById(uId);
             if (user != null) session.setAttribute("loginUser", user);
+
             return ResponseEntity.ok(webPath);
         } catch (Exception e) {
             e.printStackTrace();
