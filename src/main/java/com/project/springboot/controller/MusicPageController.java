@@ -1,5 +1,6 @@
 package com.project.springboot.controller;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -89,21 +90,34 @@ public class MusicPageController {
     @GetMapping({"/", "/home"}) 
     public String home(HttpSession session, Model model) {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        // 로그인 안 했으면 0L을 넘겨서 '전체 인기 순위'를 가져오게 함
         Long uNo = (user != null) ? (long)user.getUNo() : 0L; 
         
-        // [수정된 부분] 서비스가 알아서 로그인 유저면 개인 취향, 비로그인이면 전체 트렌드를 가져옵니다.
-        List<String> topTags = recommendationService.getUserTopTags(uNo);
+        // 1. DB에서 노래가 있는 실제 상위 태그들을 넉넉히 가져옴 (예: 15개)
+        List<String> allTopTags = recommendationService.getUserTopTags(uNo);
         
-        // 혹시나 DB에 데이터가 단 하나도 없을 때를 대비한 최후의 방어막만 남깁니다.
-        if (topTags == null || topTags.isEmpty()) {
-            topTags = Arrays.asList("행복한 기분", "카페/작업", "운동", "새벽 감성", "휴식");
+        // 2. 분류 기준 정의 (DB의 g_name과 정확히 일치해야 함)
+        List<String> contextRef = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉", "산/등산", "맑음", "흐림", "비 오는 날", "눈 오는 날");
+        
+        // 3. 섹션별로 분류
+        List<String> homeContextTags = new ArrayList<>(); // 📍 NOW & HERE
+        List<String> homeMoodTags = new ArrayList<>();    // ✨ FOR YOUR MOOD
+        
+        for (String tag : allTopTags) {
+            if (contextRef.contains(tag)) {
+                homeContextTags.add(tag);
+            } else {
+                homeMoodTags.add(tag);
+            }
         }
-        model.addAttribute("topTags", topTags);
+        
+        // 만약 데이터가 너무 없으면 기본값이라도 넣어줌 (DB에 존재하는 이름 기준)
+        if (allTopTags.isEmpty()) {
+            homeMoodTags.addAll(Arrays.asList("행복한 기분", "새벽 감성", "휴식"));
+            homeContextTags.addAll(Arrays.asList("카페/작업", "맑음"));
+        }
 
-        // [팁] 장소 태그도 나중에는 DB에서 LOCATION 타입만 긁어오도록 바꿀 수 있어요!
-        List<String> placeTags = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉");
-        model.addAttribute("placeTags", placeTags);
+        model.addAttribute("homeContextTags", homeContextTags);
+        model.addAttribute("homeMoodTags", homeMoodTags);
         
         return "Home"; 
     }

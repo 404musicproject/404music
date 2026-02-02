@@ -44,7 +44,7 @@ public class WebSecurtyConfig {
                 .requestMatchers("/musicSearch").permitAll() 
                 .requestMatchers("/api/chat/**").permitAll()
                 .requestMatchers("/css/**", "/js/**", "/img/**", "/img/Location/**", "/img/Tag/**", "/favicon.ico", "/ckeditor5/**", "/error").permitAll()
-                .requestMatchers("/user/**", "/api/user/update", "/api/user/update-pw").authenticated()
+                .requestMatchers("/user/**", "/api/user/update", "/api/user/update-pw", "/user/subscription").authenticated()
                 .requestMatchers("/user/mypage").hasAnyRole("USER")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()

@@ -126,6 +126,37 @@
     .recommend-banner h4 { margin: 0; font-size: 1.3rem; letter-spacing: -0.5px; }
     .recommend-banner p { margin: 5px 0 0 0; opacity: 0.8; font-size: 0.95rem; }
     .recommend-banner span { background: #000; color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 0.9rem; font-weight: bold; }
+	.chart-tabs {
+    position: sticky; top: 15px; z-index: 100;
+    background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(20px);
+    margin-top: -50px; padding: 25px;
+    border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-section { margin-bottom: 20px; }
+.tab-section:last-child { margin-bottom: 0; }
+
+.section-title {
+    display: block; font-size: 0.75rem; font-weight: 800;
+    color: #00f2ff; margin-bottom: 12px; letter-spacing: 2px;
+    opacity: 0.7;
+}
+
+.tab-group {
+    display: flex; flex-wrap: wrap; gap: 10px;
+}
+
+.tab-btn {
+    padding: 8px 16px; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1); color: #ccc;
+    border-radius: 30px; cursor: pointer; transition: 0.3s;
+}
+
+.tab-btn.active {
+    background: #00f2ff; color: #000; border-color: #00f2ff;
+    font-weight: bold;
+}
+
 </style>
 
 </head>
@@ -142,12 +173,11 @@
 </section>
 
 <main class="container">
-    <div class="chart-tabs">
-        <c:forEach var="t" items="${topTags}">
-            <button class="tab-btn ${t == tagName ? 'active' : ''}" onclick="changeTag('${t}', this)">#${t}</button>
-        </c:forEach>
-        <button class="tab-btn" onclick="location.href='${pageContext.request.contextPath}/home'" style="margin-left: auto; color: #ff0055;">BACK ✕</button>
-    </div>
+<div class="chart-tabs">
+    <div id="dynamic-tabs" style="display: flex; gap: 5px;">
+        </div>
+    <button class="tab-btn" onclick="location.href='${pageContext.request.contextPath}/home'" style="margin-left: auto; color: #ff0055;">BACK ✕</button>
+</div>
 
     <div class="music-grid" id="chart-body"></div>
 
@@ -164,69 +194,153 @@
 
 <footer><%@ include file="/WEB-INF/views/common/Footer.jsp" %></footer>
 
-
 <script>
+// 전역 변수 설정
+var contextPath = '${pageContext.request.contextPath}'; 
+
 $(document).ready(function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramTag = urlParams.get('tagName');
-    let currentTag = paramTag || "${topTags[0]}"; 
+    var activeTag = '${tagName}';
+    
+    var contextGroup = []; 
+    var moodGroup = [];    
+    
+    var locationTags = ["바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉"];
+    var weatherList = ["맑음", "흐림", "비 오는 날", "눈 오는 날", "더운 여름"];
 
-    const $targetBtn = $('.tab-btn').filter(function() {
-        return $(this).text().replace('#', '').trim() === currentTag;
-    });
+    // (1) 모든 분류를 userTags(유저 활동 기반)에서만 수행합니다.
+    var moodCount = 0;
+    var locCount = 0;
 
-    changeTag(currentTag, $targetBtn.length > 0 ? $targetBtn[0] : null);
+    <c:forEach var="tag" items="${userTags}">
+        (function() {
+            var tagVal = "${tag}";
+            
+            // 장소/상황 태그 분류 (최대 4개 - 날씨 자리를 비워둠)
+            if(locationTags.indexOf(tagVal) !== -1) {
+                if(locCount < 4 && contextGroup.indexOf(tagVal) === -1) {
+                    contextGroup.push(tagVal);
+                    locCount++;
+                }
+            } 
+            // 무드/활동 태그 분류 (최대 5개)
+            else if(weatherList.indexOf(tagVal) === -1) { 
+                if(moodCount < 5 && moodGroup.indexOf(tagVal) === -1) {
+                    moodGroup.push(tagVal);
+                    moodCount++;
+                }
+            }
+        })();
+    </c:forEach>
+
+    // (2) 실시간 날씨 데이터 반영 (이 로직이 contextGroup의 첫 번째 칸을 차지합니다)
+    if (window.MusicApp) {
+        window.MusicApp.getWeatherData(function(data) {
+            var weatherTag = "맑음";
+            if (data) {
+                var weatherId = data.weather[0].id;
+                if (weatherId < 600) weatherTag = "비 오는 날";
+                else if (weatherId < 700) weatherTag = "눈 오는 날";
+                else if (weatherId > 800) weatherTag = "흐림";
+            }
+            
+            // 기존에 섞여 들어갔을지 모르는 날씨 태그 제거
+            contextGroup = contextGroup.filter(function(t) { return weatherList.indexOf(t) === -1; });
+            
+            // 현재 날씨를 맨 앞에 추가
+            contextGroup.unshift(weatherTag);
+            
+            // 혹시 날씨 포함 5개가 넘어가면 자르기
+            if(contextGroup.length > 5) contextGroup = contextGroup.slice(0, 5);
+
+            renderSplitTabs(contextGroup, moodGroup, activeTag);
+        });
+    } else {
+        renderSplitTabs(contextGroup, moodGroup, activeTag);
+    }
 });
 
+// 섹션별 탭 렌더링
+function renderSplitTabs(contexts, moods, activeTag) {
+    var html = '';
+
+    if(contexts.length > 0) {
+        html += '<div class="tab-section"><span class="section-title">📍 NOW & HERE</span>';
+        html += '<div class="tab-group">';
+        for(var i=0; i<contexts.length; i++) {
+            var tag = contexts[i];
+            var isActive = (tag === activeTag) ? 'active' : '';
+            html += '<button class="tab-btn ' + isActive + '" onclick="changeTag(\'' + tag + '\', this)">#' + tag + '</button>';
+        }
+        html += '</div></div>';
+    }
+
+    if(moods.length > 0) {
+        html += '<div class="tab-section"><span class="section-title">✨ FOR YOUR MOOD</span>';
+        html += '<div class="tab-group">';
+        for(var j=0; j<moods.length; j++) {
+            var mTag = moods[j];
+            var mActive = (mTag === activeTag) ? 'active' : '';
+            html += '<button class="tab-btn ' + mActive + '" onclick="changeTag(\'' + mTag + '\', this)">#' + mTag + '</button>';
+        }
+        html += '</div></div>';
+    }
+
+    $('#dynamic-tabs').html(html).css('display', 'block');
+
+    if (activeTag) {
+        var target = $('.tab-btn').filter(function() { 
+            return $(this).text().trim() === '#' + activeTag; 
+        })[0];
+        if(target) changeTag(activeTag, target);
+    }
+}
+
 function changeTag(tagName, btn) {
+    if (!tagName || tagName === 'undefined') return;
+
     $('.tab-btn').removeClass('active');
     if(btn) $(btn).addClass('active');
     
-    $('#hero-tag-name').stop().fadeOut(200, function() {
-        $(this).text(tagName).fadeIn(200);
-    });
+    $('#hero-tag-name').text(tagName);
     
-    const cp = '${pageContext.request.contextPath}';
-    const uNo = "${sessionScope.loginUser.uNo}" || 0;
+    var uNo = "${loginUser.UNo}" || "${loginUser.uNo}" || 0;
 
     $.ajax({
-        url: cp + '/api/recommendations/tag/' + encodeURIComponent(tagName) + '?u_no=' + uNo,
+        url: contextPath + '/api/recommendations/tag',
+        data: { tagName: tagName, u_no: uNo },
         method: 'GET',
         success: function(data) {
             renderMusicList(data);
             if(data && data.length > 0) {
-                let bgImg = data[0].b_image || data[0].B_IMAGE || '';
-                if(bgImg) {
-                    const fullPath = bgImg.startsWith('http') ? bgImg : cp + (bgImg.startsWith('/') ? '' : '/') + bgImg;
-                    // 두 레이어 모두에 이미지 적용
-                    $(' #hero-bg-clear').css('background-image', 'url("' + fullPath + '")');
+                var bg = data[0].b_image || data[0].B_IMAGE || '';
+                if(bg) {
+                    var fullImg = bg.indexOf('http') === 0 ? bg : contextPath + '/' + bg;
+                    $('#hero-bg-blur, #hero-bg-clear').css('background-image', 'url(' + fullImg + ')');
                 }
             }
+        },
+        error: function(xhr) {
+            $('#chart-body').html('<div style="grid-column: 1/-1; text-align:center; padding:100px; color:#666;">데이터를 불러올 수 없습니다.</div>');
         }
     });
 }
 
 function renderMusicList(musicList) {
-    let html = '';
-    const cp = '${pageContext.request.contextPath}';
-    
+    var html = '';
     if (!musicList || musicList.length === 0) {
         html = '<div style="grid-column: 1/-1; text-align:center; padding:100px; color:#666;">추천 음악이 없습니다.</div>';
     } else {
         $.each(musicList, function(index, music) {
-            const title = (music.m_title || music.M_TITLE || 'Unknown');
-            const artist = (music.a_name || music.A_NAME || 'Unknown');
-            const imgPath = music.b_image || music.B_IMAGE || '';
+            var title = (music.m_title || music.M_TITLE || 'Unknown').replace(/'/g, "\\'");
+            var artist = (music.a_name || music.A_NAME || 'Unknown').replace(/'/g, "\\'");
+            var imgPath = music.b_image || music.B_IMAGE || '';
+            var albumImg = imgPath.indexOf('http') === 0 ? imgPath : contextPath + (imgPath.indexOf('/') === 0 ? '' : '/') + imgPath;
             
-            let albumImg = imgPath.startsWith('http') ? imgPath : cp + (imgPath.startsWith('/') ? '' : '/') + imgPath;
-            if(!imgPath) albumImg = 'https://placehold.co/400x400/111/00f2ff?text=No+Image';
-
-            html += '<div class="music-card" onclick="handlePlay(\'' + title.replace(/'/g, "\\'") + '\', \'' + artist.replace(/'/g, "\\'") + '\', \'' + albumImg + '\')">';
+            html += '<div class="music-card" onclick="handlePlay(\'' + title + '\', \'' + artist + '\', \'' + albumImg + '\')">';
             html += '<div class="card-img-wrap"><img src="' + albumImg + '" onerror="this.src=\'https://placehold.co/400x400/111/00f2ff?text=Error\'">';
             html += '<div class="card-play-overlay"><i class="fa-solid fa-play" style="font-size: 2rem; color: #00f2ff;"></i></div></div>';
-            html += '<div class="card-title">' + title + '</div>';
-            html += '<div class="card-artist">' + artist + '</div>';
-            html += '</div>';
+            html += '<div class="card-title" title="' + title + '">' + title + '</div>';
+            html += '<div class="card-artist">' + artist + '</div></div>';
         });
     }
     $('#chart-body').html(html);

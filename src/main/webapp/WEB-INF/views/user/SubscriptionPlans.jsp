@@ -25,12 +25,29 @@
 
         .buy-btn { width: 100%; padding: 18px; background: #ff0055; border: none; border-radius: 10px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4); }
         .buy-btn:hover { background: #ff3377; }
+        .back-btn {
+		    width: 100%;
+		    padding: 15px;
+		    background: transparent;
+		    border: 1px solid #444;
+		    border-radius: 10px;
+		    color: #888;
+		    font-size: 14px;
+		    font-weight: bold;
+		    cursor: pointer;
+		    margin-top: 15px;
+		    transition: 0.3s;
+		    font-family: inherit;
+		}
+		.back-btn:hover {
+		    border-color: #00f2ff;
+		    color: #00f2ff;
+		    box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+		}
+        
     </style>
 </head>
 <body>
-<header>
-	<jsp:include page="/WEB-INF/views/common/Header.jsp" />
-</header>
 
 
 <!-- 현재 구독 중인지 여부를 체크 -->
@@ -50,10 +67,14 @@
         <button type="button" id="btn-year" class="select-btn" onclick="selectPlan('YEAR', 79000)">연간 결제</button>
     </div>
 
-    <button type="button" class="buy-btn" onclick="requestPay()">지금 구독하기</button>
+    <!-- 기존 구독하기 버튼 아래에 추가 -->
+<button type="button" class="buy-btn" onclick="requestPay()">지금 구독하기</button>
+<button type="button" class="back-btn" onclick="goBack()">BACK TO SYSTEM</button>
 </div>
 
 <script>
+
+
 let currentPlan = 'MONTH';
 let currentAmount = 7900;
 
@@ -108,6 +129,12 @@ function requestPay() {
             alert("결제 실패: " + rsp.error_msg);
         }
     });
+}
+
+function goBack() {
+    // 단순히 이전 페이지로 가고 싶다면: history.back();
+    // 마이페이지로 안전하게 보내고 싶다면:
+    location.href = "/user/mypage";
 }
 </script>
 

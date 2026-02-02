@@ -1,12 +1,12 @@
 package com.project.springboot.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -42,36 +42,37 @@ public class RecommendationController {
         return recommendationService.getUserTopTags((long) uNo);
     }
 
-    // 3. 특정 태그의 음악 리스트 가져오기 (AJAX용)
-    @GetMapping("/api/recommendations/tag/{tagName}")
+    // 3. 특정 태그의 음악 리스트 가져오기 (수정본)
+    @GetMapping("/api/recommendations/tag") // 경로에서 {tagName}을 삭제했습니다.
     @ResponseBody
     public List<MusicDTO> getMusicByTag(
-            @PathVariable("tagName") String tagName, 
+            @RequestParam("tagName") String tagName, // PathVariable을 RequestParam으로 변경
             HttpSession session) {
         
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         int uNo = (loginUser != null) ? loginUser.getUNo() : 0; 
 
-        // 파라미터 tagName과 Long 타입으로 변환된 uNo 전달
         return recommendationService.getRecommendationsByTag(tagName, (long) uNo);
     }
 
     // 4. 상세 리스트 페이지로 이동
+ // RecommendationController.java 내의 해당 메서드 수정
+
     @GetMapping("/music/recommendationList")
     public String showRecommendationList(@RequestParam("tagName") String tagName, HttpSession session, Model model) {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         Long uNo = (user != null) ? (long)user.getUNo() : 0L;
         
-        List<String> topTags = recommendationService.getUserTopTags(uNo);
+        // 유저가 선호하는 모든 태그 리스트 (이름만 가져옴)
+        List<String> userTags = recommendationService.getUserTopTags(uNo);
         
-        // [핵심] 만약 4번 섹션에서 클릭한 tagName이 topTags 리스트에 없다면 맨 앞에 추가해줌
-        if (!topTags.contains(tagName)) {
-            topTags = new ArrayList<>(topTags); // 수정 가능한 리스트로 변환
-            topTags.add(0, tagName); 
-        }
-        
+        // 고정된 장소 태그 (Location)
+        List<String> placeTags = Arrays.asList("바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉");
+
         model.addAttribute("tagName", tagName);
-        model.addAttribute("topTags", topTags);
+        model.addAttribute("userTags", userTags); // 유저 기반 태그들
+        model.addAttribute("placeTags", placeTags); // 위치 기반 태그들
+        
         return "user/RecommendationList";
     }
 }

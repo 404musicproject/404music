@@ -92,9 +92,9 @@ public class UserViewController {
     
 }
     
-    @RequestMapping("user/subscription")
+    @RequestMapping("/user/subscription")
     public String subscription() {
-        return "/user/SubscriptionPlans";
+        return "user/SubscriptionPlans";
     }
     
   

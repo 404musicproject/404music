@@ -205,15 +205,24 @@
         </div>
     </section>
     
-    <section class="Weather-section">
-        <div class="section-title">Today's Context</div>
-        <div class="location-grid" id="context-list"></div>
-    </section>
+<c:if test="${not empty loginUser}">
+<section class="location-section">
+    <div class="section-title">📍 NOW & HERE</div>
+    <div class="location-grid" id="context-list">
+        </div>
+</section>
+    
+</c:if>
 
-    <section class="activity-section">
-        <div class="section-title">Personalized Mood Tags</div>
-        <div class="location-grid" id="personalized-list"></div>
-    </section>
+<c:if test="${not empty loginUser}">
+<section class="location-section">
+    <div class="section-title">✨ FOR YOUR MOOD</div>
+    <div class="location-grid" id="personalized-list">
+        </div>
+</section>
+</c:if>
+
+
 </main>
 
 <footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
@@ -236,7 +245,13 @@ function toHighResArtwork(url) {
 }
 
 function goTag(tagName) {
-    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(tagName);
+    // tagList를 수집해서 넘길 필요 없이, 클릭한 태그 이름 하나만 전송합니다.
+    if(!tagName || tagName === '-') return;
+    
+    // ' 스타일' 글자가 붙어있다면 제거해서 순수 태그명만 전달
+    const cleanTagName = tagName.replace(' 스타일', '').trim();
+    
+    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(cleanTagName);
 }
 
 function goRegional(city) { 
@@ -354,42 +369,61 @@ function loadItunesMusic() {
 }
 
 function drawTagCards() {
-    const placeTags = [];
-    <c:if test="${not empty placeTags}">
-        <c:forEach var="pt" items="${placeTags}">placeTags.push("${pt}");</c:forEach>
-    </c:if>
+    // 1. 상황/장소 데이터 수집
+    const rawContextTags = [];
+    <c:forEach var="ct" items="${homeContextTags}">
+        rawContextTags.push("${ct}");
+    </c:forEach>
 
+    const locationTags = ["바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉"];
+    const weatherTags = ["맑음", "흐림", "비 오는 날", "눈 오는 날", "더운 여름"];
+
+    // 📍 NOW & HERE 리스트 생성 (날씨 카드 1개 + 장소 카드들)
     let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/location/default.jpg\')">'
                     + '  <span class="city-name" id="geo-city">LOCATION</span>'
                     + '  <div class="city-top-song" id="geo-weather-title">날씨 확인 중...</div>'
-                    + '  <div class="city-top-artist" id="geo-weather-desc">데이터를 불러오고 있습니다.</div>'
+                    + '  <div class="city-top-artist" id="geo-weather-desc">위치 정보를 불러오는 중</div>'
                     + '</div>';
     
-    placeTags.forEach(name => {
-        const no = tagNoMap[name] || 11;
-        contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
-                     + '  <span class="city-name">NEARBY PLACE</span>'
-                     + '  <div class="city-top-song">' + name + '</div>'
-                     + '  <div class="city-top-artist">지금 위치에 어울리는 추천</div>'
-                     + '</div>';
+    // 장소 태그들만 필터링해서 추가 (최대 4개까지만 추가해서 총 5개 맞춤)
+    let addedCount = 0;
+    rawContextTags.forEach(name => {
+        if (locationTags.indexOf(name) !== -1 && addedCount < 4) {
+            const no = tagNoMap[name] || 19;
+            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                         + '  <span class="city-name">NEARBY PLACE</span>'
+                         + '  <div class="city-top-song">' + name + '</div>'
+                         + '  <div class="city-top-artist">지금 위치와 어울리는 추천</div>'
+                         + '</div>';
+            addedCount++;
+        }
     });
     $('#context-list').html(contextHtml);
 
-    const topTags = [];
-    <c:if test="${not empty topTags}">
-        <c:forEach var="tt" items="${topTags}">topTags.push("${tt}");</c:forEach>
-    </c:if>
+ // 2. 취향/무드 데이터 수집
+    const moodTags = [];
+    <c:forEach var="mt" items="${homeMoodTags}">
+        moodTags.push("${mt}");
+    </c:forEach>
 
+    // ✨ FOR YOUR MOOD 리스트 생성 (상위 5개로 제한)
     let personalHtml = '';
-    topTags.forEach((name, idx) => {
-        const no = tagNoMap[name] || 11;
-        personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
-                      + '  <span class="city-name">MY TAG #' + (idx + 1) + '</span>'
-                      + '  <div class="city-top-song">' + name + ' 스타일</div>'
-                      + '  <div class="city-top-artist">당신이 자주 찾는 감성</div>'
-                      + '</div>';
+    
+    // filter나 slice를 써도 되지만, forEach의 인덱스를 활용하는게 가장 간단합니다.
+    moodTags.forEach((name, idx) => {
+        if (idx < 5) { // 0, 1, 2, 3, 4번 인덱스만 출력 (총 5개)
+            const no = tagNoMap[name] || 9;
+            personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+                          + '  <span class="city-name">MY MOOD #' + (idx + 1) + '</span>'
+                          + '  <div class="city-top-song">' + name + '</div>'
+                          + '  <div class="city-top-artist">당신을 위한 맞춤 추천</div>'
+                          + '</div>';
+        }
     });
+    
     $('#personalized-list').html(personalHtml);
+
+    // 날씨 카드 업데이트 실행
     renderContextWeather();
 }
 

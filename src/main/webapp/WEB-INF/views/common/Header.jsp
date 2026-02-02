@@ -347,85 +347,72 @@ document.addEventListener('DOMContentLoaded', function () {
     sel.addEventListener('change', setPlaceholder);
     setPlaceholder();
 });
-</script>
+
 
 <!-- ✅ [추가] 자동완성 기능 (JSP EL 충돌 0, 기존 코드 무수정) -->
-<script>
 document.addEventListener('DOMContentLoaded', function () {
     const CTX = '<%= request.getContextPath() %>';
 
+    // --- [기존] 자동완성 관련 변수 ---
     const form  = document.getElementById('headerSearchForm');
     const sel   = document.getElementById('headerSearchType');
     const input = document.getElementById('headerSearchKeyword');
     const box   = document.getElementById('headerSuggestBox');
 
+    // --- [추가] 로그인 팝업 감지 로직 ---
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('showLogin') === 'true') {
+        // 0.5초 뒤 실행 (페이지 로드 안정화 후)
+        setTimeout(() => {
+            if (typeof openLoginModal === 'function') {
+                openLoginModal();
+            } else if (window.openLoginModal) {
+                window.openLoginModal();
+            }
+            // 주소창에서 파라미터 제거 (깔끔하게 유지)
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
+    }
+
     if (!form || !sel || !input || !box) return;
 
+    // --- [기존] 자동완성 로직 시작 ---
     let timer = null;
-
     function escapeHtml(s){
         if (s == null) return '';
-        return String(s)
-            .replaceAll('&','&amp;')
-            .replaceAll('<','&lt;')
-            .replaceAll('>','&gt;')
-            .replaceAll('"','&quot;')
-            .replaceAll("'",'&#39;');
+        return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
     }
-
-    function hideSuggest(){
-        box.style.display = 'none';
-        box.innerHTML = '';
-    }
-
+    function hideSuggest(){ box.style.display = 'none'; box.innerHTML = ''; }
     function render(list){
         if (!Array.isArray(list) || list.length === 0) { hideSuggest(); return; }
-
         let html = '';
         for (const it of list) {
             const title  = it.title  || it.m_title || '';
             const artist = it.artist || it.a_name  || '';
             const album  = it.album  || it.b_title || '';
             const label  = (artist && String(artist).trim().length > 0) ? (title + ' - ' + artist) : title;
-
-            html += ''
-              + '<div class="suggest-item" data-value="' + escapeHtml(title) + '">'
-              +   '<div class="suggest-title">' + escapeHtml(label) + '</div>'
-              +   '<div class="suggest-sub">' + escapeHtml(album) + '</div>'
-              + '</div>';
+            html += '<div class="suggest-item" data-value="' + escapeHtml(title) + '">'
+                  + '<div class="suggest-title">' + escapeHtml(label) + '</div>'
+                  + '<div class="suggest-sub">' + escapeHtml(album) + '</div>'
+                  + '</div>';
         }
-
-        box.innerHTML = html;
-        box.style.display = 'block';
+        box.innerHTML = html; box.style.display = 'block';
     }
-
     input.addEventListener('input', function () {
         const q = input.value.trim();
         if (q.length < 2) { hideSuggest(); return; }
-
         clearTimeout(timer);
         timer = setTimeout(() => {
-            const url = CTX + '/api/music/es-suggest'
-                + '?q=' + encodeURIComponent(q)
-                + '&searchType=' + encodeURIComponent(sel.value)
-                + '&size=10';
-
-            fetch(url)
-                .then(r => r.ok ? r.json() : Promise.reject())
-                .then(render)
-                .catch(hideSuggest);
+            const url = CTX + '/api/music/es-suggest?q=' + encodeURIComponent(q) + '&searchType=' + encodeURIComponent(sel.value) + '&size=10';
+            fetch(url).then(r => r.ok ? r.json() : Promise.reject()).then(render).catch(hideSuggest);
         }, 150);
     });
-
     box.addEventListener('click', function (e) {
         const item = e.target.closest('.suggest-item');
         if (!item) return;
-
         input.value = item.getAttribute('data-value') || '';
-        hideSuggest();
-        form.submit();
+        hideSuggest(); form.submit();
     });
-
     document.addEventListener('click', function (e) {
         if (e.target !== input && !box.contains(e.target)) hideSuggest();
     });

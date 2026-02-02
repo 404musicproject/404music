@@ -316,15 +316,18 @@ public class MusicService {
     
     private List<Map<String, Object>> fetchItunesList(String original, String normalized, String searchType) {
         try {
-            // [핵심 수정] "백예린 thevolunteers" 형태로 합침
-            String combinedKeyword;
-            if (original.equals(normalized)) {
-                combinedKeyword = original;
-            } else {
-                combinedKeyword = original + " " + normalized;
+            // [수정 전략]
+            // 1. 만약 원본이 'newjeans'라면 iTunes를 위해 'New Jeans'로 교정
+            // 2. 그 외에는 정규화된 키워드(한글명 등)를 우선 사용하되, 검색어 합치기 방지
+            String searchQuery = normalized; 
+            
+            if (original.toLowerCase().replaceAll("\\s+", "").equals("newjeans")) {
+                searchQuery = "New Jeans"; // iTunes API가 가장 잘 인식하는 형태
+            } else if (original.length() > normalized.length()) {
+                searchQuery = original; // 영문명이 더 정보가 많을 경우
             }
 
-            String encoded = URLEncoder.encode(combinedKeyword, StandardCharsets.UTF_8.toString());
+            String encoded = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8.toString());
             String attribute = "";
             if ("ARTIST".equals(searchType)) attribute = "&attribute=artistTerm";
             else if ("TITLE".equals(searchType)) attribute = "&attribute=songTerm";

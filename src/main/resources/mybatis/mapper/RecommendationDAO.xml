@@ -21,7 +21,7 @@
     </resultMap>
 
     <!-- 태그별 음악 추천 조회 쿼리 -->
-    <select id="findMusicDTOByTagName" resultMap="MusicRecommendationResultMap">
+<select id="findMusicDTOByTagName" resultMap="MusicRecommendationResultMap">
     SELECT 
         m.m_no, 
         m.m_title, 
@@ -33,38 +33,42 @@
         a.a_name,   
         b.b_title,  
         b.b_image,
-        COUNT(h.h_no) AS play_count
+        /* 1. 이 노래를 직접 들은 횟수 (직접적 선호) */
+        COUNT(DISTINCT CASE WHEN h.u_no = #{u_no} THEN h.h_no END) AS play_count,
+        /* 2. 이 아티스트의 다른 노래를 들은 총 횟수 (간접적 취향 점수) */
+        (SELECT COUNT(*) FROM SCOTT.history h2 
+         JOIN SCOTT.music m2 ON h2.m_no = m2.m_no 
+         WHERE h2.u_no = #{u_no} AND m2.a_no = m.a_no) AS artist_pref_score
     FROM SCOTT.music m
     INNER JOIN SCOTT.music_tag_map map ON m.m_no = map.m_no
     INNER JOIN SCOTT.tags t ON map.g_no = t.g_no
     INNER JOIN SCOTT.artists a ON m.a_no = a.a_no
     INNER JOIN SCOTT.album b ON m.b_no = b.b_no
-    LEFT OUTER JOIN SCOTT.history h ON m.m_no = h.m_no AND h.u_no = #{u_no}
+    LEFT OUTER JOIN SCOTT.history h ON m.m_no = h.m_no
     WHERE t.g_name = #{tagName}
     GROUP BY 
         m.m_no, m.m_title, m.a_no, m.b_no, m.isrc_code, 
         m.m_youtube_id, m.m_preview_url, a.a_name, b.b_title, b.b_image
-    ORDER BY play_count DESC, m.m_no DESC
+    ORDER BY 
+        (play_count * 5) + artist_pref_score DESC, /* 내 청취 기록 가중치 합산 */
+        m.m_no DESC
 </select>
 
 <select id="findUserTopTags" resultType="string">
     SELECT t.g_name
-    FROM SCOTT.history h
-    JOIN SCOTT.music_tag_map mtm ON h.m_no = mtm.m_no
-    JOIN SCOTT.tags t ON mtm.g_no = t.g_no
+    FROM SCOTT.tags t
+    INNER JOIN SCOTT.music_tag_map mtm ON t.g_no = mtm.g_no
+    INNER JOIN SCOTT.music m ON mtm.m_no = m.m_no
+    LEFT JOIN SCOTT.history h ON m.m_no = h.m_no
     <where>
-        <choose>
-            <when test="uNo != 0">
-                h.u_no = #{uNo}
-            </when>
-            <otherwise>
-                </otherwise>
-        </choose>
+        <if test="uNo != 0">
+        </if>
     </where>
     GROUP BY t.g_name
-    ORDER BY COUNT(*) DESC
-    OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY
+    ORDER BY 
+        COUNT(CASE WHEN h.u_no = #{uNo} THEN 1 END) DESC, 
+        COUNT(h.h_no) DESC
+    OFFSET 0 ROWS FETCH NEXT 15 ROWS ONLY
 </select>
-
 
 </mapper>
