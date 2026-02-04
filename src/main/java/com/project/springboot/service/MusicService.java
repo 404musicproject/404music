@@ -31,6 +31,7 @@ import org.springframework.web.client.RestTemplate;
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
+import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
 
 @Service
@@ -423,6 +424,70 @@ public class MusicService {
         } catch (Exception e) {
             System.err.println(">>> 키워드 정규화 실패: " + e.getMessage());
             return keyword;
+        }
+    }
+ // [추가] 트렌드 음악 재생 시 로그 기록 (곡이 없으면 자동 저장)
+    @Transactional
+    public void recordPlayLog(String title, String artist, String imgUrl, int uNo) {
+        // 1. 곡 존재 여부 확인 후 없으면 saveNewMusicInfo 호출 (이미 구현된 로직 사용)
+        Integer mNo = musicDAO.selectMNoByTitleAndArtist(title, artist);
+        if (mNo == null || mNo == 0) {
+            Map<String, Object> mockItunes = new HashMap<>();
+            mockItunes.put("trackName", title);
+            mockItunes.put("artistName", artist);
+            mockItunes.put("artworkUrl100", imgUrl);
+            mockItunes.put("collectionName", "K-POP TREND");
+            saveNewMusicInfo(null, mockItunes, title, artist, null);
+            mNo = musicDAO.selectMNoByTitleAndArtist(title, artist);
+        }
+
+        // 2. 실시간 차트 반영을 위한 History 저장 (이게 핵심!)
+        if (mNo != null && mNo > 0) {
+            HistoryDTO history = new HistoryDTO();
+            history.setU_no(uNo);
+            history.setM_no(mNo);
+            // 날씨나 위치 정보는 선택 사항 (기본값 설정 가능)
+            musicDAO.insertHistory(history); 
+        }
+    }
+    
+    @Transactional
+    public void recordPlayLogWithWeather(String title, String artist, String imgUrl, int uNo, int weatherId, String location, Double lat, Double lon) {
+        // 1. 기존 곡 조회
+        Integer mNo = musicDAO.selectMNoByTitleAndArtist(title, artist);
+        
+        // 2. 검색 결과가 없으면 (m_no가 null이면)
+        if (mNo == null || mNo == 0) {
+            System.out.println(">>> DB에 곡이 없어 새로 등록을 시도합니다: " + title);
+            
+            Map<String, Object> trackData = new HashMap<>();
+            trackData.put("trackName", title);
+            trackData.put("artistName", artist);
+            trackData.put("artworkUrl100", imgUrl);
+
+            // [중요] 이 메서드 내부에서 insertArtist, insertAlbum, insertMusic이 순서대로 실행됩니다.
+            // 메서드가 성공적으로 끝나면 다시 검색해서 mNo를 가져옵니다.
+            saveNewMusicInfo(null, trackData, title, artist, null);
+            
+            // 다시 가져오기 (이때도 안 온다면 insert 자체가 실패한 것)
+            mNo = musicDAO.selectMNoByTitleAndArtist(title, artist);
+        }
+
+        // 3. mNo가 있으면 히스토리 저장
+        if (mNo != null && mNo > 0) {
+            HistoryDTO dto = new HistoryDTO();
+            dto.setU_no(uNo);
+            dto.setM_no(mNo);
+            dto.setH_weather(weatherId);
+            dto.setH_location(location);
+            dto.setH_lat(lat != null ? lat : 0.0);
+            dto.setH_lon(lon != null ? lon : 0.0);
+            
+            musicDAO.insertHistory(dto);
+            System.out.println(">>> [성공] 히스토리 저장 완료 (M_NO: " + mNo + ")");
+        } else {
+            // 이 로그가 찍히면 saveNewMusicInfo 내부 로직을 점검해야 합니다.
+            System.out.println(">>> [경고] 곡 등록 시도 후에도 mNo를 가져오지 못함.");
         }
     }
 }

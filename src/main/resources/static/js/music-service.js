@@ -217,32 +217,42 @@ window.MusicApp = {
 	                );
 	            }
 	            
-	            // 2. 상세 정보 로딩 및 재생 로그 전송 (백그라운드)
-	            if (mNo > 0) {
-	                // 상세 정보 수집 (Spotify 등)
-	                $.get(this.basePath + '/api/music/detail', { m_no: mNo })
-	                 .done(() => console.log("상세 정보 업데이트 완료"))
-	                 .fail(() => console.log("상세 정보 수집 생략"));
-	                
-	                // 재생 로그 저장 (히스토리)
-	                this.sendPlayLog(mNo);
-	            }
-	        },
+				// 2. 상세 정보 로딩 (기존 곡이 있을 때만)
+				            if (mNo > 0) {
+				                $.get(this.basePath + '/api/music/detail', { m_no: mNo })
+				                 .done(() => console.log("상세 정보 업데이트 완료"));
+				            }
+				            
+				            // 3. [핵심] mNo가 0이든 아니든 무조건 로그 전송!
+				            // title, artist, imgUrl을 함께 보내서 서버가 신규 등록을 할 수 있게 함
+				            this.sendPlayLog(mNo, title, artist, imgUrl);
+				            
+				        },
 	        error: (xhr) => {
 	            console.error("API 호출 에러:", xhr.status, xhr.responseText);
 	            alert("음악 검색 중 오류가 발생했습니다. (Error: " + xhr.status + ")");
 	        }
 	    });
 	},
-
+	parseMusicData: function(item) {
+	    return {
+	        mNo: item.m_no || item.MNO || item.mNo || 0,
+	        title: item.TITLE || item.m_title || item.mTitle || 'Unknown Title', // 대문자 우선 체크
+	        artist: item.ARTIST || item.a_name || item.aName || 'Unknown Artist', // 대문자 우선 체크
+	        img: item.ALBUM_IMG || item.b_image || item.bImage || ''
+	    };
+	},
 	// MusicApp 객체 내부의 sendPlayLog 함수 수정
-	sendPlayLog: async function(mNo) { 
+	sendPlayLog: async function(mNo, title, artist, imgUrl) {
 	    // this가 유실되지 않도록 미리 잡아둠
 	    const self = this; 
 	    
 	    const postData = {
 	        u_no: this.currentUserNo, 
 	        m_no: mNo,
+			title: title,    // [추가]
+			artist: artist,  // [추가]
+			imgUrl: imgUrl,  // [추가]
 	        h_lat: 0, 
 	        h_lon: 0,
 	        h_weather: 800, // 기본값 설정
@@ -314,8 +324,5 @@ window.MusicApp = {
 	       .fail((err) => {
 	           alert("이미 추가되었거나 오류가 발생했습니다.");
 	       });
-	   }
-	   
-	   
-	   
+	   }   
 };

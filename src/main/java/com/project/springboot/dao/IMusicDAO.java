@@ -107,7 +107,7 @@ public interface IMusicDAO {
 
 //아티스트 상세 정보(장르, 팔로워, 이미지)를 한꺼번에 업데이트
 void updateArtistDetails(ArtistDTO artist);
-
+void insertPlayLog(@Param("mNo") int mNo, @Param("uNo") int uNo);
 //14. 데이터 중복 체크 및 번호 조회용
 // 아티스트 이름으로 번호 조회
 Integer selectANoByArtistName(@Param("a_name") String aName);

@@ -529,6 +529,9 @@
         ORDER BY priority ASC, m.m_no DESC
     ) WHERE ROWNUM = 1
 </select>
-
+<insert id="insertPlayLog">
+    INSERT INTO PLAY_LOG (M_NO, U_NO, PLAY_DATE)
+    VALUES (#{mNo}, #{uNo}, SYSDATE)
+</insert>
 
 </mapper>

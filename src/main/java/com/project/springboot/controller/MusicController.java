@@ -113,12 +113,13 @@ public class MusicController {
         List<Map<String, Object>> top100 = musicDAO.selectTop100Music(u_no);
         
         // DB 데이터가 부족하면 Apple RSS 데이터를 가져와서 합쳐줌
-        if (top100 == null || top100.size() < 5) {
-            return getRssMostPlayed("kr", 10); // 하단에 이미 만드신 Apple API 호출
+        if (top100 == null || top100.isEmpty()) {
+            return getRssMostPlayed("kr", 100); 
         }
         
         return ResponseEntity.ok(top100);
     }
+    
     @GetMapping("/weekly")
     public ResponseEntity<List<Map<String, Object>>> getWeekly(@RequestParam(value="u_no", defaultValue="0") int u_no) {
         // DAO에 selectWeeklyMusic 메서드가 있어야 합니다.
@@ -393,6 +394,36 @@ public class MusicController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("날씨 API 호출 실패");
         }
+    }
+    
+ // 기존의 @PostMapping("/log")가 붙은 다른 메서드는 반드시 지우세요!
+
+    @PostMapping("/log")
+    @ResponseBody
+    public String logMusicPlay(
+            @RequestParam String title, 
+            @RequestParam String artist, 
+            @RequestParam String albumImg,
+            @RequestParam(value="h_lat", required=false) Double lat,
+            @RequestParam(value="h_lon", required=false) Double lon,
+            HttpSession session) {
+        
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        if (user == null) return "LOGIN_REQUIRED";
+
+        int weatherId = 800; 
+        String locationName = "Unknown";
+
+        // [1] 날씨 가져오기 (기존 로직 유지)
+        if (lat != null && lon != null && lat != 0) {
+            // ... OpenWeather API 호출 ...
+        }
+
+        // [2] 서비스 호출 시 "곡이 없으면 등록까지 해라"라고 명령
+        // 파라미터에 lat, lon도 꼭 포함해서 넘겨주세요.
+        musicService.recordPlayLogWithWeather(title, artist, albumImg, user.getUNo(), weatherId, locationName, lat, lon);
+        
+        return "SUCCESS";
     }
     
 }

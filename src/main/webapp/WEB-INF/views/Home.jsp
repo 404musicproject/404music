@@ -30,7 +30,12 @@
 		/* 중요: 2열 배치를 위한 그리드 설정 */
 		.top10-list { 
 		    display: grid; 
+		    /* 열을 2개로 고정 */
 		    grid-template-columns: 1fr 1fr; 
+		    /* 행을 5개로 고정 (반드시 지정해야 세로로 흐름) */
+		    grid-template-rows: repeat(5, auto); 
+		    /* 데이터가 위에서 아래로(세로) 먼저 채워지도록 설정 */
+		    grid-auto-flow: column; 
 		    gap: 10px 20px; 
 		}
 		
@@ -55,16 +60,16 @@
 		    margin-right: 15px;
 		}
 		.top10-img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 15px; }
-		.top10-info { flex-grow: 1; min-width: 0; overflow: hidden; }
-		.top10-title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-		.top10-artist { font-size: 0.8rem; color: #888; }
+		.top10-info { flex-grow: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;}
+		.top10-title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+		.top10-artist { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
 		.top10-play { color: #ff0055; font-size: 1.2rem; padding: 0 10px; }
 
         /* 2. 메뉴 그리드 */
         .menu-grid { max-width: 1000px; margin: -50px auto 50px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 0 20px; position: relative; z-index: 10; }
-        .menu-card { background: #0a0a0a; border: 1px solid #00f2ff; padding: 30px 10px; text-align: center; text-decoration: none; color: #00f2ff; transition: all 0.3s; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; }
+        .menu-card { background: #0a0a0a; border: 1px solid #00f2ff; padding: 30px 10px; text-align: center; text-decoration: none; color: #00f2ff; transition: all 0.3s; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; cursor: pointer;z-index: 20; user-select: none; }
         .menu-card:hover { background: rgba(0, 242, 255, 0.1); transform: translateY(-10px); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); color: #fff; border-color: #fff; }
-        
+        .menu-card * {pointer-events: none;}
         /* 3. 최신 음악 섹션 */
         .container { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
         .chart-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; }
@@ -95,7 +100,12 @@
             #itunes-list { grid-template-columns: repeat(2, 1fr); }
             .location-grid { grid-template-columns: repeat(2, 1fr); }
             .menu-grid { grid-template-columns: repeat(2, 1fr); }
-            .top10-list { grid-template-columns: 1fr; } /* 모바일은 1열 */
+            .top10-list { 
+		        display: grid;
+		        grid-template-columns: 1fr; 
+		        grid-template-rows: none;
+		        grid-auto-flow: row; /* 모바일은 다시 순서대로 아래로 */
+		    }
         }
         
         /* 태그 이미지 (생략 가능하면 유지) */
@@ -120,6 +130,34 @@
 		.tag-19 { background-image: url('${pageContext.request.contextPath}/img/Tag/19.png'); }
 		.tag-20 { background-image: url('${pageContext.request.contextPath}/img/Tag/20.png'); }
 		.tag-21 { background-image: url('${pageContext.request.contextPath}/img/Tag/21.png'); }
+		
+		/* 팝업 오버레이 스타일 추가 */
+		.custom-popup-overlay {
+		    position: fixed;
+		    top: 0; left: 0; width: 100%; height: 100%;
+		    background: rgba(0, 0, 0, 0.8);
+		    display: flex; align-items: center; justify-content: center;
+		    z-index: 10000;
+		}
+		.custom-popup-content {
+		    background: #1a1a1a;
+		    border: 2px solid #ff0055;
+		    padding: 20px;
+		    border-radius: 12px;
+		    width: 400px;
+		    color: #fff;
+		    box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+		}
+		.popup-footer {
+		    margin-top: 15px;
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		}
+		.popup-footer button {
+		    background: #ff0055; border: none; color: #fff;
+		    padding: 5px 15px; cursor: pointer; border-radius: 4px;
+		}
     </style>
 </head>
 <body>
@@ -130,7 +168,7 @@
         <div id="top1-bg"></div>
         <div class="hero-content" onclick="playTopOne()">
 		    <div class="top1-badge">CURRENT NO.1</div>
-		    <img id="top1-jacket" src="${pageContext.request.contextPath}/img/location/default.jpg" alt="Top Music">
+		    <img id="top1-jacket" src="https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png" alt="Top Music">
 		    <h1 id="top1-title" style="margin: 0; font-size: 2.2rem; text-shadow: 0 0 15px #ff0055;">Loading...</h1>
 		    <p id="top1-artist" style="color: #ccc; margin-top: 5px;"></p>
 		</div>
@@ -166,8 +204,8 @@
     <section class="container">
         <div class="chart-header">
             <div>
-                <h2 style="color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); margin:0;">NEW RELEASES</h2>
-                <p style="margin: 4px 0 0 0; color: #888; font-size: 0.8rem;">글로벌 트렌드 차트</p>
+                <h2 style="color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); margin:0;">K-POP TREND</h2>
+                <p style="margin: 4px 0 0 0; color: #888; font-size: 0.8rem;">K-POP 트렌드 차트</p>
             </div>
             <button onclick="loadItunesMusic()" style="background: none; border: 1px solid #333; color: #888; cursor: pointer; padding: 5px 10px; border-radius: 4px;">REFRESH</button>
         </div>
@@ -245,12 +283,8 @@ function toHighResArtwork(url) {
 }
 
 function goTag(tagName) {
-    // tagList를 수집해서 넘길 필요 없이, 클릭한 태그 이름 하나만 전송합니다.
     if(!tagName || tagName === '-') return;
-    
-    // ' 스타일' 글자가 붙어있다면 제거해서 순수 태그명만 전달
     const cleanTagName = tagName.replace(' 스타일', '').trim();
-    
     location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(cleanTagName);
 }
 
@@ -258,36 +292,51 @@ function goRegional(city) {
     location.href = contextPath + '/music/regional?city=' + city; 
 }
 
-//클릭 시 히어로 변경 + MusicApp을 통한 재생 및 로그 기록
 function changeHeroAndPlay(title, artist, imgUrl) {
-    // 1. 히어로 섹션 비주얼 업데이트 (기존 동일)
+    // 1. [UI 변경] 즉시 화면 정보를 바꿉니다.
     const highImg = toHighResArtwork(imgUrl);
     $('#top1-bg').css('background-image', 'url(' + highImg + ')');
     $('#top1-jacket').attr('src', highImg);
     $('#top1-title').text(title);
     $('#top1-artist').text(artist);
 
-    // 2. MusicApp 서비스 호출 (이 함수가 내부적으로 로그/위치/날씨를 다 처리함)
+    // 2. [핵심: 재생 실행] 이 코드가 있어야 노래가 나옵니다!
     if (window.MusicApp && typeof window.MusicApp.playLatestYouTube === 'function') {
-        // 이미 music-service.js에 정의된 이 함수가 
-        // 1) 유튜브 검색 -> 2) 상세정보 업데이트 -> 3) 재생로그(sendPlayLog)를 순서대로 실행합니다.
         window.MusicApp.playLatestYouTube(title, artist, imgUrl);
     } else {
-        console.error("MusicApp을 찾을 수 없습니다. js파일 로드 확인 필요");
+        console.error("MusicApp이 로드되지 않았거나 playLatestYouTube 함수를 찾을 수 없습니다.");
     }
-}
 
-function playLatestYouTube(title, artist, imgUrl) {
-    if (!window.MusicApp) return;
-
-    $.ajax({
-        url: contextPath + '/api/music/logHistoryAuto',
-        type: 'POST',
-        data: { title: title, artist: artist },
-        success: function(res) { console.log("로그 기록 완료"); }
-    });
-
-    window.MusicApp.playLatestYouTube(title, artist, imgUrl);
+    // 3. [로그 전송] 재생과 별개로 백그라운드에서 실행 (비동기)
+    const userNo = "${loginUser != null ? loginUser.UNo : 0}";
+    if (userNo !== "0") {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                // 좌표 성공 시 전송
+                $.post(contextPath + '/api/music/log', {
+                    title: title,
+                    artist: artist,
+                    albumImg: imgUrl,
+                    h_lat: position.coords.latitude,
+                    h_lon: position.coords.longitude
+                });
+            }, function(error) {
+                // 좌표 실패 시(권한 거부 등) 기본 정보만 전송
+                $.post(contextPath + '/api/music/log', {
+                    title: title,
+                    artist: artist,
+                    albumImg: imgUrl
+                });
+            }, { timeout: 3000 }); // 3초 대기 후 안되면 실패 처리
+        } else {
+            // Geolocation 지원 안 하는 브라우저
+            $.post(contextPath + '/api/music/log', {
+                title: title,
+                artist: artist,
+                albumImg: imgUrl
+            });
+        }
+    }
 }
 
 function playTopOne() {
@@ -298,43 +347,49 @@ function playTopOne() {
 
 function loadTop10() {
     var userNo = "${loginUser != null ? loginUser.UNo : 0}";
+    var $listContainer = $('#top10-list');
 
-    $.get(contextPath + '/api/music/top100', { u_no: userNo }, function(data) {
-        if (data && data.length > 0) {
-            // --- [1] 초기 Hero 설정 (1위곡) ---
-            cachedTopOne = data[0];
-            var heroImgRaw = cachedTopOne.ALBUM_IMG || cachedTopOne.B_IMAGE || cachedTopOne.album_img || FALLBACK_IMG;
-            var heroImg = toHighResArtwork(heroImgRaw);
-
-            $('#top1-bg').css('background-image', 'url(' + heroImg + ')');
-            $('#top1-jacket').attr('src', heroImg);
-            $('#top1-title').text(cachedTopOne.TITLE || cachedTopOne.m_title);
-            $('#top1-artist').text(cachedTopOne.ARTIST || cachedTopOne.a_name);
-
-            // --- [2] 리스트 생성 (2열 그리드) ---
-            var top10Html = '';
-            var displayData = data.slice(0, 10);
-            
-            for (var i = 0; i < displayData.length; i++) {
-                var m = displayData[i];
-                var title = (m.TITLE || m.m_title || 'Unknown').replace(/'/g, "\\'");
-                var artist = (m.ARTIST || m.a_name || 'Unknown').replace(/'/g, "\\'");
-                var imgRaw = m.ALBUM_IMG || m.B_IMAGE || m.album_img || FALLBACK_IMG;
-                var img = toHighResArtwork(imgRaw);
-                
-                // 클릭 시 changeHeroAndPlay 호출
-                top10Html += '<div class="top10-item" onclick="changeHeroAndPlay(\'' + title + '\', \'' + artist + '\', \'' + img + '\')">';
-                top10Html += '  <div class="top10-rank">' + (i + 1) + '</div>';
-                top10Html += '  <img src="' + img + '" class="top10-img" onerror="this.src=\'' + FALLBACK_IMG + '\'">';
-                top10Html += '  <div class="top10-info">';
-                top10Html += '    <div class="top10-title">' + (m.TITLE || m.m_title) + '</div>';
-                top10Html += '    <div class="top10-artist">' + (m.ARTIST || m.a_name) + '</div>';
-                top10Html += '  </div>';
-                top10Html += '  <div class="top10-play"><i class="fa-solid fa-play"></i></div>';
-                top10Html += '</div>';
-            }
-            $('#top10-list').html(top10Html);
+    $.get(contextPath + '/api/music/top100', { u_no: userNo, _t: Date.now() }, function(res) {
+        let list = Array.isArray(res) ? res : (res.list || res.data || []);
+        
+        if (list.length === 0) {
+            $listContainer.html('<p style="grid-column:1/-1; text-align:center;">데이터가 없습니다.</p>');
+            return;
         }
+
+        let html = '';
+        list.forEach(function(item, i) {
+            if (i >= 10) return;
+
+            var title = (item.TITLE || item.m_title || 'Unknown');
+            var artist = (item.ARTIST || item.a_name || 'Unknown');
+            var rawImg = item.ALBUM_IMG || item.b_image || FALLBACK_IMG;
+            var img = toHighResArtwork(rawImg);
+            var rank = i + 1;
+
+            var sTitle = title.replace(/'/g, "\\'");
+            var sArtist = artist.replace(/'/g, "\\'");
+
+            if (i === 0) {
+                $('#top1-bg').css('background-image', 'url(' + img + ')');
+                $('#top1-jacket').attr('src', img);
+                $('#top1-title').text(title);
+                $('#top1-artist').text(artist);
+                cachedTopOne = item;
+            }
+
+            html += '<div class="top10-item" onclick="changeHeroAndPlay(\'' + sTitle + '\', \'' + sArtist + '\', \'' + img + '\')">';
+            html += '    <div class="top10-rank">' + rank + '</div>';
+            html += '    <img src="' + img + '" class="top10-img" onerror="this.src=\'' + FALLBACK_IMG + '\'">';
+            html += '    <div class="top10-info">';
+            html += '        <div class="top10-title">' + title + '</div>';
+            html += '        <div class="top10-artist">' + artist + '</div>';
+            html += '    </div>';
+            html += '    <div class="top10-play"><i class="fa-solid fa-play"></i></div>';
+            html += '</div>';
+        });
+        
+        $listContainer.html(html);
     });
 }
 
@@ -369,23 +424,16 @@ function loadItunesMusic() {
 }
 
 function drawTagCards() {
-    // 1. 상황/장소 데이터 수집
     const rawContextTags = [];
-    <c:forEach var="ct" items="${homeContextTags}">
-        rawContextTags.push("${ct}");
-    </c:forEach>
-
+    <c:forEach var="ct" items="${homeContextTags}">rawContextTags.push("${ct}");</c:forEach>
     const locationTags = ["바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉"];
-    const weatherTags = ["맑음", "흐림", "비 오는 날", "눈 오는 날", "더운 여름"];
-
-    // 📍 NOW & HERE 리스트 생성 (날씨 카드 1개 + 장소 카드들)
-    let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/location/default.jpg\')">'
+    
+    let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/Location/seoul.jpg\')">'
                     + '  <span class="city-name" id="geo-city">LOCATION</span>'
                     + '  <div class="city-top-song" id="geo-weather-title">날씨 확인 중...</div>'
                     + '  <div class="city-top-artist" id="geo-weather-desc">위치 정보를 불러오는 중</div>'
                     + '</div>';
     
-    // 장소 태그들만 필터링해서 추가 (최대 4개까지만 추가해서 총 5개 맞춤)
     let addedCount = 0;
     rawContextTags.forEach(name => {
         if (locationTags.indexOf(name) !== -1 && addedCount < 4) {
@@ -400,18 +448,11 @@ function drawTagCards() {
     });
     $('#context-list').html(contextHtml);
 
- // 2. 취향/무드 데이터 수집
     const moodTags = [];
-    <c:forEach var="mt" items="${homeMoodTags}">
-        moodTags.push("${mt}");
-    </c:forEach>
-
-    // ✨ FOR YOUR MOOD 리스트 생성 (상위 5개로 제한)
+    <c:forEach var="mt" items="${homeMoodTags}">moodTags.push("${mt}");</c:forEach>
     let personalHtml = '';
-    
-    // filter나 slice를 써도 되지만, forEach의 인덱스를 활용하는게 가장 간단합니다.
     moodTags.forEach((name, idx) => {
-        if (idx < 5) { // 0, 1, 2, 3, 4번 인덱스만 출력 (총 5개)
+        if (idx < 5) {
             const no = tagNoMap[name] || 9;
             personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
                           + '  <span class="city-name">MY MOOD #' + (idx + 1) + '</span>'
@@ -420,10 +461,7 @@ function drawTagCards() {
                           + '</div>';
         }
     });
-    
     $('#personalized-list').html(personalHtml);
-
-    // 날씨 카드 업데이트 실행
     renderContextWeather();
 }
 
@@ -435,11 +473,9 @@ function renderContextWeather() {
         const weatherId = data.weather[0].id;
         let tagName = "맑음";
         let bgImg = "${pageContext.request.contextPath}/img/Tag/14.png";
-
         if (weatherId < 600) { tagName = "비 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/8.png"; }
         else if (weatherId < 700) { tagName = "눈 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/16.png"; }
         else if (weatherId > 800) { tagName = "흐림"; bgImg = "${pageContext.request.contextPath}/img/Tag/15.png"; }
-
         $('#geo-city').text(city);
         $('#geo-weather-title').text(tagName);
         $('#geo-weather-desc').text(Math.round(data.main.temp) + "°C, 현재 날씨 맞춤형");
@@ -448,17 +484,79 @@ function renderContextWeather() {
 }
 
 $(document).ready(function() {
-    const uNoStr = "${loginUser.UNo}"; // 필드명 확인 필요 (UNo 인지 uNo인지)
-    const uNo = uNoStr !== "" ? parseInt(uNoStr) : 0;
+    // 1. 팝업 체크 로직 (정상 종료 확인)
+  $.get(contextPath + '/api/getPopups', function(list) {
+        console.log("받아온 팝업 목록:", list);
+        
+        if (list && list.length > 0) {
+            list.forEach(function(popup) {
+                // DTO 필드명인 noticeNo 사용
+                const popupId = 'hide_popup_' + popup.noticeNo; 
+                
+                // 오늘 하루 보지 않기 쿠키가 없을 때만 띄움
+                if (!getCookie(popupId)) {
+                    showLayerPopup(popup);
+                }
+            });
+        }
+    });
+
+    // 2. 메뉴 카드 클릭 시 강제 이동
+    $('.menu-grid').on('click', '.menu-card', function(e) {
+        var href = $(this).attr('href');
+        if(href) location.href = href;
+    });
+
+    // 3. MusicApp 초기화 및 데이터 로드
+    if (window.MusicApp) window.MusicApp.init("${loginUser.UNo}" || 0);
     
-    setTimeout(function() {
-        if (window.MusicApp) window.MusicApp.init(uNo);
-        loadTop10();
-        loadRegionalPreviews();
-        loadItunesMusic();
-        drawTagCards(); 
-    }, 200);
+    loadRegionalPreviews();
+    drawTagCards();
+    loadItunesMusic();
+    setTimeout(loadTop10, 300);
 });
+
+// --- 추가 함수: 팝업 생성 ---
+function showLayerPopup(popup) {
+    // 소문자로 들어오는 값을 우선적으로 읽도록 수정
+    const title = popup.ntitle || popup.nTitle || "제목 없음";
+    const content = popup.ncontent || popup.nContent || "내용 없음";
+    const no = popup.noticeNo || popup.noticeno;
+
+    const modalHtml = `
+        <div id="popup-modal-${no}" class="custom-popup-overlay">
+            <div class="custom-popup-content">
+                <h3>${title}</h3>
+                <div class="popup-body">${content}</div>
+                <div class="popup-footer">
+                    <label><input type="checkbox" id="no-more-${no}"> 오늘 안 보기</label>
+                    <button onclick="closePopup(${no})">닫기</button>
+                </div>
+            </div>
+        </div>
+    `;
+    $('body').append(modalHtml);
+}
+// 팝업 닫기 기능
+function closePopup(no) {
+    if ($('#no-more-' + no).is(':checked')) {
+        setCookie('hide_popup_' + no, 'true', 1); // 1일 저장
+    }
+    $('#popup-modal-' + no).remove();
+}
+
+// --- 추가 함수: 쿠키 유틸리티 ---
+function setCookie(name, value, days) {
+    let date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + '=' + value + ';expires=' + date.toUTCString() + ';path=/';
+}
+
+function getCookie(name) {
+    let value = "; " + document.cookie;
+    let parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+}
 </script>
 </body>
 </html>

@@ -393,16 +393,6 @@ function sendChat() {
 
 $(document).ready(function () {
   PlayQueue.init();
-  $.get("/api/popup/list").done(function (list) {
-    if (list && Array.isArray(list)) {
-      list.forEach(function (p) {
-        var $pop = $("<div>").addClass("retro-popup");
-        $pop.append('<div class="retro-header"><span>NOTICE</span><button onclick="$(this).closest(\'.retro-popup\').remove()" style="background:none;border:none;color:white;cursor:pointer">&times;</button></div>');
-        $pop.append('<div class="retro-content"><strong>'+(p.ptitle||'')+'</strong><br>'+(p.pcontent||'')+'</div>');
-        $("#popup-area").append($pop);
-      });
-    }
-  });
   setInterval(function () {
     if (!isPlayerReady || !player || !player.getCurrentTime) return;
     var dur = player.getDuration();

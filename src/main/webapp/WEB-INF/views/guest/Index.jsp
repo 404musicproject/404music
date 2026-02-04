@@ -55,111 +55,133 @@
         .play-trigger:hover { transform: scale(1.2); text-shadow: 0 0 10px #00f2ff; }
     </style>
 
-    <script>
+ <script>
+    // 전역 변수로 관리할 데이터들
+    const uNo = "${sessionScope.loginUser.uNo}" || 0;
+    const contextPath = '${pageContext.request.contextPath}';
+
     $(document).ready(function() {
-    	
-    	console.log("1. Document Ready 시작");
-        const uNo = "${sessionScope.loginUser.uNo}" || 0; // 세션 키 uNo 확인 필요
-        const contextPath = '${pageContext.request.contextPath}';
-        
-        
-        console.log("2. uNo 확인:", uNo);
-        // 1. 초기화
+        console.log("1. Document Ready 시작 - uNo:", uNo);
+
+        // 1. MusicApp 초기화
         MusicApp.init(Number(uNo));
 
-        // 2. 렌더링 함수 - Index.jsp와 동일한 스타일/기능 적용
-MusicApp.renderRow = function(item, index) {
-    // [로그 추가] 개별 아이템 데이터 확인
-    console.log("4. 렌더링 시작 (아이템):", item);
-
-    // 1. 키값 매핑 보강 (서버 응답에 맞춰 대/소문자 모두 체크)
-    const mNo = item.m_no || item.MNO || item.mNo || 0;
-    const bNo = item.b_no || item.BNO || item.bNo || 0;
-    const aNo = item.a_no || item.ANO || item.aNo || 0;
-    
-    // 제목과 가수가 비어있으면 '' 대신 '제목 없음' 표시
-    const rawTitle = item.m_title || item.TITLE || item.mTitle || 'Unknown Title';
-    const rawArtist = item.a_name || item.ARTIST || item.aName || 'Unknown Artist';
-    
-    // 2. 재생을 위한 이스케이프 처리
-    const titleForJS = String(rawTitle).replace(/'/g, "\\'");
-    const artistForJS = String(rawArtist).replace(/'/g, "\\'");
-    
-    // 3. 이미지 처리 (b_image가 비어있을 경우 대비)
-    let albumImg = item.b_image || item.ALBUM_IMG || item.bImage || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
-    // 고화질 변환 로직 적용
-    if(albumImg.includes('100x100')) {
-        albumImg = albumImg.replace('100x100bb', '600x600bb').replace('100x100', '600x600');
-    }
-
-    const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
-
-    const albumAction = bNo !== 0 ? "location.href='" + contextPath + "/album/detail?b_no=" + bNo + "'" : "alert('앨범 정보가 없습니다.')";
-    const artistAction = aNo !== 0 ? "location.href='" + contextPath + "/artist/detail?a_no=" + aNo + "'" : "alert('아티스트 정보가 없습니다.')";
-
-    return '<tr onclick="MusicApp.playLatestYouTube(\'' + titleForJS + '\', \'' + artistForJS + '\', \'' + albumImg + '\');" ' +
-           'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;" ' +
-           'onmouseover="this.style.backgroundColor=\'rgba(255,255,255,0.03)\'" ' +
-           'onmouseout="this.style.backgroundColor=\'transparent\'">' +
-        '<td class="col-rank" style="padding: 20px 15px; color: #444; text-align: center;">' + (index + 1) + '</td>' +
-        '<td>' +
-            '<div style="display: flex; align-items: center; padding: 10px 0;">' +
-                '<div onclick="event.stopPropagation(); ' + albumAction + '" title="앨범 상세보기" style="cursor:pointer;">' +
-                    '<img src="' + albumImg + '" class="album-art" onerror="this.src=\'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png\'">' +
-                '</div>' +
-                '<div style="margin-left:10px;">' +
-                    '<div style="font-weight: bold; color: #eee; margin-bottom: 4px;">' + rawTitle + '</div>' +
-                    '<div class="artist-link" style="font-size: 0.85rem; color: #888; cursor:pointer;" ' +
-                         'onclick="event.stopPropagation(); ' + artistAction + '">' +
-                        rawArtist +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-        '</td>' +
-        '<td style="text-align: center;">' +
-            '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
-                    'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
-                '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
-            '</button>' +
-        '</td>' +
-        '<td style="text-align: center;">' +
-            '<button style="background:none; border:none; color:#00f2ff; cursor:pointer; font-size: 1.1rem;" ' +
-                    'onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
-                '<i class="fa-solid fa-plus-square"></i>' +
-            '</button>' +
-        '</td>' +
-        '<td class="col-play" style="text-align:right; padding-right:30px;">' +
-            '<i class="fa-solid fa-circle-play play-trigger" style="color:#00f2ff; font-size:1.5rem;"></i>' +
-        '</td>' +
-    '</tr>';
-};
-
+        // 2. 탭 렌더링 (초기 렌더링 시 active 설정 포함)
         renderTabs();
-        MusicApp.loadChart = function() {
-            const endpoint = this.selectedCity ? 'regional' : this.currentMode;
-            $.get(this.basePath + '/api/music/' + endpoint, { u_no: this.currentUserNo }, (data) => {
-                console.log("🔥 서버 응답 데이터 샘플:", data[0]); // 첫 번째 데이터 구조 확인
-                let html = '';
-                data.forEach((item, index) => { html += this.renderRow(item, index); });
-                $('#chart-body').html(html);
-            });
-        };
+
+        // 3. URL 파라미터 확인 및 초기 탭 활성화
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlType = urlParams.get('type') || 'top100'; 
+        
+        MusicApp.currentMode = urlType;
+        
+        // 탭 버튼 상태 업데이트
+        $('.tab-btn').removeClass('active');
+        $('.tab-btn').each(function() {
+            // onclick 속성에 해당 타입이 포함되어 있는지 확인
+            if ($(this).attr('onclick').includes("'" + urlType + "'")) {
+                $(this).addClass('active');
+            }
+        });
+
+        // 4. 제목 동적 변경 (선택사항)
+        const titles = { 'top100': '실시간', 'weekly': '주간', 'monthly': '월간', 'yearly': '연간' };
+        $('.main-title span').text((titles[urlType] || '실시간') + ' 음악 순위');
+
+        // 5. 차트 데이터 로드
+        MusicApp.loadChart();
     });
 
+    // 탭 렌더링 함수
     function renderTabs() {
-        const html = '<button class="tab-btn active" onclick="changeTab(\'top100\', this)">Real-time</button>' +
+        const html = '<button class="tab-btn" onclick="changeTab(\'top100\', this)">Real-time</button>' +
                      '<button class="tab-btn" onclick="changeTab(\'weekly\', this)">Weekly</button>' +
                      '<button class="tab-btn" onclick="changeTab(\'monthly\', this)">Monthly</button>' +
                      '<button class="tab-btn" onclick="changeTab(\'yearly\', this)">Yearly</button>';
         $('.chart-tabs').html(html);
     }
 
+    // 탭 변경 함수
     function changeTab(mode, btn) {
         $('.tab-btn').removeClass('active');
         $(btn).addClass('active');
+        
         MusicApp.currentMode = mode;
+        
+        // 주소창 파라미터 업데이트 (새로고침 없이)
+        const newUrl = window.location.pathname + '?type=' + mode;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+
+        // 제목 변경
+        const titles = { 'top100': '실시간', 'weekly': '주간', 'monthly': '월간', 'yearly': '연간' };
+        $('.main-title span').text(titles[mode] + ' 음악 순위');
+        
         MusicApp.loadChart();
     }
+
+    // 데이터 렌더링 로직 (MusicApp 객체 확장)
+    MusicApp.renderRow = function(item, index) {
+        const mNo = item.MNO || item.m_no || 0;
+        const bNo = item.BNO || item.b_no || 0;
+        const aNo = item.ANO || item.a_no || 0;
+        
+        const rawTitle = item.TITLE || item.m_title || 'Unknown Title';
+        const rawArtist = item.ARTIST || item.a_name || 'Unknown Artist';
+        
+        const titleForJS = String(rawTitle).replace(/'/g, "\\'");
+        const artistForJS = String(rawArtist).replace(/'/g, "\\'");
+        
+        let albumImg = item.ALBUM_IMG || item.b_image || 'https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u1f4bf/u1f4bf.png';
+        if(albumImg.includes('100x100')) {
+            albumImg = albumImg.replace('100x100bb', '600x600bb').replace('100x100', '600x600');
+        }
+
+        const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
+
+        return '<tr onclick="MusicApp.playLatestYouTube(\'' + titleForJS + '\', \'' + artistForJS + '\', \'' + albumImg + '\');" ' +
+               'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;">' +
+            '<td class="col-rank">' + (index + 1) + '</td>' +
+            '<td>' +
+                '<div style="display: flex; align-items: center; padding: 10px 0;">' +
+                    '<img src="' + albumImg + '" class="album-art" onclick="event.stopPropagation(); location.href=\'' + contextPath + '/album/detail?b_no=' + bNo + '\'">' +
+                    '<div style="margin-left:10px;">' +
+                        '<div style="font-weight: bold; color: #eee;">' + rawTitle + '</div>' +
+                        '<div class="artist-link" style="font-size: 0.85rem; color: #888;" onclick="event.stopPropagation(); location.href=\'' + contextPath + '/artist/detail?a_no=' + aNo + '\'">' +
+                            rawArtist +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</td>' +
+            '<td style="text-align: center;">' +
+                '<button style="background:none; border:none; cursor:pointer; color: ' + (isLiked ? '#ff0055' : '#444') + ';" ' +
+                        'onclick="event.stopPropagation(); MusicApp.toggleLike(' + mNo + ', this);">' +
+                    '<i class="fa-' + (isLiked ? 'solid' : 'regular') + ' fa-heart"></i>' +
+                '</button>' +
+            '</td>' +
+            '<td style="text-align: center;">' +
+                '<button style="background:none; border:none; color:#00f2ff; cursor:pointer;" onclick="event.stopPropagation(); MusicApp.addToLibrary(' + mNo + ');">' +
+                    '<i class="fa-solid fa-plus-square"></i>' +
+                '</button>' +
+            '</td>' +
+            '<td class="col-play" style="text-align:right; padding-right:30px;">' +
+                '<i class="fa-solid fa-circle-play play-trigger" style="color:#00f2ff; font-size:1.5rem;"></i>' +
+            '</td>' +
+        '</tr>';
+    };
+
+    // 차트 로드 로직
+    MusicApp.loadChart = function() {
+        const endpoint = this.selectedCity ? 'regional' : this.currentMode;
+        $.get(this.basePath + '/api/music/' + endpoint, { u_no: this.currentUserNo }, (data) => {
+            let html = '';
+            if(!data || data.length === 0) {
+                html = '<tr><td colspan="5" style="text-align:center; padding:50px; color:#555;">데이터가 없습니다.</td></tr>';
+            } else {
+                data.forEach((item, index) => { html += this.renderRow(item, index); });
+            }
+            $('#chart-body').html(html);
+        });
+    };
 </script>
 </head>
 <body>

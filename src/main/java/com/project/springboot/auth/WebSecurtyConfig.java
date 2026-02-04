@@ -30,7 +30,8 @@ public class WebSecurtyConfig {
             .cors(cors -> cors.disable())
             .sessionManagement(session -> session
                     .sessionFixation().migrateSession() // 세션 고정 보호 강화
-                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 필요시 세션 생성
+                    //.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // 필요시 세션 생성
+                    .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
                 )
             .authorizeHttpRequests(auth -> auth
             	    // 패키지 경로를 통째로 적어서 타입을 강제합니다.
@@ -70,6 +71,7 @@ public class WebSecurtyConfig {
                                 HttpSession session = request.getSession(true);
                                 // SecurityContext 보관
                                 session.setAttribute("SPRING_SECURITY_CONTEXT", org.springframework.security.core.context.SecurityContextHolder.getContext());
+                                session.setMaxInactiveInterval(Integer.valueOf(0));
 
                                 Boolean isUpdateMode = (Boolean) session.getAttribute("isUpdateMode");
                                 if (Boolean.TRUE.equals(isUpdateMode)) {
@@ -80,6 +82,8 @@ public class WebSecurtyConfig {
                                     session.removeAttribute("loginError");
                                     response.sendRedirect(request.getContextPath() + "/");
                                 }
+                                
+                                
                             }) // Handler 닫기
                         )
             
