@@ -425,5 +425,14 @@ public class MusicController {
         
         return "SUCCESS";
     }
+ // MusicController.java에 추가하면 좋은 메서드
+    @GetMapping("/check-like-status")
+    public ResponseEntity<Boolean> checkLikeStatus(@RequestParam("m_no") int mNo, HttpSession session) {
+        UserDTO user = (UserDTO) session.getAttribute("loginUser");
+        if (user == null) return ResponseEntity.ok(false);
+        
+        int count = musicDAO.checkLike(user.getUNo(), mNo);
+        return ResponseEntity.ok(count > 0);
+    }
     
 }

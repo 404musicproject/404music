@@ -484,17 +484,16 @@ function renderContextWeather() {
 }
 
 $(document).ready(function() {
-    // 1. 팝업 체크 로직 (정상 종료 확인)
-  $.get(contextPath + '/api/getPopups', function(list) {
+    // 1. [중요] 서버에서 팝업 목록 가져오기 로직 추가
+    $.get(contextPath + '/api/getPopups', function(list) {
         console.log("받아온 팝업 목록:", list);
-        
         if (list && list.length > 0) {
             list.forEach(function(popup) {
-                // DTO 필드명인 noticeNo 사용
-                const popupId = 'hide_popup_' + popup.noticeNo; 
+                // noticeNo 필드를 사용하여 쿠키 체크
+                const no = popup.noticeNo || popup.noticeno || 1;
+                const cookieKey = 'hide_popup_' + no;
                 
-                // 오늘 하루 보지 않기 쿠키가 없을 때만 띄움
-                if (!getCookie(popupId)) {
+                if (!getCookie(cookieKey)) {
                     showLayerPopup(popup);
                 }
             });
@@ -517,32 +516,77 @@ $(document).ready(function() {
 });
 
 // --- 추가 함수: 팝업 생성 ---
+// 팝업 생성 함수: 데이터 필드명을 더 꼼꼼하게 체크합니다.
+// 1. 팝업 생성 함수
+// 1. 팝업 생성 함수
+// --- 팝업 관련 최종 통합 함수 (중복 제거용) ---
+
 function showLayerPopup(popup) {
-    // 소문자로 들어오는 값을 우선적으로 읽도록 수정
-    const title = popup.ntitle || popup.nTitle || "제목 없음";
-    const content = popup.ncontent || popup.nContent || "내용 없음";
-    const no = popup.noticeNo || popup.noticeno;
+    const title = popup.ntitle || popup.nTitle || "공지사항"; 
+    const content = popup.ncontent || popup.nContent || "내용이 없습니다.";
+    const no = popup.noticeNo || popup.noticeno || 1;
 
     const modalHtml = `
-        <div id="popup-modal-${no}" class="custom-popup-overlay">
-            <div class="custom-popup-content">
-                <h3>${title}</h3>
-                <div class="popup-body">${content}</div>
-                <div class="popup-footer">
-                    <label><input type="checkbox" id="no-more-${no}"> 오늘 안 보기</label>
-                    <button onclick="closePopup(${no})">닫기</button>
-                </div>
+        <div id="popup-modal-\${no}" class="custom-popup-sticker" 
+             style="position: fixed; 
+                    top: 150px;   /* 화면 상단에서 20px */
+                    left: 120px;  /* 화면 왼쪽에서 20px */
+                    width: 320px; 
+                    background: #1a1a1a; 
+                    border: 2px solid #ff0055; 
+                    border-radius: 12px; 
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
+                    z-index: 100002; /* 헤더보다 위에 오도록 설정 */
+                    color: #fff;
+                    overflow: hidden;
+                    pointer-events: auto; /* 팝업 자체는 클릭 가능 */
+             ">
+            
+            <div style="padding: 12px 15px; background: #222; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #ff0055; font-size: 0.9rem;">\${title}</strong>
+                <span onclick="closePopup(\${no})" style="cursor:pointer; color:#888; font-size: 1.2rem;">&times;</span>
+            </div>
+
+            <div style="padding: 15px; min-height: 60px; font-size: 0.9rem; line-height: 1.4; color: #eee;">
+                \${content}
+            </div>
+
+            <div style="padding: 10px 15px; background: #1a1a1a; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333;">
+                <label style="font-size: 11px; color: #bbb; cursor: pointer; display: flex; align-items: center;">
+                    <input type="checkbox" id="no-more-\${no}" style="margin-right: 5px;"> 오늘 하루 보지 않기
+                </label>
+                <button onclick="closePopup(\${no})" 
+                        style="background: #ff0055; border: none; color: #fff; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">
+                    닫기
+                </button>
             </div>
         </div>
     `;
+    
     $('body').append(modalHtml);
 }
-// 팝업 닫기 기능
+
 function closePopup(no) {
+    console.log("닫기 실행 시도 - 번호:", no);
+    
+    // 1. 오늘 하루 보지 않기 체크 여부 확인
     if ($('#no-more-' + no).is(':checked')) {
-        setCookie('hide_popup_' + no, 'true', 1); // 1일 저장
+        setCookie('hide_popup_' + no, 'true', 1);
+        console.log("쿠키 저장 완료: hide_popup_" + no);
     }
-    $('#popup-modal-' + no).remove();
+
+    // 2. 팝업 제거 (두 가지 방법 병행)
+    // 방법 A: ID로 정확히 타격
+    const targetModal = $('#popup-modal-' + no);
+    
+    if (targetModal.length > 0) {
+        targetModal.remove();
+        console.log("ID 기반 삭제 성공");
+    } else {
+        // 방법 B: ID 매칭 실패 시, 현재 클릭된 버튼에서 가장 가까운 오버레이 제거
+        $('.custom-popup-overlay').has('#no-more-' + no).remove();
+        console.log("근접 요소 탐색으로 삭제 성공");
+    }
 }
 
 // --- 추가 함수: 쿠키 유틸리티 ---

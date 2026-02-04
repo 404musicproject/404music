@@ -178,17 +178,23 @@ public class MusicPageController {
 
     @RequestMapping("/album/detail")
     public String albumDetail(@RequestParam("b_no") int b_no, HttpSession session, Model model) {
+        // 1. 앨범 정보 가져오기
         AlbumDTO album = musicDAO.selectAlbumByNo(b_no);
         
-        // [체크] 만약 album이 null이면 musicList의 첫 번째 곡 정보를 활용해서라도 채워야 합니다.
-        if (album == null) {
-            System.out.println("⚠️ 앨범 정보를 찾을 수 없습니다. b_no: " + b_no);
-        }
-
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         int uNo = (user != null) ? user.getUNo() : 0;
+        
+        // 2. 해당 앨범 번호를 가진 곡 목록 가져오기
         List<MusicDTO> musicList = musicDAO.selectMusicByAlbumNo(b_no, uNo);
         
+        // 3. [핵심] 만약 앨범 정보가 null이라면 곡 목록에서 정보를 추출
+        if (album == null && musicList != null && !musicList.isEmpty()) {
+            album = new AlbumDTO();
+            album.setB_no(b_no);
+            album.setB_title(musicList.get(0).getM_title()); // 첫 번째 곡 제목을 앨범 제목으로 사용
+            album.setB_image(musicList.get(0).getB_image()); // 곡의 이미지를 앨범 이미지로 사용
+        }
+
         model.addAttribute("album", album);
         model.addAttribute("musicList", musicList);
         

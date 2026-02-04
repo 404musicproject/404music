@@ -27,6 +27,16 @@
         <result property="a_genres" column="a_genres" />
     </resultMap>
 
+	<resultMap id="AlbumMap" type="com.project.springboot.dto.AlbumDTO">
+	    <id property="b_no" column="b_no" />
+	    <result property="a_no" column="a_no" />
+	    <result property="b_title" column="b_title" />
+	    <result property="b_date" column="b_date" />
+	    <result property="b_image" column="b_image" />
+	    <result property="b_type" column="b_type" />
+	    <result property="b_description" column="b_description" />
+	</resultMap>
+
     <insert id="insertArtist" parameterType="com.project.springboot.dto.ArtistDTO">
         <selectKey keyProperty="a_no" resultType="int" order="BEFORE">
             SELECT COALESCE(
@@ -150,20 +160,27 @@
         ORDER BY b.b_title ASC, m.m_title ASC
     </select>
     
-    <select id="selectAlbumByNo" resultType="com.project.springboot.dto.AlbumDTO">
-        SELECT * FROM album WHERE b_no = #{b_no}
-    </select>
+    <select id="selectAlbumByNo" resultMap="AlbumMap">
+	    SELECT 
+	        B_NO, 
+	        A_NO, 
+	        B_TITLE, 
+	        B_DATE, 
+	        B_IMAGE, 
+	        B_TYPE, 
+	        B_DESCRIPTION 
+	    FROM ALBUM 
+	    WHERE B_NO = #{b_no}
+	</select>
 
-    <select id="selectMusicByAlbumNo" resultMap="MusicMap">
-        SELECT m.*, a.a_name, b.b_title, b.b_image,
-               (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END FROM likes l 
-                WHERE l.l_target_type = 'MUSIC' AND l.l_target_no = m.m_no AND l.u_no = #{u_no}) as isLiked
-        FROM music m
-        JOIN artists a ON m.a_no = a.a_no
-        JOIN album b ON m.b_no = b.b_no
-        WHERE m.b_no = #{b_no}
-        ORDER BY m.m_no ASC
-    </select>
+	<select id="selectMusicByAlbumNo" resultMap="MusicMap">
+	    SELECT m.*, a.a_name, b.b_title, b.b_image,
+	           (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END FROM likes l 
+	            WHERE l.l_target_type = 'MUSIC' AND l.l_target_no = m.m_no AND l.u_no = #{u_no}) as isLiked
+	    FROM music m
+	    LEFT JOIN artists a ON m.a_no = a.a_no  LEFT JOIN album b ON m.b_no = b.b_no    WHERE m.b_no = #{b_no}
+	    ORDER BY m.m_no ASC
+	</select>
 
     <select id="selectTop100Music" resultType="map">
         SELECT * FROM (
@@ -328,7 +345,7 @@
     </insert>
 
     <select id="selectMusicByLibrary" resultMap="MusicMap">
-	    SELECT m.m_no, m.m_title, m.a_no, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url,
+	    SELECT m.m_no, m.m_title, m.a_no, m.b_no, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url,
 	           (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END FROM likes l 
 	            WHERE l.l_target_type = 'MUSIC' AND l.l_target_no = m.m_no AND l.u_no = #{u_no}) as isLiked
 	    FROM playlists p
@@ -340,8 +357,8 @@
 	</select>
 	
 	<select id="selectLikedMusic" resultMap="MusicMap">
-	    SELECT m.m_no, m.m_title, m.a_no, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url,
-	           'Y' as isLiked -- 이 쿼리의 결과는 무조건 좋아요 상태임
+	    SELECT m.m_no, m.m_title, m.a_no, m.b_no, a.a_name, b.b_image, m.m_youtube_id, m.m_preview_url,
+	           'Y' as isLiked
 	    FROM likes l
 	    JOIN music m ON l.l_target_no = m.m_no
 	    JOIN artists a ON m.a_no = a.a_no

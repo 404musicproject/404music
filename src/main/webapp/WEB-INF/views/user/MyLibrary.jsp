@@ -13,7 +13,6 @@
         main { min-height: calc(100vh - 180px); padding-top: 20px; padding-bottom: 120px; }
         .container { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
         
-        /* 헤더 & 탭 */
         .lib-keyword { color: #00f2ff; text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); font-style: italic; }
         .lib-tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 15px; }
         .tab-item { 
@@ -22,19 +21,25 @@
         }
         .tab-item.active { color: #00f2ff; border-bottom: 2px solid #00f2ff; }
 
-        /* 테이블 */
         .chart-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .chart-table th { border-bottom: 1px solid #222; color: #555; padding: 15px 0; font-size: 0.8rem; }
         .chart-table td { padding: 12px 0; border-bottom: 1px solid #111; vertical-align: middle; text-align: center; }
         
-        .album-art { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 15px; }
+        /* SearchResult 스타일 이식 */
+        .album-art { 
+            width: 50px; height: 50px; object-fit: cover; border-radius: 4px; 
+            margin-right: 15px; transition: all 0.3s ease; cursor: pointer; flex-shrink: 0; 
+        }
+        .album-art:hover { filter: brightness(1.2); transform: scale(1.1); box-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+        
         .song-title { font-weight: bold; color: #eee; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .artist-link { color: #888; text-decoration: none; font-size: 0.85rem; }
-        .artist-link:hover { color: #00f2ff; }
+        .artist-link { color: #888; text-decoration: none; font-size: 0.85rem; cursor: pointer; }
+        .artist-link:hover { color: #00f2ff !important; text-decoration: underline; }
         
         .btn-icon { background:none; border:none; cursor:pointer; font-size: 1.1rem; color: #444; }
         .heart-active { color: #ff0055 !important; }
-        .play-trigger { color: #00f2ff; cursor: pointer; font-size: 1.5rem; }
+        .play-trigger { color: #00f2ff; cursor: pointer; font-size: 1.5rem; transition: 0.2s; }
+        .play-trigger:hover { transform: scale(1.2); text-shadow: 0 0 10px #00f2ff; }
     </style>
 </head>
 <body>
@@ -68,55 +73,76 @@
                 </tr>
             </thead>
             
+            <%-- [전체 곡 탭] --%>
             <tbody id="body-all">
                 <c:forEach var="music" items="${libraryList}" varStatus="status">
                     <tr class="music-row" id="lib-row-${music.m_no}" 
                         data-mno="${music.m_no}" data-title="${fn:escapeXml(music.m_title)}" 
-                        data-artist="${fn:escapeXml(music.a_name)}" data-img="${music.b_image}">
+                        data-artist="${fn:escapeXml(music.a_name)}" data-img="${music.b_image}"
+                        onmouseover="this.style.backgroundColor='rgba(255,255,255,0.03)'" 
+                        onmouseout="this.style.backgroundColor='transparent'">
                         <td>${status.count}</td>
                         <td style="text-align: left; padding-left: 15px;">
                             <div style="display: flex; align-items: center;">
-                                <img src="${music.b_image}" class="album-art">
+                                <%-- SearchResult와 동일한 앨범 이동 로직 --%>
+                                <img src="${music.b_image}" class="album-art" 
+                                     onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/album/detail?b_no=${music.b_no}'" 
+                                     title="앨범 상세 보기">
                                 <div>
                                     <div class="song-title">${music.m_title}</div>
-                                    <a href="/artist/detail?a_no=${music.a_no}" class="artist-link">${music.a_name}</a>
+                                    <%-- SearchResult와 동일한 아티스트 이동 로직 --%>
+                                    <div class="artist-link" 
+                                         onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/artist/detail?a_no=${music.a_no}'" 
+                                         title="아티스트 정보 보기">
+                                        ${music.a_name}
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <button class="btn-icon ${music.isLiked == 'Y' ? 'heart-active' : ''}" onclick="handleLike(${music.m_no}, this)">
+                            <button class="btn-icon ${music.isLiked == 'Y' ? 'heart-active' : ''}" onclick="event.stopPropagation(); handleLike(${music.m_no}, this)">
                                 <i class="${music.isLiked == 'Y' ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
                             </button>
                         </td>
                         <td>
-                            <button class="btn-icon" onclick="removeLib(${music.m_no})"><i class="fa-solid fa-trash-can"></i></button>
+                            <button class="btn-icon" onclick="event.stopPropagation(); removeLib(${music.m_no})">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </td>
-                        <td><i class="fa-solid fa-circle-play play-trigger" onclick="playThis(this)"></i></td>
+                        <td><i class="fa-solid fa-circle-play play-trigger" onclick="event.stopPropagation(); playThis(this)"></i></td>
                     </tr>
                 </c:forEach>
             </tbody>
 
+            <%-- [좋아요 탭] --%>
             <tbody id="body-liked" style="display:none;">
                 <c:forEach var="music" items="${likedList}" varStatus="status">
                     <tr class="music-row" id="liked-row-${music.m_no}" 
                         data-mno="${music.m_no}" data-title="${fn:escapeXml(music.m_title)}" 
-                        data-artist="${fn:escapeXml(music.a_name)}" data-img="${music.b_image}">
+                        data-artist="${fn:escapeXml(music.a_name)}" data-img="${music.b_image}"
+                        onmouseover="this.style.backgroundColor='rgba(255,255,255,0.03)'" 
+                        onmouseout="this.style.backgroundColor='transparent'">
                         <td>${status.count}</td>
                         <td style="text-align: left; padding-left: 15px;">
                             <div style="display: flex; align-items: center;">
-                                <img src="${music.b_image}" class="album-art">
+                                <img src="${music.b_image}" class="album-art" 
+                                     onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/album/detail?b_no=${music.b_no}'">
                                 <div>
                                     <div class="song-title">${music.m_title}</div>
-                                    <a href="/artist/detail?a_no=${music.a_no}" class="artist-link">${music.a_name}</a>
+                                    <div class="artist-link" 
+                                         onclick="event.stopPropagation(); location.href='${pageContext.request.contextPath}/artist/detail?a_no=${music.a_no}'">
+                                        ${music.a_name}
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <button class="btn-icon heart-active" onclick="handleLike(${music.m_no}, this)">
+                            <button class="btn-icon heart-active" onclick="event.stopPropagation(); handleLike(${music.m_no}, this)">
                                 <i class="fa-solid fa-heart"></i>
                             </button>
                         </td>
-                        <td>-</td> <td><i class="fa-solid fa-circle-play play-trigger" onclick="playThis(this)"></i></td>
+                        <td>-</td> 
+                        <td><i class="fa-solid fa-circle-play play-trigger" onclick="event.stopPropagation(); playThis(this)"></i></td>
                     </tr>
                 </c:forEach>
             </tbody>
@@ -143,7 +169,6 @@
         $.post('/api/music/toggle-like', { m_no: mNo, u_no: uNo }, function(res) {
             if(res.status === 'unliked') {
                 $(btn).removeClass('heart-active').find('i').attr('class', 'fa-regular fa-heart');
-                // 좋아요 탭에서 해제하면 즉시 행 숨기기
                 $("#liked-row-" + mNo).fadeOut(300);
             } else {
                 $(btn).addClass('heart-active').find('i').attr('class', 'fa-solid fa-heart');
@@ -164,7 +189,7 @@
     }
 
     function playAllVisible() {
-        const $rows = $("tbody:visible tr");
+        const $rows = $("tbody:visible tr:visible");
         if($rows.length === 0) return;
         PlayQueue.list = [];
         $rows.each(function() {
