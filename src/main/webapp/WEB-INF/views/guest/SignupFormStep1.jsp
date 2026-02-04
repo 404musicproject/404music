@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="/css/SignupFormStep1.css">
 </head>
 <body>
+    <jsp:include page="../common/Header.jsp" />
+    <main class="signup-main">
+      <div class="signup-wrap">
 <h2>회원가입</h2>
 
 
@@ -108,5 +111,8 @@
             });
         }
     </script>
+      </div>
+    </main>
+    <jsp:include page="../common/Footer.jsp" />
 </body>
 </html>

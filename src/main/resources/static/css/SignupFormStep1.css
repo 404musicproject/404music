@@ -1,143 +1,170 @@
 @charset "UTF-8";
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
 
-/* 404Music 홈 화면의 톤앤매너 계승 */
+/* ✅ 페이지 전체(헤더/푸터 포함) 배경만 담당 - flex 금지 */
 body {
-    background-color: #050505; /* 홈 화면과 동일한 딥 블랙 */
-    color: #fff;
-    font-family: 'Pretendard', sans-serif; /* 홈 화면 폰트 적용 */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+  background-color: #050505;
+  color: #fff;
+  font-family: 'Pretendard', sans-serif;
+  margin: 0;
+  min-height: 100vh;
 }
 
-/* '회원가입' 타이틀 - 홈의 No.1 텍스트 스타일 적용 */
-h2 {
-    color: #fff;
-    text-shadow: 0 0 15px #ff0055; /* 메인 핑크 글로우 */
-    text-transform: uppercase;
-    text-align: center;
-    margin-bottom: 25px;
-    font-size: 32px;
-    letter-spacing: 4px;
-    font-weight: 800;
+/* ✅ 본문 영역만 가운데 정렬 (헤더/푸터 영향 X) */
+.signup-main {
+  min-height: calc(100vh - 160px); /* 대충 헤더+푸터 높이만큼 */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 90px 16px 80px; /* 위는 헤더 공간, 아래는 푸터 공간 */
+  box-sizing: border-box;
 }
 
-/* 폼 컨테이너 - 홈의 itunes-card 스타일 계승 */
-#signupForm {
-    background-color: #0a0a0a; /* 홈의 메뉴 카드 배경색 */
-    border: 1px solid #ff0055; /* 너무 두꺼운 2px보다는 1px이 더 세련되어 보임 */
-    padding: 40px;
-    width: 400px;
-    border-radius: 16px; /* 홈 화면의 카드들처럼 둥근 모서리 적용 */
-    box-shadow: 0 0 30px rgba(255, 0, 85, 0.15);
-    box-sizing: border-box;
+/* ✅ 가입 폼 래퍼 */
+.signup-wrap {
+  width: 100%;
+  max-width: 520px;
 }
 
-/* 입력 필드 - 홈의 다크 인풋 스타일 */
-input[type="email"], 
-input[type="text"], 
-input[type="password"] {
-    background: #111; /* 홈 화면의 카드 내부 색상 */
-    border: 1px solid #222;
-    color: #ffffff;
-    padding: 14px;
-    margin-bottom: 15px;
-    width: 100%;
-    border-radius: 8px; /* 약간 둥글게 */
-    box-sizing: border-box;
-    outline: none;
-    transition: all 0.3s ease;
+/* '회원가입' 타이틀 */
+.signup-wrap h2 {
+  color: #fff;
+  text-shadow: 0 0 15px #ff0055;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0 0 25px;
+  font-size: 32px;
+  letter-spacing: 4px;
+  font-weight: 800;
 }
 
-input:focus {
-    border-color: #00f2ff; /* 포커스 시 홈의 포인트 컬러(시안) 사용 */
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+/* 폼 컨테이너 */
+.signup-wrap #signupForm {
+  background-color: #0a0a0a;
+  border: 1px solid #ff0055;
+  padding: 40px;
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 0 30px rgba(255, 0, 85, 0.15);
+  box-sizing: border-box;
 }
 
-/* 인증 버튼 - 홈의 REFRESH 버튼 스타일 계승 */
-#btnSendMail, 
-#authDiv button {
-    background: transparent;
-    border: 1px solid #00f2ff; /* 보조 버튼은 시안색으로 */
-    color: #00f2ff;
-    padding: 10px;
-    margin-bottom: 15px;
-    width: 100%;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    text-transform: uppercase;
-    transition: 0.3s;
+/* 입력 필드 */
+.signup-wrap input[type="email"],
+.signup-wrap input[type="text"],
+.signup-wrap input[type="password"] {
+  background: #111;
+  border: 1px solid #222;
+  color: #ffffff;
+  padding: 14px 16px;
+  margin-bottom: 15px;
+  width: 100%;
+  border-radius: 8px;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.3s ease;
 }
 
-#btnSendMail:hover, 
-#authDiv button:hover {
-    background: rgba(0, 242, 255, 0.1);
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+.signup-wrap input:focus {
+  border-color: #00f2ff;
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
 }
 
-#btnSubmit:hover:not(:disabled) {
-    background-color: #ff2e73;
-    box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+/* 인증 버튼 */
+.signup-wrap #btnSendMail,
+.signup-wrap #authDiv button {
+  background: transparent;
+  border: 1px solid #00f2ff;
+  color: #00f2ff;
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: 0.3s;
 }
 
-#btnSubmit:disabled {
-    background-color: #222;
-    color: #555;
-    cursor: not-allowed;
+.signup-wrap #btnSendMail:hover,
+.signup-wrap #authDiv button:hover {
+  background: rgba(0, 242, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
 }
 
-/* 진행 바 컨테이너 */
-.progress-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 40px;
-    gap: 10px;
+/* ✅ 가입하기 버튼: 기본 스타일이 없어서 작게 보이던 문제 해결 */
+.signup-wrap #btnSubmit {
+  width: 100%;
+  display: block;
+  background-color: #ff0055;
+  border: none;
+  color: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: 0.3s;
+  box-shadow: 0 0 15px rgba(255, 0, 85, 0.25);
 }
 
-/* 단계 아이템 (01, 02, 03) */
-.progress-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 0.3; /* 평소에는 흐리게 */
-    transition: 0.5s;
+.signup-wrap #btnSubmit:hover:not(:disabled) {
+  background-color: #ff2e73;
+  box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
 }
 
-/* 현재 활성화된 단계 */
-.progress-step.active {
-    opacity: 1;
+.signup-wrap #btnSubmit:disabled {
+  background-color: #222;
+  color: #555;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
-.step-num {
-    font-family: 'Courier Prime', monospace;
-    font-size: 18px;
-    font-weight: bold;
-    color: #00f2ff; /* 시안 색상 */
-    text-shadow: 0 0 10px #00f2ff;
+/* 진행 바 (충돌 방지 위해 signup-wrap 아래로만) */
+.signup-wrap .progress-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 40px;
+  gap: 10px;
 }
 
-.progress-step.active .step-num {
-    color: #ff0055; /* 현재 단계는 핑크로 강조 */
-    text-shadow: 0 0 15px #ff0055;
+.signup-wrap .progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.3;
+  transition: 0.5s;
 }
 
-.step-text {
-    font-size: 10px;
-    letter-spacing: 2px;
-    margin-top: 5px;
-    color: #fff;
+.signup-wrap .progress-step.active {
+  opacity: 1;
 }
 
-/* 연결 라인 */
-.progress-line {
-    width: 50px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin-bottom: 15px; /* 텍스트 높이 고려 */
+.signup-wrap .step-num {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: #00f2ff;
+  text-shadow: 0 0 10px #00f2ff;
+}
+
+.signup-wrap .progress-step.active .step-num {
+  color: #ff0055;
+  text-shadow: 0 0 15px #ff0055;
+}
+
+.signup-wrap .step-text {
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-top: 5px;
+  color: #fff;
+}
+
+.signup-wrap .progress-line {
+  width: 50px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 15px;
 }

@@ -19,6 +19,9 @@
     </style>
 </head>
 <body>
+    <jsp:include page="../common/Header.jsp" />
+    <main class="signup-main">
+      <div class="signup-wrap">
 <div id="signup-container">
     <h2>프로필 설정</h2>
     
@@ -152,5 +155,8 @@
         });
     }
     </script>
+      </div>
+    </main>
+    <jsp:include page="../common/Footer.jsp" />
 </body>
 </html>

@@ -1,22 +1,30 @@
 @charset "UTF-8";
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
 
-body {
+.signup-main {
     background-color: #050505;
     color: #fff;
     font-family: 'Pretendard', sans-serif;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
-    margin: 0;
+    padding: 70px 0 90px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
     /* 스캔라인은 유지하되 투명도를 낮춰 세련되게 변경 */
     background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 0, 85, 0.02) 50%);
     background-size: 100% 4px;
 }
 
-h2 {
+.signup-wrap {
+    width: 100%;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+.signup-wrap h2 {
     color: #fff;
     text-shadow: 0 0 15px #ff0055;
     text-transform: uppercase;
@@ -28,7 +36,7 @@ h2 {
 }
 
 /* 메인 폼 박스: 홈의 카드 스타일 계승 */
-#signupFormStep2 {
+.signup-wrap #signupFormStep2 {
     background-color: #0a0a0a;
     border: 1px solid #ff0055;
     padding: 40px;
@@ -40,7 +48,7 @@ h2 {
 }
 
 /* 장식용 ✕ 버튼 (홈 화면 스타일) */
-#signupFormStep2::after {
+.signup-wrap #signupFormStep2::after {
     content: '×';
     position: absolute;
     top: 15px;
@@ -52,7 +60,7 @@ h2 {
 }
 
 /* 레이블: 홈의 포인트 컬러(시안) 활용 */
-label {
+.signup-wrap label {
     font-size: 0.8rem;
     margin-bottom: 8px;
     color: #00f2ff;
@@ -63,8 +71,8 @@ label {
 }
 
 /* 입력 필드 */
-input[type="text"], 
-input[type="date"] {
+.signup-wrap input[type="text"], 
+.signup-wrap input[type="date"] {
     background: #111;
     border: 1px solid #222;
     color: #ffffff;
@@ -77,13 +85,13 @@ input[type="date"] {
     transition: 0.3s;
 }
 
-input:focus {
+.signup-wrap input:focus {
     border-color: #00f2ff;
     box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
 }
 
 /* 성별 선택 그룹 */
-.gender-group {
+.signup-wrap .gender-group {
     margin: 10px 0 20px 0;
     padding: 15px;
     background: #050505;
@@ -93,7 +101,7 @@ input:focus {
     justify-content: space-around;
 }
 
-.gender-group label {
+.signup-wrap .gender-group label {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -103,13 +111,13 @@ input:focus {
     font-weight: normal;
 }
 
-input[type="radio"] {
+.signup-wrap input[type="radio"] {
     accent-color: #ff0055;
     transform: scale(1.1);
 }
 
 /* 버튼 그룹: 그리드 대신 플렉스나 단일 열 그리드로 변경 */
-.btn-group {
+.signup-wrap .btn-group {
     margin-top: 10px;
     display: flex;
     flex-direction: column; /* 세로로 쌓기 */
@@ -117,7 +125,7 @@ input[type="radio"] {
 }
 
 /* 첫 번째 버튼 (다음 단계로 - 핑크) */
-.btn-group button:first-child {
+.signup-wrap .btn-group button:first-child {
     background-color: #ff0055;
     border: none;
     box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
@@ -126,7 +134,7 @@ input[type="radio"] {
 }
 
 /* 두 번째 버튼 (나중에 하기 - 다크/테두리) */
-.btn-group button:last-child {
+.signup-wrap .btn-group button:last-child {
     background: transparent;
     border: 1px solid #333;
     color: #888;
@@ -134,7 +142,7 @@ input[type="radio"] {
     width: 100%; /* 가로 꽉 채우기 */
 }
 
-.btn-group button {
+.signup-wrap .btn-group button {
     color: #ffffff;
     padding: 16px;
     border-radius: 8px;
@@ -145,7 +153,7 @@ input[type="radio"] {
     transition: 0.3s;
 }
 /* 진행 바 컨테이너 */
-.progress-container {
+.signup-wrap .progress-container {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,7 +162,7 @@ input[type="radio"] {
 }
 
 /* 단계 아이템 (01, 02, 03) */
-.progress-step {
+.signup-wrap .progress-step {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -163,11 +171,11 @@ input[type="radio"] {
 }
 
 /* 현재 활성화된 단계 */
-.progress-step.active {
+.signup-wrap .progress-step.active {
     opacity: 1;
 }
 
-.step-num {
+.signup-wrap .step-num {
     font-family: 'Courier Prime', monospace;
     font-size: 18px;
     font-weight: bold;
@@ -175,12 +183,12 @@ input[type="radio"] {
     text-shadow: 0 0 10px #00f2ff;
 }
 
-.progress-step.active .step-num {
+.signup-wrap .progress-step.active .step-num {
     color: #ff0055; /* 현재 단계는 핑크로 강조 */
     text-shadow: 0 0 15px #ff0055;
 }
 
-.step-text {
+.signup-wrap .step-text {
     font-size: 10px;
     letter-spacing: 2px;
     margin-top: 5px;
@@ -188,7 +196,7 @@ input[type="radio"] {
 }
 
 /* 연결 라인 */
-.progress-line {
+.signup-wrap .progress-line {
     width: 50px;
     height: 1px;
     background: rgba(255, 255, 255, 0.1);

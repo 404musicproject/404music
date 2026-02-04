@@ -52,6 +52,14 @@ public class UserRestController {
 
         if (userDAO.insertUser(userDTO) > 0) {
             session.setAttribute("loginUser", userDAO.findById(userDTO.getUId()));
+
+            // ✅ Spring Security 인증도 같이 세팅 (회원가입 직후 /user/** 접근 가능하게)
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                userDTO.getUId(), null, AuthorityUtils.createAuthorityList("ROLE_USER"));
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
             return ResponseEntity.ok("/signup/step2?email=" + userDTO.getUId());
         }
         return ResponseEntity.internalServerError().body("가입 오류");
@@ -93,7 +101,7 @@ public class UserRestController {
             String preset = profilePreset.trim();
 
             // ✅ 간단 화이트리스트: profile01.png ~ profile08.png 만 허용
-            if (!preset.matches("^profile0[1-8]\\\\.png$")) {
+            if (!preset.matches("^profile0[1-8]\\.png$")) {
                 return ResponseEntity.badRequest().body("잘못된 프리셋 파일명");
             }
 
@@ -102,6 +110,16 @@ public class UserRestController {
 
             UserDTO user = userDAO.findById(uId);
             if (user != null) session.setAttribute("loginUser", user);
+
+            // ✅ 혹시 인증 컨텍스트가 없으면 생성(회원가입 흐름에서 로그인처럼 동작)
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                Authentication auth = new UsernamePasswordAuthenticationToken(
+                    uId, null, AuthorityUtils.createAuthorityList("ROLE_USER"));
+                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                context.setAuthentication(auth);
+                SecurityContextHolder.setContext(context);
+                session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+            }
 
             return ResponseEntity.ok(webPath);
         }

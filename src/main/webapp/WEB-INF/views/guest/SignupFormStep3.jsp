@@ -212,6 +212,9 @@
 </style>
 </head>
 <body>
+    <jsp:include page="../common/Header.jsp" />
+    <main class="signup-main">
+      <div class="signup-wrap">
 
     <h2>SIGN UP STEP 3</h2>
 
@@ -341,5 +344,8 @@
             }
         }
     </script>
+      </div>
+    </main>
+    <jsp:include page="../common/Footer.jsp" />
 </body>
 </html>
