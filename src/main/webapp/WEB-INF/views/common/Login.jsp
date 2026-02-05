@@ -149,18 +149,37 @@
             closeLoginModal();
         }
     });
+
     $(document).ready(function() {
+        // 1. 에러 파라미터 체크
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('loginError')) {
             alert("아이디 또는 비밀번호가 틀렸습니다.");
-            openLoginModal(); // 에러 시 다시 팝업 띄우기
+            openLoginModal();
         }
+
+        // 2. 엔터키 이벤트 등록 (여기 핵심!)
+        // input 필드에서 엔터를 누르면 ajaxLogin 함수를 실행합니다.
+        $('#modalId, #modalPw').on('keypress', function (e) {
+            if (e.which === 13) { // 13은 엔터키의 keyCode입니다.
+                e.preventDefault();
+                ajaxLogin();
+            }
+        });
     });
     
     function ajaxLogin() {
+        const uId = $('#modalId').val();
+        const uPassword = $('#modalPw').val();
+
+        if (!uId || !uPassword) {
+            alert("아이디와 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
         const loginData = {
-            uId: $('#modalId').val(),
-            uPassword: $('#modalPw').val()
+            uId: uId,
+            uPassword: uPassword
         };
 
         $.ajax({
@@ -169,12 +188,10 @@
             contentType: 'application/json',
             data: JSON.stringify(loginData),
             beforeSend: function(xhr) {
-                // CSRF 토큰 헤더 추가 (Security 설정 때문)
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('#csrfToken').val());
             },
             success: function(res) {
                 alert("환영합니다!");
-                // 현재 페이지를 유지하면서 서버 세션만 새로 읽어오려면 reload가 가장 깔끔합니다.
                 location.reload(); 
             },
             error: function(xhr) {

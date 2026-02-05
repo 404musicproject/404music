@@ -37,7 +37,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             text-shadow: 0 0 10px var(--neon-cyan);
-            font-size: 12px;
+            font-size: 20px;
         }
 
         .label-neon { 
@@ -109,7 +109,7 @@
             cursor: pointer; 
             width: 100%; 
             font-weight: bold;
-            font-size:10px;
+            font-size:15px;
             text-transform: uppercase;
             letter-spacing: 2px;
             transition: 0.4s;
@@ -119,7 +119,7 @@
         .btn-neon-submit:hover { 
             background: var(--neon-pink); 
             color: #fff; 
-            box-shadow: 0 0 30px var(--neon-pink); 
+            box-shadow: 0 0 30px var(--neon-pink);
         }
     </style>
 </head>

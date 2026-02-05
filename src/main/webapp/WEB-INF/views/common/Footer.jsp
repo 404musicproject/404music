@@ -49,21 +49,27 @@
 	/* [신규] 좋아요/보관함 버튼 영역 (재생 버튼 왼쪽으로 이동) */
 	.fp-actions {
 	    display: flex;
-	    gap: 20px;
+	    gap: 12px;
 	    align-items: center;
-	    margin-right: 20px; /* 재생 컨트롤과의 간격 */
+	    margin-left: 15px; /* 곡 정보와의 간격 */
 	}
 	.fp-action-btn {
 	    background: none;
 	    border: none;
-	    color: #555; /* 기본 색상 */
+	    color: #444; /* 평상시 색상 좀 더 차분하게 */
 	    cursor: pointer;
-	    font-size: 1.4rem; /* 크기 키움 */
+	    font-size: 1.2rem; /* 크기 살짝 조절 */
 	    transition: all 0.2s;
 	    padding: 5px;
 	    display: flex;
 	    align-items: center;
 	    justify-content: center;
+	}
+	.fp-info-group {
+	    display: flex;
+	    align-items: center;
+	    width: 35%; /* 너비를 충분히 확보 */
+	    min-width: 300px;
 	}
 	.fp-action-btn:hover {
 	    transform: scale(1.2);
@@ -168,29 +174,29 @@
         <div class="progress-bar" id="progress-bar"></div>
     </div>
     
-    <div class="fp-info">
-        <img src="" class="fp-art" id="footer-art" onclick="toggleVideo(true)">
-        <div class="fp-text">
-            <span class="fp-title" id="footer-title">No Music</span>
-            <span class="fp-artist" id="footer-artist">재생할 곡을 선택하세요</span>
+    <div class="fp-info-group">
+        <div class="fp-info">
+            <img src="" class="fp-art" id="footer-art" onclick="toggleVideo(true)">
+            <div class="fp-text">
+                <span class="fp-title" id="footer-title">No Music</span>
+                <span class="fp-artist" id="footer-artist">재생할 곡을 선택하세요</span>
+            </div>
+        </div>
+        
+        <div class="fp-actions">
+            <button id="player-like-btn" class="fp-action-btn" onclick="MusicAction.toggleLike(event)" title="좋아요">
+                <i class="far fa-heart"></i>
+            </button>
+            <button id="player-lib-btn" class="fp-action-btn" onclick="MusicAction.addToLibrary(event)" title="보관함 추가">
+                <i class="fas fa-plus-square"></i>
+            </button>
         </div>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: center; flex: 1;">
-        <div class="fp-actions">
-            <button id="player-like-btn" class="fp-action-btn" onclick="MusicAction.toggleLike(event)" title="좋아요">
-			    <i class="far fa-heart"></i>
-			</button>
-			<button id="player-lib-btn" class="fp-action-btn" onclick="MusicAction.addToLibrary(event)" title="보관함 추가">
-			    <i class="fas fa-plus-square"></i>
-			</button>
-        </div>
-
-        <div class="fp-ctrl">
-            <button class="fp-btn" onclick="PlayQueue.prev()"><i class="fas fa-step-backward"></i></button>
-            <button class="fp-btn" onclick="PlayQueue.togglePlay()"><i class="fas fa-play" id="play-icon"></i></button>
-            <button class="fp-btn" onclick="PlayQueue.next()"><i class="fas fa-step-forward"></i></button>
-        </div>
+    <div class="fp-ctrl">
+        <button class="fp-btn" onclick="PlayQueue.prev()"><i class="fas fa-step-backward"></i></button>
+        <button class="fp-btn" onclick="PlayQueue.togglePlay()"><i class="fas fa-play" id="play-icon"></i></button>
+        <button class="fp-btn" onclick="PlayQueue.next()"><i class="fas fa-step-forward"></i></button>
     </div>
 
     <div class="fp-side">

@@ -20,7 +20,6 @@ body {
     margin: 0 auto;
     background-color: #050505;
     font-family: 'Courier New', monospace;
-    margin: 0;
     font-size: 13px;
 }
 
@@ -95,15 +94,10 @@ body {
    팝업 옵션
 ========================= */
 .popup-options {
-    background: #0c0c0c;
-    padding: 18px 22px;
-    border: 1px solid #00e6ff;
-    box-shadow: 0 0 6px rgba(0,230,255,0.5);
-    margin-bottom: 40px;
-
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
+    flex-wrap: wrap; /* 중요 */
 }
 
 .checkbox-label {
@@ -118,11 +112,9 @@ body {
 }
 
 .date-group {
-    display: flex !important;
+    display: none;
     align-items: center;
     gap: 12px;
-    margin-left: auto;
-    white-space: nowrap;
 }
 
 .date-group label {
