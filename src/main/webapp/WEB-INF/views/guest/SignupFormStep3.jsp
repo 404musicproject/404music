@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>SIGN UP STEP 3</title>
+<title>회원가입 3단계</title>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <style>
@@ -14,10 +14,12 @@
         font-family: 'Pretendard', sans-serif;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        height: 100vh;
-        margin: 0;
+        padding-top: 40px;
+        padding-bottom: 80px;
+        min-height: 100vh;
+margin: 0;
     }
 
     h2 {
@@ -51,7 +53,7 @@
         overflow: hidden;
         margin: 0 auto 18px;   /* ✅ 아래 간격 살짝 줄임 */
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
         transition: 0.3s;
     }
@@ -157,7 +159,7 @@
     .progress-container {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         margin-bottom: 40px;
         gap: 10px;
     }
@@ -216,24 +218,24 @@
     <main class="signup-main">
       <div class="signup-wrap">
 
-    <h2>SIGN UP STEP 3</h2>
+    <h2>회원가입 3단계</h2>
 
     <div class="progress-container">
         <div class="progress-step active">
             <span class="step-num">01</span>
-            <span class="step-text">AUTH</span>
+            <span class="step-text">인증</span>
         </div>
         <div class="progress-line active-line"></div>
 
         <div class="progress-step active">
             <span class="step-num">02</span>
-            <span class="step-text">INFO</span>
+            <span class="step-text">정보</span>
         </div>
         <div class="progress-line active-line"></div>
 
         <div class="progress-step active">
             <span class="step-num">03</span>
-            <span class="step-text">PHOTO</span>
+            <span class="step-text">프로필</span>
         </div>
     </div>
 

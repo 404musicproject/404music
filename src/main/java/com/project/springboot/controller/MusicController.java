@@ -301,17 +301,7 @@ public class MusicController {
             return ResponseEntity.internalServerError().body("fail");
         }
     }
-    @GetMapping("/music/myLibrary")
-    public String myLibrary(HttpSession session, Model model) {
-        UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        if (user == null) return "redirect:/login";
 
-        List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(user.getUNo());
-        model.addAttribute("libraryList", libraryList);
-        
-        // guest/가 아니라 user/ 폴더 안에 만드셨으므로 경로 수정!
-        return "user/MyLibrary"; 
-    }
     
     @PostMapping("/remove-library")
     public ResponseEntity<String> removeLibrary(@RequestParam("m_no") int mNo, @RequestParam("u_no") int uNo) {

@@ -40,7 +40,7 @@ public class WebSecurtyConfig {
             	    .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll() 
                 .requestMatchers("/signup/**", "/api/user/guest/**", "/api/user/login", "/api/auth/**", "/verify-email").permitAll()
-                .requestMatchers("/", "/home","/common/**", "/guest/**","/api/music/**","/support/**","/music/**").permitAll()
+                .requestMatchers("/", "/home","/common/**", "/guest/**","/api/music/**","/support/**","/music/**", "/artist/**", "/album/**").permitAll()
                 // ✅ 검색 결과 페이지 경로 추가
                 .requestMatchers("/musicSearch").permitAll() 
                 .requestMatchers("/api/chat/**").permitAll()

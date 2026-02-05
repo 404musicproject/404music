@@ -158,6 +158,90 @@
 		    background: #ff0055; border: none; color: #fff;
 		    padding: 5px 15px; cursor: pointer; border-radius: 4px;
 		}
+		
+		
+/* 5. Kibana 프로모션 섹션 스타일 (바이올렛 & 핑크 테마) */
+.Kibana {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1000px;
+    margin: 80px auto; /* 간격 살짝 넓힘 */
+    padding: 40px;
+    /* 세련된 보라색에서 핑크로 이어지는 그라데이션 */
+    background: linear-gradient(135deg, #6e00ff 0%, #ff0055 100%);
+    border-radius: 20px;
+    text-decoration: none;
+    color: #fff; /* 밝은 배경이 아니므로 글자를 흰색으로 변경 */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(110, 0, 255, 0.3);
+}
+
+.Kibana:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 20px 40px rgba(255, 0, 85, 0.4);
+}
+
+/* 내부 광택 효과 */
+.Kibana::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 140%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.Kibana h4 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.Kibana p {
+    margin: 10px 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.Kibana span {
+    background: rgba(0, 0, 0, 0.3); /* 반투명 블랙으로 고급스럽게 */
+    color: #fff;
+    padding: 15px 35px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: 0.3s;
+    white-space: nowrap;
+    backdrop-filter: blur(5px); /* 배경 흐림 효과 추가 */
+}
+
+.Kibana:hover span {
+    background: #fff;
+    color: #ff0055;
+    border-color: #fff;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .Kibana {
+        flex-direction: column;
+        text-align: center;
+        gap: 25px;
+        padding: 40px 20px;
+        margin: 40px 20px;
+    }
+}
     </style>
 </head>
 <body>
@@ -173,6 +257,7 @@
 		    <p id="top1-artist" style="color: #ccc; margin-top: 5px;"></p>
 		</div>
     </section>
+    
 	
 	<section class="menu-grid">
         <a href="${pageContext.request.contextPath}/music/Index?type=top100" class="menu-card">
@@ -200,6 +285,24 @@
                 </div>
 	    </div>
 	</section>
+	
+	
+	    <c:if test="${not empty loginUser}">
+<section class="location-section">
+    <div class="section-title">📍 NOW & HERE</div>
+    <div class="location-grid" id="context-list">
+        </div>
+</section>
+    
+</c:if>
+
+<c:if test="${not empty loginUser}">
+<section class="location-section">
+    <div class="section-title">✨ FOR YOUR MOOD</div>
+    <div class="location-grid" id="personalized-list">
+        </div>
+</section>
+</c:if>
 
     <section class="container">
         <div class="chart-header">
@@ -211,6 +314,19 @@
         </div>
         <div id="itunes-list"></div>
     </section>    
+
+<section>
+	    <a href="${pageContext.request.contextPath}/user/Kibana" class="Kibana">
+        <div>
+            <h4 style="margin: 0; font-size: 1.6rem; letter-spacing: -1px;">404 분석 데스크🤔</h4>
+            <p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 1.1rem;">404 Found</p>
+        </div>
+        <span style="background: #000; color: #fff; padding: 15px 30px; border-radius: 40px; font-size: 1rem;">
+            분석 차트 보러가기 >
+        </span>
+    </a>
+</section>
+
 
     <section class="location-section">
         <div class="section-title">Regional Top Hits</div>
@@ -243,22 +359,7 @@
         </div>
     </section>
     
-<c:if test="${not empty loginUser}">
-<section class="location-section">
-    <div class="section-title">📍 NOW & HERE</div>
-    <div class="location-grid" id="context-list">
-        </div>
-</section>
-    
-</c:if>
 
-<c:if test="${not empty loginUser}">
-<section class="location-section">
-    <div class="section-title">✨ FOR YOUR MOOD</div>
-    <div class="location-grid" id="personalized-list">
-        </div>
-</section>
-</c:if>
 
 
 </main>

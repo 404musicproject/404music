@@ -49,7 +49,15 @@ public class UserViewController {
         model.addAttribute("uId", uId);
         return "guest/SignupFormStep3";
     }
- 
+
+    // ✅ 마이페이지에서 쓰는 '프로필 선택' 전용 페이지 (Step 문구/진행바 없이 별도 화면)
+    @GetMapping("/user/profile")
+    public String profileSelectPage(HttpSession session) {
+        UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
+        if (loginUser == null) return "redirect:/home";
+        return "user/ProfileSelect";
+    }
+
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         if (session != null) {
@@ -97,5 +105,9 @@ public class UserViewController {
         return "user/SubscriptionPlans";
     }
     
+    @RequestMapping("/user/Kibana")
+    public String Kibana() {
+    	return "user/Kibana";
+    }
   
 }

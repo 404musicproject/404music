@@ -4,11 +4,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>SETTINGS | SYSTEM</title>
+    <title>마이페이지 | 404MUSIC</title>
     <style>
         /* 기본 네온 테마 스타일 */
         html, body { margin: 0; padding: 0; background-color: #000; color: #fff;  }
-        .mypage-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding-top: 50px; padding-bottom: 50px; font-family: 'Courier New', monospace;}
+        .mypage-container { display: flex; justify-content: center; align-items: flex-start; min-height: auto; padding-top: 50px; padding-bottom: 50px; font-family: 'Courier New', monospace;}
         
         .neon-card { width: 550px; padding: 40px; border: 2px solid #ff0055; box-shadow: 0 0 15px #ff0055; background: #050505; position: relative; }
         
@@ -41,9 +41,9 @@
         }
         .profile-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* 프로필 호버 시 'CHANGE' 글자 표시 */
+        /* 프로필 호버 시 네온 안내 */
         .profile-wrapper:hover::after {
-            content: 'CHANGE';
+            content: '프로필 변경';
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7);
             color: #00f2ff;
@@ -182,13 +182,13 @@
 
     <div class="mypage-container">
         <div class="neon-card">
-            <h2 style="text-align:center; color:#ff0055; text-shadow: 0 0 10px #ff0055; letter-spacing: 2px;">SYSTEM SETTINGS</h2>
+            <h2 style="text-align:center; color:#ff0055; text-shadow: 0 0 10px #ff0055; letter-spacing: 2px;">마이페이지 설정</h2>
 
             <div class="tab-menu">
-                <button class="tab-btn active" onclick="openTab(event, 'general')">GENERAL</button>
-                <button class="tab-btn" onclick="openTab(event, 'security')">SECURITY</button>
-                <button class="tab-btn" onclick="openTab(event, 'notification')">NOTI</button>
-                <button class="tab-btn" onclick="openTab(event, 'sub-container')">SUBSCRIPTION</button>
+                <button class="tab-btn active" onclick="openTab(event, 'general')">일반</button>
+                <button class="tab-btn" onclick="openTab(event, 'security')">보안</button>
+                <button class="tab-btn" onclick="openTab(event, 'notification')">알림</button>
+                <button class="tab-btn" onclick="openTab(event, 'sub-container')">구독</button>
             </div>
 
             <form action="/api/user/update" method="POST">
@@ -197,21 +197,21 @@
                     <div class="profile-section">
 						<div class="profile-wrapper" onclick="goToUpdateProfile()">
     <img id="currentProfileImg" 
-         src="${not empty sessionScope.loginUser.UProfileImg ? sessionScope.loginUser.UProfileImg : '/images/default_profile.png'}" 
+         src="${not empty sessionScope.loginUser.UProfileImg ? sessionScope.loginUser.UProfileImg : '/img/default-profile.png'}" 
          onerror="this.src='https://via.placeholder.com/150/000000/00f2ff?text=NO+IMG'">
 </div>
                         <input type="file" id="profileUpdateInput" accept="image/*">
-                        <p style="font-size: 11px; color: #666; margin-top: 5px;">CLICK IMAGE TO CHANGE</p>
+                        <p style="font-size: 11px; color: #666; margin-top: 5px;">이미지 클릭 → 프로필 변경</p>
                     </div>
 
                     <div class="info-row">
-                        <span class="label">ID / EMAIL</span>
+                        <span class="label">아이디 / 이메일</span>
                         <span class="value">${sessionScope.loginUser.UId}</span>
                         <input type="hidden" name="uId" value="${sessionScope.loginUser.UId}">
                     </div>
             
                     <div class="info-row">
-                        <span class="label">NICKNAME</span>
+                        <span class="label">닉네임</span>
                         <span class="view-mode value">${sessionScope.loginUser.UNick}</span>
                         <div class="edit-mode" style="display:none;">
                             <input type="text" name="uNick" id="uNick" class="neon-input" value="${sessionScope.loginUser.UNick}">
@@ -220,37 +220,37 @@
                     </div>
             
                     <div class="info-row">
-                        <span class="label">REGION</span>
+                        <span class="label">지역</span>
                         <span class="view-mode value">${not empty sessionScope.loginUser.URegion ? sessionScope.loginUser.URegion : '미설정'}</span>
                         <input type="text" name="uRegion" class="neon-input edit-mode" value="${sessionScope.loginUser.URegion}" style="display:none;">
                     </div>
             
                     <div class="info-row">
-                        <span class="label">GENDER</span>
+                        <span class="label">성별</span>
                         <span class="view-mode value">
                             <c:choose>
-                                <c:when test="${sessionScope.loginUser.UGender == 'M'}">MALE</c:when>
-                                <c:when test="${sessionScope.loginUser.UGender == 'F'}">FEMALE</c:when>
-                                <c:otherwise>OTHER</c:otherwise>
+                                <c:when test="${sessionScope.loginUser.UGender == 'M'}">남성</c:when>
+                                <c:when test="${sessionScope.loginUser.UGender == 'F'}">여성</c:when>
+                                <c:otherwise>기타</c:otherwise>
                             </c:choose>
                         </span>
                         <select name="uGender" class="neon-input edit-mode" style="display:none;">
-                            <option value="M" ${sessionScope.loginUser.UGender == 'M' ? 'selected' : ''}>MALE</option>
-                            <option value="F" ${sessionScope.loginUser.UGender == 'F' ? 'selected' : ''}>FEMALE</option>
-                            <option value="O" ${sessionScope.loginUser.UGender == 'O' ? 'selected' : ''}>OTHER</option>
+                            <option value="M" ${sessionScope.loginUser.UGender == 'M' ? 'selected' : ''}>남성</option>
+                            <option value="F" ${sessionScope.loginUser.UGender == 'F' ? 'selected' : ''}>여성</option>
+                            <option value="O" ${sessionScope.loginUser.UGender == 'O' ? 'selected' : ''}>기타</option>
                         </select>
                     </div>
             
                     <div class="info-row">
-                        <span class="label">PREFERRED GENRE</span>
-                        <span class="view-mode value">${not empty sessionScope.loginUser.UPreferredGenre ? sessionScope.loginUser.UPreferredGenre : 'NONE'}</span>
+                        <span class="label">선호 장르</span>
+                        <span class="view-mode value">${not empty sessionScope.loginUser.UPreferredGenre ? sessionScope.loginUser.UPreferredGenre : '없음'}</span>
                         <input type="text" name="uPreferredGenre" class="neon-input edit-mode" value="${sessionScope.loginUser.UPreferredGenre}" style="display:none;">
                     </div>
             
                     <div class="btn-group">
-                        <button type="button" id="edit-start-btn" class="save-btn" onclick="toggleEditMode(true)">EDIT PROFILE INFO</button>
-                        <button type="submit" id="save-btn" class="save-btn edit-mode" style="display:none;">SAVE CHANGES</button>
-                        <button type="button" id="cancel-btn" class="withdraw-btn edit-mode" style="display:none; margin-top:10px; width:100%; text-align:center;" onclick="toggleEditMode(false)">CANCEL</button>
+                        <button type="button" id="edit-start-btn" class="save-btn" onclick="toggleEditMode(true)">정보 수정</button>
+                        <button type="submit" id="save-btn" class="save-btn edit-mode" style="display:none;">변경사항 저장</button>
+                        <button type="button" id="cancel-btn" class="withdraw-btn edit-mode" style="display:none; margin-top:10px; width:100%; text-align:center;" onclick="toggleEditMode(false)">취소</button>
                     </div>
                 </div>
             </form>
@@ -260,90 +260,90 @@
                     <c:when test="${sessionScope.loginUser.USocialType == 'LOCAL'}">
                         <div id="pw-change-group">
                             <div class="info-row">
-                                <span class="label">CURRENT PASSWORD</span>
+                                <span class="label">현재 비밀번호</span>
                                 <input type="password" id="currentPw" class="neon-input" placeholder="********">
                             </div>
                             <div class="info-row">
-                                <span class="label">NEW PASSWORD</span>
+                                <span class="label">새 비밀번호</span>
                                 <input type="password" id="newPw" class="neon-input" placeholder="********">
                             </div>
                             <div class="info-row">
-                                <span class="label">CONFIRM NEW PASSWORD</span>
+                                <span class="label">새 비밀번호 확인</span>
                                 <input type="password" id="confirmPw" class="neon-input" placeholder="********">
                             </div>
-                            <button type="button" class="save-btn" onclick="changePassword()">CHANGE PASSWORD</button>
+                            <button type="button" class="save-btn" onclick="changePassword()">비밀번호 변경</button>
                             <div id="pwMsg" style="font-size: 12px; margin-top: 10px; text-align: center;"></div>
                         </div>
                     </c:when>
                     <c:otherwise>
                         <div class="social-notice">
-                            [SYSTEM NOTICE]<br>
-                            This account is linked via <strong>${sessionScope.loginUser.USocialType}</strong>.<br>
-                            Password management is handled by the provider.
+                            [시스템 안내]<br>
+                            이 계정은 <strong>${sessionScope.loginUser.USocialType}</strong> 소셜 로그인으로 연동되어 있습니다.<br>
+                            비밀번호 변경은 해당 제공사에서 관리합니다.
                         </div>
                     </c:otherwise>
                 </c:choose>
             
                 <div class="danger-zone">
-                    <span class="label">DANGER ZONE</span>
+                    <span class="label">주의</span>
                     <p style="font-size:11px; color:#aaa; margin-bottom: 10px;">
-                        WARNING: Account deletion is permanent. All data will be lost.
+                        경고: 회원 탈퇴는 되돌릴 수 없으며 모든 데이터가 삭제됩니다.
                     </p>
-                    <button type="button" class="withdraw-btn" onclick="confirmWithdraw()">DELETE ACCOUNT</button>
+                    <button type="button" class="withdraw-btn" onclick="confirmWithdraw()">회원 탈퇴</button>
                 </div>
             </div>
 
             <div id="notification" class="tab-content">
                 <div class="info-row">
-                    <span class="label">EMAIL NOTIFICATION</span>
+                    <span class="label">이메일 알림</span>
                     <label style="color:#ddd; display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" name="emailNoti" checked style="accent-color: #00f2ff;"> 
-                        Receive system updates via email
+                        이메일로 시스템 업데이트 받기
                     </label>
                 </div>
                 <div class="info-row">
-                    <span class="label">MARKETING PUSH</span>
+                    <span class="label">마케팅 알림</span>
                     <label style="color:#ddd; display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" name="pushNoti" style="accent-color: #00f2ff;"> 
-                        Receive marketing & event news
+                        마케팅/이벤트 소식 받기
                     </label>
                 </div>
-                <button type="button" class="save-btn" onclick="alert('Preferences Saved.')">SAVE PREFERENCES</button>
+                <button type="button" class="save-btn" onclick="alert('설정이 저장되었습니다.')">설정 저장</button>
             </div>
 
             <div id="sub-container" class="tab-content">
                 <c:choose>
                     <c:when test="${not empty subscription}">
                         <div style="border: 1px solid #333; padding: 20px; border-radius: 4px;">
-                            <h3 style="color:#00f2ff; margin-top:0;">PLAN: ${subscription.SSub}</h3>
+                            <h3 style="color:#00f2ff; margin-top:0;">플랜: ${subscription.SSub}</h3>
                             
-                            <p class="value">STATUS: 
+                            <p class="value">상태: 
                                 <c:choose>
                                     <c:when test="${subscription.SStatus eq 'PENDING_CANCEL'}">
-                                        <strong style="color:#ff0055;">CANCELLATION SCHEDULED</strong>
+                                        <strong style="color:#ff0055;">해지 예약됨</strong>
                                     </c:when>
                                     <c:otherwise>
-                                        <strong style="color:#00f2ff;">ACTIVE</strong>
+                                        <strong style="color:#00f2ff;">이용 중</strong>
                                     </c:otherwise>
                                 </c:choose>
                             </p>
                         
-                            <p class="value">PERIOD: <br><span style="font-size:13px; color:#888;">${subscription.SStartDate} ~ ${subscription.SEndDate}</span></p>
+                            <p class="value">이용 기간: <br><span style="font-size:13px; color:#888;">${subscription.SStartDate} ~ ${subscription.SEndDate}</span></p>
                         
                             <c:if test="${subscription.SStatus ne 'PENDING_CANCEL'}">
-                                <p class="value">NEXT BILLING: <br><span style="font-size:13px; color:#888;">${subscription.SNextSub}</span></p>
+                                <p class="value">다음 결제일: <br><span style="font-size:13px; color:#888;">${subscription.SNextSub}</span></p>
                             </c:if>
                             
                             <c:choose>
                                 <c:when test="${subscription.SCancelReserved == 'F'}">
-                                     <button class="save-btn" onclick="cancelSubscription()" style="border-color:#ff0055; color:#ff0055;">CANCEL SUBSCRIPTION</button>
+                                     <button class="save-btn" onclick="cancelSubscription()" style="border-color:#ff0055; color:#ff0055;">구독 해지</button>
                                 </c:when>
                                 <c:otherwise>
                                     <p style="color:#ff0055; font-size:12px; margin-top:15px;">
-                                        * Access remains until ${subscription.SEndDate}.
+                                        * ${subscription.SEndDate}까지 이용 가능합니다.
                                     </p>
                                     <button class="save-btn" onclick="reverseCancelSubscription()">
-                                        REACTIVATE SUBSCRIPTION
+                                        구독 재개
                                     </button>
                                 </c:otherwise>
                             </c:choose>
@@ -351,8 +351,8 @@
                     </c:when>
                     <c:otherwise>
                         <div style="text-align:center; padding: 30px; border: 1px dashed #444;">
-                            <p style="color:#888;">No active subscription found.</p>
-                            <button class="save-btn" onclick="location.href='/user/subscription'">UPGRADE PLAN</button>
+                            <p style="color:#888;">구독 정보가 없습니다.</p>
+                            <button class="save-btn" onclick="location.href='/user/subscription'">플랜 선택하기</button>
                         </div>
                     </c:otherwise>
                 </c:choose>
@@ -377,36 +377,36 @@
 
         // 구독 해지 로직
         function cancelSubscription() {
-            if (confirm("Are you sure you want to cancel your subscription?")) {
+            if (confirm("구독을 해지할까요?")) {
                 $.ajax({
                     url: '/api/subscription/cancel',
                     type: 'POST',
-                    success: function() { alert("Cancellation scheduled."); location.reload(); },
-                    error: function(xhr) { alert("Error: " + xhr.responseText); }
+                    success: function() { alert("구독 해지가 예약되었습니다."); location.reload(); },
+                    error: function(xhr) { alert("오류: " + xhr.responseText); }
                 });
             }
         }
         
         // 구독 해지 철회 로직
         function reverseCancelSubscription() {
-            if (confirm("Reactivate your subscription?")) {
+            if (confirm("구독을 다시 활성화할까요?")) {
                 $.ajax({
                     url: '/api/subscription/reverseCancel',
                     type: 'POST',
-                    success: function() { alert("Subscription reactivated."); location.reload(); },
-                    error: function(xhr) { alert("Error: " + xhr.responseText); }
+                    success: function() { alert("구독이 다시 활성화되었습니다."); location.reload(); },
+                    error: function(xhr) { alert("오류: " + xhr.responseText); }
                 });
             }
         }
 
         // 탈퇴 로직
         function confirmWithdraw() {
-            if(confirm("FINAL WARNING: This action cannot be undone.")) {
+            if(confirm("최종 확인: 회원 탈퇴는 되돌릴 수 없습니다. 진행할까요?")) {
                 $.ajax({
                     url: '/api/user/withdraw',
                     type: 'GET',
                     success: function(res) { alert(res); location.href = "/"; },
-                    error: function(xhr) { alert("Error: " + xhr.responseText); }
+                    error: function(xhr) { alert("오류: " + xhr.responseText); }
                 });
             }
         }
@@ -417,29 +417,21 @@
             const newPw = $('#newPw').val();
             const confirmPw = $('#confirmPw').val();
 
-            if (!currentPw || !newPw || !confirmPw) { alert("Please fill in all fields."); return; }
-            if (newPw !== confirmPw) { $('#pwMsg').text("❌ Passwords do not match.").css("color", "#ff0055"); return; }
+            if (!currentPw || !newPw || !confirmPw) { alert("모든 항목을 입력해주세요."); return; }
+            if (newPw !== confirmPw) { $('#pwMsg').text("❌ 비밀번호가 일치하지 않습니다.").css("color", "#ff0055"); return; }
 
             $.ajax({
                 url: '/api/user/update-pw',
                 type: 'POST',
                 data: { currentPw: currentPw, newPw: newPw },
-                success: function() { alert("Password changed successfully."); location.reload(); },
+                success: function() { alert("비밀번호가 변경되었습니다."); location.reload(); },
                 error: function(xhr) { $('#pwMsg').text("❌ " + xhr.responseText).css("color", "#ff0055"); }
             });
         }
         
         function goToUpdateProfile() {
-            // 세션에 있는 ID를 자바스크립트 변수로 안전하게 가져옵니다.
-            const userId = "${sessionScope.loginUser.UId}"; 
-            
-            if(!userId) {
-                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                return;
-            }
-
-            // 경로를 직접 생성해서 이동합니다.
-            location.href = "/signup/step3?uId=" + encodeURIComponent(userId) + "&mode=edit";
+            // 마이페이지용 '프로필 선택' 전용 페이지로 이동
+            location.href = "/user/profile";
         }
     </script>
 </body>

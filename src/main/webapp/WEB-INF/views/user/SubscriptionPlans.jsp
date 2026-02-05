@@ -10,7 +10,7 @@
     <!-- 아임포트/포트원 SDK -->
     <script src="https://cdn.iamport.kr/js/iamport.payment-1.2.0.js"></script>
     <style>
-        body { background: #0a0a0a; color: #fff; font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { background: #0a0a0a; color: #fff; font-family: 'Pretendard', sans-serif; margin: 0; }
         .plan-card { background: #151515; border: 2px solid #ff0055; border-radius: 20px; width: 350px; padding: 40px; text-align: center; box-shadow: 0 0 20px rgba(255, 0, 85, 0.2); }
         .plan-title { font-size: 28px; font-weight: 800; color: #ff0055; margin-bottom: 10px; }
         .plan-desc { color: #aaa; font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
@@ -48,6 +48,8 @@
     </style>
 </head>
 <body>
+    <jsp:include page="../common/Header.jsp" />
+    <main style="display:flex; justify-content:center; align-items:flex-start; padding-top:40px; padding-bottom:80px;">
 
 
 <!-- 현재 구독 중인지 여부를 체크 -->
@@ -138,5 +140,7 @@ function goBack() {
 }
 </script>
 
+    </main>
+    <jsp:include page="../common/Footer.jsp" />
 </body>
 </html>

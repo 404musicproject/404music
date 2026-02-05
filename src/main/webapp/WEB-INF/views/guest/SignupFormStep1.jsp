@@ -17,17 +17,17 @@
 <div class="progress-container">
     <div class="progress-step active">
         <span class="step-num">01</span>
-        <span class="step-text">AUTH</span>
+        <span class="step-text">인증</span>
     </div>
     <div class="progress-line"></div>
     <div class="progress-step">
         <span class="step-num">02</span>
-        <span class="step-text">INFO</span>
+        <span class="step-text">정보</span>
     </div>
     <div class="progress-line"></div>
     <div class="progress-step">
         <span class="step-num">03</span>
-        <span class="step-text">PHOTO</span>
+        <span class="step-text">프로필</span>
     </div>
 </div>
 

@@ -139,25 +139,25 @@ public class MusicPageController {
     public String myLibrary(HttpSession session, Model model) {
         // 1. 세션 확인
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
-        
+
         // 2. 로그인 안되어 있을 때 처리
         if (user == null) {
             return "redirect:/user/login"; 
         }
 
-        // 3. 데이터 조회 (u_no 기준)
+        // 3. 데이터 조회
         int uNo = user.getUNo();
-        
-        // [수정된 부분] 보관함 리스트와 좋아요 리스트를 따로 가져옵니다.
+
         List<MusicDTO> libraryList = musicDAO.selectMusicByLibrary(uNo);
-        List<MusicDTO> likedList = musicDAO.selectLikedMusic(uNo); // DAO에 추가한 그 메서드!
-        
+        List<MusicDTO> likedList = musicDAO.selectLikedMusic(uNo);
+
         model.addAttribute("libraryList", libraryList);
         model.addAttribute("likedList", likedList);
-        model.addAttribute("keyword", "MY LIBRARY"); 
-        
-        return "user/MyLibrary"; 
+        model.addAttribute("keyword", "MY LIBRARY");
+
+        return "user/MyLibrary";
     }
+
     
     // [수정] 주소에 슬래시(/)를 넣어서 브라우저 요청과 일치시킵니다.
     @GetMapping("/artist/detail")
