@@ -189,14 +189,41 @@
     }
 
     function playAllVisible() {
-        const $rows = $("tbody:visible tr:visible");
-        if($rows.length === 0) return;
-        PlayQueue.list = [];
+        const $rows = $("tbody:visible tr.music-row");
+        if ($rows.length === 0) return;
+
+        // 1. 기존 큐를 비웁니다.
+        PlayQueue.list = []; 
+
         $rows.each(function() {
             const d = $(this).data();
-            PlayQueue.addOnly(d.mno, d.title, d.artist, d.img);
+            
+            // 2. addOnly 대신 가장 기본적인 add 함수를 시도해봅니다.
+            // 만약 PlayQueue.add()가 실행 시 바로 재생을 시작하는 구조라면 
+            // 아래처럼 push로 데이터만 넣고 마지막에 play를 호출해야 합니다.
+            
+            const songData = {
+                mno: d.mno,
+                title: d.title,
+                artist: d.artist,
+                img: d.img
+            };
+            
+            // 함수가 있는지 체크하며 안전하게 추가
+            if (typeof PlayQueue.add === 'function') {
+                PlayQueue.add(songData); 
+            } else {
+                // 함수가 없다면 배열에 직접 주입 (플레이어 구현 방식에 따라 다름)
+                PlayQueue.list.push(songData);
+            }
         });
-        PlayQueue.playIndex(0);
+
+        // 3. 첫 번째 곡 재생
+        if (typeof PlayQueue.playIndex === 'function') {
+            PlayQueue.playIndex(0);
+        } else if (typeof PlayQueue.play === 'function') {
+            PlayQueue.play();
+        }
     }
 </script>
 </body>

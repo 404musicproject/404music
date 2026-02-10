@@ -33,6 +33,26 @@
         font-family: inherit;
     }
     
+    /* notice-body 내 이미지 및 영상 크기 자동 조절 */
+	.notice-body img {
+	    max-width: 100%;    /* 부모 영역을 넘지 않게 */
+	    height: auto;       /* 비율 유지 */
+	    display: block;     /* 하단 여백 방지 */
+	    margin: 15px 0;     /* 이미지 위아래 간격 */
+	    border: 1px solid #333; /* 이미지 테두리 (디자인 컨셉) */
+	}
+	
+	/* 에디터에서 설정한 글자 색상이 다크모드에서 안 보일 경우를 대비 */
+	.notice-body {
+	    word-break: break-all; /* 긴 영문/링크 줄바꿈 */
+	    overflow-wrap: break-word;
+	}
+	
+	/* 테이블 내 HTML 태그 출력 시 텍스트 정렬 */
+	.notice-body p {
+	    margin: 8px 0;
+	}
+    
     /* 3. 테이블 스타일 (FAQ 항목 느낌으로 수정) */
     .retro-table { 
         width: 100%; 

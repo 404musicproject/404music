@@ -57,7 +57,7 @@
 
 <div class="plan-card">
     <div class="plan-title">404MUSIC PASS</div>
-    <div class="plan-desc">광고 없는 스트리밍<br>그리고 초고음질 음악 감상까지.</div>
+    <div class="plan-desc">개인별 추천 태그<br>그리고 본인의 히스토리 분석까지.</div>
 
     <div class="price-box">
         <span id="display-price" class="price">₩ 7,900</span>

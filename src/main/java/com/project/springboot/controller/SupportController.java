@@ -56,7 +56,7 @@ public class SupportController {
     @GetMapping("/support/noticeWrite")
     public String noticeWriteForm(HttpSession session) {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
-        if (loginUser == null || !"ADMIN".equals(loginUser.getUAuth())) {
+        if (loginUser == null || !"ADMIN".equals(loginUser.getuAuth())) {
             return "redirect:/support?mode=notice"; // 관리자가 아니면 목록으로
         }
         return "support/NoticeForm";
@@ -68,7 +68,7 @@ public class SupportController {
                                @RequestParam(value="isPopup", defaultValue="N") String isPopup,
                                HttpSession session) {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
-        if (loginUser != null && "ADMIN".equals(loginUser.getUAuth())) {
+        if (loginUser != null && "ADMIN".equals(loginUser.getuAuth())) {
             
             if("Y".equals(isPopup)) {
                 notice.setUserNo(0); // 팝업은 특정 회원이 아닌 전체(0) 대상
@@ -97,7 +97,7 @@ public class SupportController {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         
         // 관리자 권한 체크 (보안 강화)
-        if (loginUser != null && "ADMIN".equals(loginUser.getUAuth())) {
+        if (loginUser != null && "ADMIN".equals(loginUser.getuAuth())) {
             supportDao.deleteNotice(nNo); // noticeService -> supportDao로 변경
         }
         
@@ -111,7 +111,7 @@ public class SupportController {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         
         // 관리자만 수정 페이지 접근 가능
-        if (loginUser == null || !"ADMIN".equals(loginUser.getUAuth())) {
+        if (loginUser == null || !"ADMIN".equals(loginUser.getuAuth())) {
             return "redirect:/support?mode=notice";
         }
 
@@ -125,7 +125,7 @@ public class SupportController {
     public String updateNotice(NotificationDTO notice, HttpSession session) {
         UserDTO loginUser = (UserDTO) session.getAttribute("loginUser");
         
-        if (loginUser != null && "ADMIN".equals(loginUser.getUAuth())) {
+        if (loginUser != null && "ADMIN".equals(loginUser.getuAuth())) {
             supportDao.updateNotice(notice);
         }
         System.out.println("전달받은 공지번호: " + notice.getNoticeNo()); 
@@ -209,7 +209,7 @@ public class SupportController {
         InquiryDTO inq = supportDao.getInquiryDetail(iNo);
         
         // 권한 체크: 작성자 본인이거나 관리자일 때만 삭제 가능
-        if (loginUser != null && (loginUser.getUNo() == inq.getUserNo() || "ADMIN".equals(loginUser.getUAuth()))) {
+        if (loginUser != null && (loginUser.getUNo() == inq.getUserNo() || "ADMIN".equals(loginUser.getuAuth()))) {
             supportDao.deleteInquiry(iNo);
         }
         return "redirect:/support?mode=inquiry";
@@ -239,6 +239,11 @@ public class SupportController {
         }
         supportDao.updateInquiry(inquiry);
         return "redirect:/support?mode=inquiry";
+    }
+    
+    @GetMapping("/support/KibanaAdmin")
+    public String KibanaAdmin(){
+    	return "support/KibanaAdmin";
     }
     
 }

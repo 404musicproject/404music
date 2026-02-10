@@ -1,204 +1,266 @@
 @charset "UTF-8";
-@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&family=Orbitron:wght@900&family=Courier+Prime:wght@400;700&display=swap');
 
+:root{
+  --bg:#050505; --panel:#07070f; --hot:#ff0055; --cyan:#00f2ff; --input:#0b0b14;
+}
+
+@keyframes neonFlow { to { background-position: 200% center; } }
+
+body { background-color: #050505 !important; color: #fff !important; font-family: 'Pretendard', sans-serif !important; margin: 0 !important; }
+
+/* ✅ [Step 1과 동일] 상단 여백 100px + 위쪽 정렬 */
 .signup-main {
-    background-color: #050505;
-    color: #fff;
-    font-family: 'Pretendard', sans-serif;
-    min-height: 100vh;
-    padding: 70px 0 90px;
-    box-sizing: border-box;
-    display: flex;
-    justify-content: center;
-    /* 스캔라인은 유지하되 투명도를 낮춰 세련되게 변경 */
-    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(255, 0, 85, 0.02) 50%);
-    background-size: 100% 4px;
+  padding: 100px 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important; 
+  min-height: 100vh !important;
+  box-sizing: border-box !important;
 }
 
+/* ✅ 620px 고정 */
 .signup-wrap {
-    width: 100%;
-    max-width: 620px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  width: 620px !important;
+  max-width: 620px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin: 0 auto !important;
 }
 
+/* 1순위: 진행 바 */
+.signup-wrap .progress-container {
+  order: 1 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  /* 👇 Step 1과 동일하게 마진 0 (제목에서 밀어냄) */
+  margin: 0 !important; 
+}
 
+/* 2순위: 제목 (Step 1과 동일한 간격) */
 .signup-wrap h2 {
-    color: #fff;
-    text-shadow: 0 0 15px #ff0055;
-    text-transform: uppercase;
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 32px;
-    letter-spacing: 4px;
-    font-weight: 800;
+  order: 2 !important;
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  color: #ff0055 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 36px !important;
+  text-shadow: 0 0 15px rgba(255, 0, 85, 0.5) !important;
+  
+  /* 👇 [핵심] Step 1과 똑같이 위 50px, 아래 40px 띄움 */
+  margin-top: 50px !important; 
+  margin-bottom: 40px !important; 
 }
 
-/* 메인 폼 박스: 홈의 카드 스타일 계승 */
+/* 3순위: 폼 박스 */
 .signup-wrap #signupFormStep2 {
-    background-color: #0a0a0a;
-    border: 1px solid #ff0055;
-    padding: 40px;
-    width: 480px; /* 입력 요소가 많으므로 약간 넓게 */
-    border-radius: 16px;
-    box-shadow: 0 0 30px rgba(255, 0, 85, 0.1);
-    box-sizing: border-box;
-    position: relative;
+  order: 3 !important;
+  width: 100% !important;
+  position: relative !important;
+  background: linear-gradient(180deg, rgba(0,242,255,0.06), rgba(255,43,214,0.04)), #07070f !important;
+  border: 1px solid rgba(0,242,255,0.38) !important;
+  padding: 50px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 0 30px rgba(0,242,255,0.18) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
-/* 장식용 ✕ 버튼 (홈 화면 스타일) */
-.signup-wrap #signupFormStep2::after {
-    content: '×';
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    color: #ff0055;
-    font-size: 22px;
-    opacity: 0.5;
-    cursor: pointer;
+/* 네온 라인 */
+.signup-wrap #signupFormStep2::before {
+  content: "" !important; position: absolute !important; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #ff0055, #00f2ff, #ff0055) !important;
+  background-size: 200% auto !important;
+  animation: neonFlow 3s linear infinite !important; z-index: 10 !important;
 }
 
-/* 레이블: 홈의 포인트 컬러(시안) 활용 */
-.signup-wrap label {
-    font-size: 0.8rem;
-    margin-bottom: 8px;
-    color: #00f2ff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: block;
-    font-weight: bold;
-}
+.signup-wrap #signupFormStep2::after { content: none !important; }
 
-/* 입력 필드 */
+/* 내부 요소 */
+.signup-wrap label { font-size: 0.8rem !important; margin-bottom: 8px !important; color: var(--cyan) !important; display: block !important; font-weight: bold !important; }
+
 .signup-wrap input[type="text"], 
 .signup-wrap input[type="date"] {
-    background: #111;
-    border: 1px solid #222;
-    color: #ffffff;
-    padding: 12px;
-    margin-bottom: 15px;
-    width: 100%;
-    border-radius: 8px;
-    box-sizing: border-box;
-    outline: none;
-    transition: 0.3s;
+  width: 100% !important;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
+  background: #0b0b14 !important;
+  border: 1px solid #333 !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
 }
+.signup-wrap input:focus { border-color: var(--cyan) !important; box-shadow: 0 0 10px rgba(0, 242, 255, 0.3) !important; }
 
-.signup-wrap input:focus {
-    border-color: #00f2ff;
-    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
-}
-
-/* 성별 선택 그룹 */
 .signup-wrap .gender-group {
-    margin: 10px 0 20px 0;
-    padding: 15px;
-    background: #050505;
-    border-radius: 8px;
-    border: 1px solid #222;
-    display: flex;
-    justify-content: space-around;
+  display: flex !important; justify-content: space-around !important; padding: 15px !important;
+  background: #050505 !important; border: 1px solid #333 !important; border-radius: 8px !important; margin-bottom: 20px !important;
+}
+.signup-wrap .gender-group label { margin: 0 !important; cursor: pointer !important; color: #aaa !important; }
+
+/* 버튼 */
+.signup-wrap button {
+  width: 100% !important; padding: 18px !important; background: var(--cyan) !important;
+  color: #000 !important; font-weight: 900 !important; border: none !important;
+  border-radius: 8px !important; cursor: pointer !important; text-transform: uppercase !important;
+  box-shadow: 0 0 15px rgba(0,242,255,0.3) !important; transition: 0.3s !important;
+}
+.signup-wrap button:hover { background: var(--hot) !important; color: #fff !important; box-shadow: 0 0 20px var(--hot) !important; }
+
+/* 스킵 버튼 */
+.signup-wrap button:last-child {
+    background: transparent !important; border: 1px solid #555 !important; color: #888 !important; box-shadow: none !important; margin-top: 10px !important;
+}
+.signup-wrap button:last-child:hover { border-color: var(--cyan) !important; color: var(--cyan) !important; }
+
+/* 진행 바 폰트 (Step 1과 동일) */
+.signup-wrap .step-num { font-family: 'Courier Prime', monospace !important; font-size: 18px !important; font-weight: bold !important; color: var(--cyan) !important; text-shadow: 0 0 10px #00f2ff !important; }
+.signup-wrap .progress-step.active .step-num { color: #ff0055 !important; text-shadow: 0 0 15px #ff0055 !important; }
+.signup-wrap .step-text { font-size: 10px !important; margin-top: 8px !important; color: #fff !important; display: block !important; }
+.signup-wrap .progress-line { width: 60px !important; height: 1px !important; background: rgba(255, 255, 255, 0.2) !important; margin-bottom: 15px !important; }
+
+/* =========================================================
+   [CYBERPUNK ACCENT] (기존 틀/레이아웃 유지)
+   - 테두리/버튼/포커스/진행바만 화려하게
+   - 선택자 범위는 signup-wrap 내부로 제한
+========================================================= */
+
+:root{
+  --np:#ff2bd6;     /* neon pink */
+  --nc:#00f2ff;     /* neon cyan */
+  --nv:#7a2bff;     /* neon violet */
+  --glass: rgba(255,255,255,0.03);
 }
 
-.signup-wrap .gender-group label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 0;
-    color: #aaa;
-    text-transform: none;
-    font-weight: normal;
+/* 공통 패널: 폼 박스/박스류 테두리 글로우 */
+.signup-wrap #signupForm,
+.signup-wrap #signupFormStep2,
+.signup-wrap .signup-box{
+  border-color: rgba(0,242,255,0.55) !important;
+  box-shadow:
+    0 0 18px rgba(0,242,255,0.18),
+    0 0 38px rgba(255,0,85,0.10),
+    inset 0 0 18px rgba(0,242,255,0.10) !important;
 }
 
-.signup-wrap input[type="radio"] {
-    accent-color: #ff0055;
-    transform: scale(1.1);
+/* 패널에 은은한 스캔/노이즈 레이어 (아주 약하게) */
+.signup-wrap #signupForm::after,
+.signup-wrap #signupFormStep2::after,
+.signup-wrap .signup-box::after{
+  content:"" !important;
+  position:absolute !important;
+  inset:0 !important;
+  pointer-events:none !important;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,242,255,0.00) 0px,
+      rgba(0,242,255,0.00) 2px,
+      rgba(0,242,255,0.03) 3px
+    ),
+    linear-gradient(135deg, rgba(255,43,214,0.05), rgba(0,242,255,0.03)) !important;
+  mix-blend-mode: screen !important;
+  opacity: 0.55 !important;
 }
 
-/* 버튼 그룹: 그리드 대신 플렉스나 단일 열 그리드로 변경 */
-.signup-wrap .btn-group {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column; /* 세로로 쌓기 */
-    gap: 12px;
+/* 입력창 더 네온스럽게 */
+.signup-wrap input{
+  border-color: rgba(255,0,85,0.40) !important;
+  box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)), var(--input) !important;
+}
+.signup-wrap input:focus{
+  border-color: rgba(0,242,255,0.95) !important;
+  box-shadow:
+    0 0 0 3px rgba(0,242,255,0.12),
+    0 0 16px rgba(0,242,255,0.35) !important;
 }
 
-/* 첫 번째 버튼 (다음 단계로 - 핑크) */
-.signup-wrap .btn-group button:first-child {
-    background-color: #ff0055;
-    border: none;
-    box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
-    width: 100%; /* 가로 꽉 채우기 */
-    /* span 2는 제거해도 무방 (flex 환경) */
+/* 버튼: 그라데이션 + 글로우 + 라이트 스윕 */
+.signup-wrap button,
+.signup-box button{
+  position: relative !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0,242,255,0.70) !important;
+  background: linear-gradient(135deg, var(--nc), var(--nv)) !important;
+  box-shadow:
+    0 0 14px rgba(0,242,255,0.30),
+    0 0 30px rgba(255,0,85,0.12) !important;
+  transform: translateZ(0) !important;
 }
 
-/* 두 번째 버튼 (나중에 하기 - 다크/테두리) */
-.signup-wrap .btn-group button:last-child {
-    background: transparent;
-    border: 1px solid #333;
-    color: #888;
-    font-size: 14px;
-    width: 100%; /* 가로 꽉 채우기 */
+/* 버튼 위에 빛이 쓱 지나가는 효과 */
+.signup-wrap button::before,
+.signup-box button::before{
+  content:"" !important;
+  position:absolute !important;
+  top:-20% !important;
+  left:-60% !important;
+  width:60% !important;
+  height:140% !important;
+  background: linear-gradient(90deg, rgba(255,255,255,0.00), rgba(255,255,255,0.25), rgba(255,255,255,0.00)) !important;
+  transform: rotate(18deg) !important;
+  opacity: 0.0 !important;
+  transition: 0.35s ease !important;
 }
 
-.signup-wrap .btn-group button {
-    color: #ffffff;
-    padding: 16px;
-    border-radius: 8px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: 0.3s;
-}
-/* 진행 바 컨테이너 */
-.signup-wrap .progress-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 40px;
-    gap: 10px;
+.signup-wrap button:hover:not(:disabled),
+.signup-box button:hover:not(:disabled){
+  background: linear-gradient(135deg, var(--np), var(--nc)) !important;
+  box-shadow:
+    0 0 18px rgba(0,242,255,0.55),
+    0 0 45px rgba(255,0,85,0.25) !important;
+  transform: translateY(-2px) !important;
 }
 
-/* 단계 아이템 (01, 02, 03) */
-.signup-wrap .progress-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    opacity: 0.3; /* 평소에는 흐리게 */
-    transition: 0.5s;
+.signup-wrap button:hover:not(:disabled)::before,
+.signup-box button:hover:not(:disabled)::before{
+  left:110% !important;
+  opacity: 0.9 !important;
 }
 
-/* 현재 활성화된 단계 */
-.signup-wrap .progress-step.active {
-    opacity: 1;
+/* 보조 버튼(투명/테두리형)은 기존 의도 유지하면서 네온만 추가 */
+#btnSendMail, #authDiv button,
+.signup-wrap button:last-child,
+.signup-box button.skip{
+  background: rgba(0,0,0,0.00) !important;
+  border: 1px solid rgba(0,242,255,0.75) !important;
+  color: var(--nc) !important;
+  box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+}
+#btnSendMail:hover, #authDiv button:hover,
+.signup-wrap button:last-child:hover,
+.signup-box button.skip:hover{
+  background: rgba(0,242,255,0.10) !important;
+  box-shadow: 0 0 16px rgba(0,242,255,0.25) !important;
+  transform: translateY(-1px) !important;
 }
 
-.signup-wrap .step-num {
-    font-family: 'Courier Prime', monospace;
-    font-size: 18px;
-    font-weight: bold;
-    color: #00f2ff; /* 시안 색상 */
-    text-shadow: 0 0 10px #00f2ff;
+/* 진행바: 활성 step 더 강하게 */
+.signup-wrap .progress-step.active .step-num{
+  text-shadow:
+    0 0 10px rgba(255,0,85,0.55),
+    0 0 20px rgba(0,242,255,0.25) !important;
 }
-
-.signup-wrap .progress-step.active .step-num {
-    color: #ff0055; /* 현재 단계는 핑크로 강조 */
-    text-shadow: 0 0 15px #ff0055;
+.signup-wrap .progress-line{
+  background: linear-gradient(90deg, rgba(255,0,85,0.45), rgba(0,242,255,0.45)) !important;
+  box-shadow: 0 0 10px rgba(0,242,255,0.18) !important;
 }
-
-.signup-wrap .step-text {
-    font-size: 10px;
-    letter-spacing: 2px;
-    margin-top: 5px;
-    color: #fff;
-}
-
-/* 연결 라인 */
-.signup-wrap .progress-line {
-    width: 50px;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin-bottom: 15px; /* 텍스트 높이 고려 */
+/* 닉네임 메시지 스타일 수정 */
+#nickMsg {
+  font-size: 0.75rem !important; /* 글자 크기를 살짝 줄임 */
+  margin-top: -15px !important;  /* 입력창 바로 아래로 끌어올림 (값은 조절 가능) */
+  margin-bottom: 15px !important; /* 다음 항목과의 간격 확보 */
+  font-weight: 500 !important;
+  padding-left: 5px !important;
 }

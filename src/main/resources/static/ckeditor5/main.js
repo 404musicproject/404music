@@ -1,189 +1,43 @@
-/**
- * This configuration was generated using the CKEditor 5 Builder. You can modify it anytime using this link:
- * https://ckeditor.com/ckeditor-5/builder/#installation/NoNgNARATAdAnDAjBSBmALHdB2ADL7EAVnUShBGwA490K9sjci4q4pc4iqKoaoUEANYB7FLjDBEYCROnyAupAAmVZeigBjAQqA==
- */
+// main.js
 
-const {
-	ClassicEditor,
-	Autosave,
-	Essentials,
-	Paragraph,
-	ImageUtils,
-	ImageEditing,
-	Bold,
-	Italic,
-	FontBackgroundColor,
-	FontColor,
-	FontSize,
-	Highlight,
-	Heading,
-	Link,
-	AutoLink,
-	BlockQuote,
-	HorizontalLine,
-	Indent,
-	Alignment,
-	ImageInline,
-	ImageToolbar,
-	ImageBlock,
-	ImageInsertViaUrl,
-	AutoImage,
-	ImageStyle,
-	List,
-	TodoList,
-	Table,
-	TableToolbar,
-	PlainTableOutput
-} = window.CKEDITOR;
+const LICENSE_KEY = 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE4MDA4MzUxOTksImp0aSI6ImQ0ZTI0NGI0LTZkODQtNDlhOS1iN2FkLTA2MWM1MjAwNjA4MCIsImxpY2Vuc2VkSG9zdHMiOlsiMTI3LjAuMC4xIiwibG9jYWxob3N0IiwiMTkyLjE2OC4qLioiLCIxMC4qLiouKiIsIjE3Mi4qLiouKiIsIioudGVzdCIsIioubG9jYWxob3N0IiwiKi5sb2NhbCJdLCJ1c2FnZUVuZHBvaW50IjoiaHR0cHM6Ly9wcm94eS1ldmVudC5ja2VkaXRvci5jb20iLCJkaXN0cmlidXRpb25DaGFubmVsIjpbImNsb3VkIiwiZHJ1cGFsIl0sImxpY2Vuc2VUeXBlIjoiZGV2ZWxvcG1lbnQiLCJmZWF0dXJlcyI6WyJEUlVQIiwiRTJQIiwiRTJXIl0sInJlbW92ZUZlYXR1cmVzIjpbIlBCIiwiUkYiLCJTQ0giLCJUQ1AiLCJUTCIsIlRDUiIsIklSIiwiU1VBIiwiQjY0QSIsIkxQIiwiSEUiLCJSRUQiLCJQRk8iLCJXQyIsIkZBUiIsIkJLTSIsIkZQSCIsIk1SRSJdLCJ2YyI6IjlkOGEwMzk5In0.pfQoAuy4ny8jmSg93ORw5sPgludqtVcApEtgFc5Kw5FJbiejFgpfnrD5bBZcHR719PMQSRJ4vDpx9bU4GkEj2g';
 
-const LICENSE_KEY =
-	'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3NzA1MDg3OTksImp0aSI6IjVmMGMyYzdhLTkyZDktNGYyOC05OTc4LTg2OWU1YjA0ZGFmNiIsInVzYWdlRW5kcG9pbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiLCJzaCJdLCJ3aGl0ZUxhYmVsIjp0cnVlLCJsaWNlbnNlVHlwZSI6InRyaWFsIiwiZmVhdHVyZXMiOlsiKiJdLCJ2YyI6IjA5NTZhNzAxIn0.DiArpz7DpIQIRdh-S03RJahicYeiXMS9WCNE27m6QeI7TkOL3H1b58RUc3Jrdv5PaOgGx8wN3xAyrfY9oY7o3A';
-
-const editorConfig = {
-	toolbar: {
-		items: [
-			'undo',
-			'redo',
-			'|',
-			'heading',
-			'|',
-			'fontSize',
-			'fontColor',
-			'fontBackgroundColor',
-			'|',
-			'bold',
-			'italic',
-			'|',
-			'horizontalLine',
-			'link',
-			'insertImageViaUrl',
-			'insertTable',
-			'highlight',
-			'blockQuote',
-			'|',
-			'alignment',
-			'|',
-			'bulletedList',
-			'numberedList',
-			'todoList',
-			'outdent',
-			'indent'
-		],
-		shouldNotGroupWhenFull: false
-	},
-	plugins: [
-		Alignment,
-		AutoImage,
-		AutoLink,
-		Autosave,
-		BlockQuote,
-		Bold,
-		Essentials,
-		FontBackgroundColor,
-		FontColor,
-		FontSize,
-		Heading,
-		Highlight,
-		HorizontalLine,
-		ImageBlock,
-		ImageEditing,
-		ImageInline,
-		ImageInsertViaUrl,
-		ImageStyle,
-		ImageToolbar,
-		ImageUtils,
-		Indent,
-		Italic,
-		Link,
-		List,
-		Paragraph,
-		PlainTableOutput,
-		Table,
-		TableToolbar,
-		TodoList
-	],
-	fontSize: {
-		options: [10, 12, 14, 'default', 18, 20, 22],
-		supportAllValues: true
-	},
-	heading: {
-		options: [
-			{
-				model: 'paragraph',
-				title: 'Paragraph',
-				class: 'ck-heading_paragraph'
-			},
-			{
-				model: 'heading1',
-				view: 'h1',
-				title: 'Heading 1',
-				class: 'ck-heading_heading1'
-			},
-			{
-				model: 'heading2',
-				view: 'h2',
-				title: 'Heading 2',
-				class: 'ck-heading_heading2'
-			},
-			{
-				model: 'heading3',
-				view: 'h3',
-				title: 'Heading 3',
-				class: 'ck-heading_heading3'
-			},
-			{
-				model: 'heading4',
-				view: 'h4',
-				title: 'Heading 4',
-				class: 'ck-heading_heading4'
-			},
-			{
-				model: 'heading5',
-				view: 'h5',
-				title: 'Heading 5',
-				class: 'ck-heading_heading5'
-			},
-			{
-				model: 'heading6',
-				view: 'h6',
-				title: 'Heading 6',
-				class: 'ck-heading_heading6'
-			}
-		]
-	},
-	image: {
-		toolbar: ['imageStyle:inline', 'imageStyle:wrapText', 'imageStyle:breakText']
-	},
-	language: 'ko',
-	licenseKey: LICENSE_KEY,
-	link: {
-		addTargetToExternalLinks: true,
-		defaultProtocol: 'https://',
-		decorators: {
-			toggleDownloadable: {
-				mode: 'manual',
-				label: 'Downloadable',
-				attributes: {
-					download: 'file'
-				}
-			}
-		}
-	},
-	menuBar: {
-		isVisible: true
-	},
-	placeholder: 'Type or paste your content here!',
-	table: {
-		contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-	}
-};
-
-// 수정 코드:
-ClassicEditor.create(document.querySelector('#editor'), editorConfig)
+CKEDITOR.ClassicEditor
+    .create(document.querySelector('#editor'), {
+        licenseKey: LICENSE_KEY,
+        language: 'ko',
+        // 1. 툴바 설정
+        toolbar: [
+            'undo', 'redo', '|', 'heading', '|', 
+            'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+            'bold', 'italic', 'strikethrough', 'underline', '|',
+            'alignment', 'link', 'uploadImage', 'insertTable', 'highlight', '|',
+            'bulletedList', 'numberedList', 'todoList', '|', 'outdent', 'indent'
+        ],
+        // 2. 서버 업로드 설정 (SimpleUpload)
+        // 만약 서버 처리가 귀찮다면 이 부분을 지우고 removePlugins에서 Base64UploadAdapter를 빼세요.
+        simpleUpload: {
+            uploadUrl: '/support/Notification', 
+            withCredentials: true
+        },
+        // 3. 충돌 플러그인 제거
+        removePlugins: [
+            'CKBox', 'CKFinder', 'EasyImage', 
+            // 'Base64UploadAdapter', // 서버 전송 대신 바로 보이게 하려면 이 줄을 주석 처리하세요.
+            'TableOfContents', 'FormatPainter', 'Template', 'SlashCommand',
+            'PasteFromOfficeEnhanced', 'CaseChange', 'AIAssistant', 'AIAssistantUI',
+            'AIAdapter', 'DocumentOutline', 'Pagination', 'WProofreader',
+            'RealTimeCollaborativeComments', 'RealTimeCollaborativeTrackChanges',
+            'RealTimeCollaborativeRevisionHistory', 'PresenceList', 'Comments',
+            'TrackChanges', 'TrackChangesData', 'RevisionHistory',
+            'CommentsRepository', 'RealTimeCollaborationClient',
+            'ExportPdf', 'ExportWord'
+        ]
+    })
     .then(editor => {
-        window.editor = editor; // JSP에서 접근할 수 있도록 window 객체에 저장
+        window.editor = editor;
+        console.log('에디터 초기화 및 업로드 준비 완료!');
     })
     .catch(error => {
-        console.error(error);
+        console.error('에디터 초기화 실패:', error);
     });
-

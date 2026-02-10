@@ -68,18 +68,21 @@
     </form>
 </div>
 
-<script src="https://cdn.ckeditor.com/ckeditor5/47.4.0/ckeditor5.umd.js" crossorigin></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/47.4.0/translations/ko.umd.js" crossorigin></script>
-<!-- main.js에서 window.editor를 설정한다고 가정 -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/super-build/ckeditor.js"></script>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/translations/ko.js"></script>
+
 <script src="/ckeditor5/main.js"></script>
 
 <script>
-    // 에디터 인스턴스가 생성될 때까지 기다렸다가 기존 데이터를 넣어줍니다.
+    // 에디터 초기 데이터 주입 및 전송 스크립트
     const checkEditor = setInterval(() => {
         if (window.editor) {
-            // 서버에서 넘어온 기존 content를 에디터에 주입
-            // (EL의 줄바꿈 에러 방지를 위해 백틱(`) 사용 권장)
-            window.editor.setData(`${notice.NContent}`);
+            // 서버에서 넘어온 기존 내용을 에디터에 주입
+            // 주의: Java 객체의 필드명이 NContent인지 nContent인지 확인하세요. 
+            // EL 데이터에 HTML 태그가 포함되어 있으므로 따옴표 보다는 백틱(`)이 안전합니다.
+            const existingContent = `${notice.NContent}`; 
+            window.editor.setData(existingContent);
             clearInterval(checkEditor);
         }
     }, 100);
@@ -92,9 +95,10 @@
                 e.preventDefault();
                 return;
             }
+            // hidden input에 에디터 데이터 담기
             document.getElementById('nContent').value = data;
         }
     });
-</script>		
+</script>	
 </body>
 </html>

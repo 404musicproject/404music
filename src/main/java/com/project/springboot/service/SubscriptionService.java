@@ -40,4 +40,7 @@ public class SubscriptionService {
         
         subscriptionDAO.insertPaymentLog(log);
     }
+    public boolean isUserPremium(int uNo) {
+        return subscriptionDAO.checkActiveSubscription(uNo) > 0;
+    }
 }

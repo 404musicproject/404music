@@ -59,5 +59,17 @@ public class UserDTO {
     public String getuNick() {
         return uNick;
     }
+ // UserDTO.java 안에 추가
+    public String getuAuth() {
+        return uAuth;
+    }
+    public String getUAuth() {
+        return uAuth;
+    }
+
+    // JSP EL (${loginUser.uauth})이 소문자로 접근할 때를 대비
+    public String getUauth() {
+        return uAuth;
+    }
 }
 

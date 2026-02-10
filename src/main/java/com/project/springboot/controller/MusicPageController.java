@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.project.springboot.dao.IMusicDAO;
+import com.project.springboot.dao.ISubscriptionDAO;
 import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
 import com.project.springboot.dto.MusicDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
 import com.project.springboot.service.RecommendationService;
+import com.project.springboot.service.SubscriptionService;
 
 // 스프링 부트 버전에 따라 아래 import 중 맞는 것을 사용하세요.
 // import javax.servlet.http.HttpSession; // 구버전 (Spring Boot 2.x)
@@ -33,7 +35,12 @@ public class MusicPageController {
     // =====================================================
     // 0. 검색
     // =====================================================
-    		
+    @Autowired
+    private SubscriptionService subscriptionService;
+    
+    @Autowired
+    private ISubscriptionDAO subscriptionDAO;	
+    
     @GetMapping("/musicSearch")
     public String searchPage(
             @RequestParam(value = "searchType", required = false, defaultValue = "TITLE") String searchType,
@@ -92,15 +99,20 @@ public class MusicPageController {
         UserDTO user = (UserDTO) session.getAttribute("loginUser");
         Long uNo = (user != null) ? (long)user.getUNo() : 0L; 
         
-        // 1. DB에서 노래가 있는 실제 상위 태그들을 넉넉히 가져옴 (예: 15개)
+        // 2. 서비스의 메서드(isUserPremium)를 사용하여 구독 상태 확인
+        boolean isSubscribed = false;
+        if (uNo > 0) {
+            isSubscribed = subscriptionService.isUserPremium(uNo.intValue()); //
+        }
+        model.addAttribute("isSubscribed", isSubscribed);
+
+        // 2. 추천 태그 가져오기 (비회원이나 미구독자도 기본 추천은 보이게 유지)
         List<String> allTopTags = recommendationService.getUserTopTags(uNo);
         
-        // 2. 분류 기준 정의 (DB의 g_name과 정확히 일치해야 함)
         List<String> contextRef = Arrays.asList("카페/작업", "바다", "헬스장", "공원/피크닉", "산/등산", "맑음", "흐림", "비 오는 날", "눈 오는 날");
         
-        // 3. 섹션별로 분류
-        List<String> homeContextTags = new ArrayList<>(); // 📍 NOW & HERE
-        List<String> homeMoodTags = new ArrayList<>();    // ✨ FOR YOUR MOOD
+        List<String> homeContextTags = new ArrayList<>(); 
+        List<String> homeMoodTags = new ArrayList<>();    
         
         for (String tag : allTopTags) {
             if (contextRef.contains(tag)) {
@@ -110,7 +122,6 @@ public class MusicPageController {
             }
         }
         
-        // 만약 데이터가 너무 없으면 기본값이라도 넣어줌 (DB에 존재하는 이름 기준)
         if (allTopTags.isEmpty()) {
             homeMoodTags.addAll(Arrays.asList("행복한 기분", "새벽 감성", "휴식"));
             homeContextTags.addAll(Arrays.asList("카페/작업", "맑음"));

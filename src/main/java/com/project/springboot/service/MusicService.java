@@ -4,7 +4,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.unit.Fuzziness;
+import org.elasticsearch.client.indices.AnalyzeRequest;
+import org.elasticsearch.client.indices.AnalyzeResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -33,6 +33,7 @@ import com.project.springboot.dto.AlbumDTO;
 import com.project.springboot.dto.ArtistDTO;
 import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
+import com.project.springboot.dto.MusicLyricsDTO;
 
 @Service
 public class MusicService {
@@ -144,6 +145,7 @@ public class MusicService {
         }
     }
     // [2단계] 상세: 재생 버튼 클릭 시 가사/특징 실시간 수집 (Lazy Loading)
+ // [2단계] 상세: 재생 버튼 클릭 시 가사/특징/아티스트 정보 실시간 수집 (Lazy Loading)
     @Transactional
     public Map<String, Object> getOrFetchMusicDetail(int mNo) {
         MusicDTO musicInfo = musicDAO.selectMusicByNo(mNo);
@@ -154,6 +156,10 @@ public class MusicService {
         result.put("a_name", musicInfo.getA_name());
         
         String spotifyId = musicInfo.getIsrc_code();
+
+        // [중요] 변수를 try 블록 밖에서 선언해야 에러가 발생하지 않습니다.
+        Map<String, Object> lyrics = null;
+        Map<String, Object> feature = null;
 
         try {
             // 1. Spotify ID가 없다면 검색해서 채워넣기
@@ -167,7 +173,7 @@ public class MusicService {
 
             if (spotifyId != null && !spotifyId.isEmpty()) {
                 // 2. 가사 수집 (DB에 없을 때만)
-                Map<String, Object> lyrics = musicDAO.selectLyrics(mNo);
+                lyrics = musicDAO.selectLyrics(mNo);
                 if (lyrics == null) {
                     String lyricsText = spotifyApiService.getLyrics(spotifyId);
                     if (lyricsText != null) {
@@ -182,7 +188,7 @@ public class MusicService {
                 if (lyrics != null) result.putAll(lyrics);
 
                 // 3. 오디오 특징 수집 (DB에 없을 때만)
-                Map<String, Object> feature = musicDAO.selectMusicFeature(mNo);
+                feature = musicDAO.selectMusicFeature(mNo);
                 if (feature == null) {
                     Map<String, Object> raw = spotifyApiService.getTrackFeatures(spotifyId);
                     if (raw != null) {
@@ -192,15 +198,41 @@ public class MusicService {
                 }
                 if (feature != null) result.putAll(feature);
 
-                // 4. ES 업데이트 (가사/특징 최신화)
-                updateElasticsearchDetail(mNo, feature, lyrics, musicInfo.getA_genres());
+             // 4. [수정] 아티스트 상세 정보 수집 (장르, 이미지, 팔로워 갱신)
+                if (musicInfo.getA_genres() == null || musicInfo.getA_genres().equals("Unknown")) {
+                    String artistSpotifyId = spotifyApiService.searchArtistId(musicInfo.getA_name());
+                    if (artistSpotifyId != null) {
+                        Map<String, Object> artistDetails = spotifyApiService.getArtistFullDetails(artistSpotifyId);
+                        if (artistDetails != null) {
+                            ArtistDTO artistDto = new ArtistDTO();
+                            artistDto.setA_no(musicInfo.getA_no());
+                            artistDto.setA_genres((String) artistDetails.get("genres"));
+                            artistDto.setA_image((String) artistDetails.get("imageUrl"));
+
+                            // ★ 팔로워 수 저장 추가 (Long 타입 변환 처리)
+                            if (artistDetails.get("followers") != null) {
+                                // Spotify API 응답값이 Integer나 Long일 수 있으므로 안전하게 변환
+                                long followers = Long.parseLong(artistDetails.get("followers").toString());
+                                artistDto.setA_followers(followers);
+                            }
+
+                            musicDAO.updateArtistDetails(artistDto);
+                            musicInfo.setA_genres(artistDto.getA_genres()); // ES 업데이트용 데이터 갱신
+                            System.out.println(">>> [DB 업데이트] " + musicInfo.getA_name() + "의 장르/팔로워 저장 완료");
+                        }
+                    }
+                }
             }
         } catch (Exception e) {
             System.err.println("상세 수집 에러: " + e.getMessage());
         }
+
+        // 5. 수집된 모든 정보(가사, 특징, 장르)를 ES에 최종 업데이트
+        // 변수가 스코프 밖에 선언되어 있어 이제 정상적으로 참조됩니다.
+        updateElasticsearchDetail(mNo, feature, lyrics, musicInfo.getA_genres());
+
         return result;
     }
-    
 
     // ES 업데이트 통합 메서드 (상세 수집 시 호출)
     private void updateElasticsearchDetail(int mNo, Map<String, Object> feature, Map<String, Object> lyrics, String genres) {
@@ -242,35 +274,51 @@ public class MusicService {
         }
     }
     
+    
+    public List<String> getAnalyzeTokens(String keyword) {
+        try {
+            // music_index에 설정된 ko_search_analyzer(또는 동의어 설정이 된 분석기)를 사용
+            AnalyzeRequest request = AnalyzeRequest.withIndexAnalyzer("music_index", "ko_search_analyzer", keyword);
+            AnalyzeResponse response = esClient.indices().analyze(request, RequestOptions.DEFAULT);
+
+            return response.getTokens().stream()
+                    .map(AnalyzeResponse.AnalyzeToken::getTerm)
+                    .distinct()
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("분석기 토큰 추출 실패: " + e.getMessage());
+            return Arrays.asList(keyword);
+        }
+    }
+    
     // [중요] ES 검색 로직 개선 (ITZY 검색 안되는 문제 해결)
     public List<Map<String, Object>> esSuggest(String keyword, String searchType, int size) {
         if (keyword == null || keyword.trim().length() < 1) return new ArrayList<>();
         String q = keyword.trim();
-        if (searchType == null) searchType = "ALL";
 
         try {
             SearchRequest request = new SearchRequest("music_index");
             SearchSourceBuilder source = new SearchSourceBuilder();
-            source.size(size > 0 ? size : 10);
+            source.size(size > 0 ? size : 15);
 
+         // esSuggest 메서드 내부 수정
             BoolQueryBuilder qb = QueryBuilders.boolQuery();
 
-            // [핵심] searchType에 따라 쿼리를 날릴 필드를 결정합니다.
-            if (searchType.equals("ARTIST")) {
-                qb.should(QueryBuilders.matchPhraseQuery("a_name", q).boost(100.0f));
-                qb.should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
-            } else if (searchType.equals("TITLE")) {
-                qb.should(QueryBuilders.matchPhraseQuery("m_title", q).boost(100.0f));
-                qb.should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
-            } else if (searchType.equals("ALBUM")) {
-                qb.should(QueryBuilders.matchPhraseQuery("b_title", q).boost(100.0f));
-            } else {
-                // ALL (전체 검색) - 기존 로직 유지
-                qb.should(QueryBuilders.matchPhraseQuery("a_name", q).boost(100.0f));
-                qb.should(QueryBuilders.matchPhraseQuery("m_title", q).boost(80.0f));
-                qb.should(QueryBuilders.matchQuery("a_name", q).fuzziness(Fuzziness.AUTO).boost(40.0f));
-                qb.should(QueryBuilders.matchQuery("m_title", q).fuzziness(Fuzziness.AUTO).boost(30.0f));
-            }
+            // 1. [아티스트 최우선] 아티스트명이 입력값으로 시작하는 경우 (가장 높은 점수)
+            qb.should(QueryBuilders.matchPhrasePrefixQuery("a_name", q).boost(150.0f)); 
+
+            // 2. [제목 최우선] 노래 제목이 입력값으로 시작하는 경우
+            qb.should(QueryBuilders.matchPhrasePrefixQuery("m_title", q).boost(100.0f));
+
+            // 3. [구문 일치] 아티스트명이나 제목에 단어가 정확히 붙어서 포함된 경우
+            // "뉴" "진"이 떨어진 것보다 "뉴진스"를 우선하기 위함
+            qb.should(QueryBuilders.matchPhraseQuery("a_name", q).boost(80.0f));
+            qb.should(QueryBuilders.matchPhraseQuery("m_title", q).boost(70.0f));
+
+            // 4. [보조] 일반 검색 (가중치를 낮춰서 엉뚱한 결과가 위로 오는 걸 방지)
+            // operator(AND)를 써서 '뉴'와 '진'이 모두 있는 데이터만 필터링
+            qb.should(QueryBuilders.matchQuery("a_name", q).operator(org.elasticsearch.index.query.Operator.AND).boost(1.0f));
+            qb.should(QueryBuilders.matchQuery("m_title", q).operator(org.elasticsearch.index.query.Operator.AND).boost(1.0f));
 
             source.query(qb);
             source.fetchSource(new String[]{"m_no", "m_title", "a_name", "b_title"}, null);
@@ -291,30 +339,38 @@ public class MusicService {
     // --- 기타 보조 메서드들 ---
     
     public List<MusicDTO> getMusicListByES(String keyword, String searchType, int uNo) {
-        String normalizedKeyword = getNormalizedKeyword(keyword); 
+        // 1. 우선 현재 DB/ES에 몇 개나 있는지 확인해봅니다.
+        List<Map<String, Object>> currentResults = esSuggest(keyword, searchType, 30);
         
-        System.out.println(">>> 검색 시작: " + keyword + " -> 정규화: " + normalizedKeyword);
+        // 2. 분석기를 통해 동의어(영문명 등)를 추출합니다.
+        List<String> tokens = getAnalyzeTokens(keyword);
+        String englishName = tokens.stream()
+                .filter(t -> t.matches(".*[a-zA-Z].*"))
+                .findFirst()
+                .orElse(null);
 
-        // [수정] 원본 키워드(keyword)와 정규화 키워드(normalizedKeyword)를 모두 전달
-        List<Integer> itunesMNoList = searchAndSave(keyword, normalizedKeyword, searchType);
-
-
-        if (itunesMNoList != null && !itunesMNoList.isEmpty()) {
-            return musicDAO.selectMusicByMNoList(itunesMNoList, uNo);
+        // [핵심 로직] 
+        // 결과가 너무 적거나(10개 미만), 한글로 검색했는데 영문 동의어가 있는 경우
+        // 기존 데이터에 만족하지 말고 iTunes에서 영문명으로 데이터를 더 긁어옵니다.
+        if (currentResults.size() < 10 || englishName != null) {
+            String itunesQuery = (englishName != null) ? englishName : keyword;
+            System.out.println(">>> 데이터 보충 필요 (현재 " + currentResults.size() + "건). iTunes 검색어: " + itunesQuery);
+            
+            // itunesQuery로 긁어와서 DB에 저장 (normalizedKeyword는 가중치 정렬을 위해 원본 keyword 유지)
+            searchAndSave(itunesQuery, keyword, searchType);
+            
+            // 3. 데이터를 새로 긁어왔으니 다시 한번 ES에서 리스트를 뽑습니다.
+            currentResults = esSuggest(keyword, searchType, 30);
         }
 
-        // 2. 결과 없을 시 ES 검색 (인자 3개 전달 필수!)
-        List<Map<String, Object>> esResults = esSuggest(keyword, searchType, 30);
-        
-        if (esResults.isEmpty()) return new ArrayList<>();
-        
-        List<Integer> mNoList = esResults.stream()
+        if (currentResults.isEmpty()) return new ArrayList<>();
+
+        List<Integer> mNoList = currentResults.stream()
                 .map(m -> Integer.parseInt(m.get("m_no").toString()))
                 .collect(Collectors.toList());
-                
+
         return musicDAO.selectMusicByMNoList(mNoList, uNo);
     }
-    
     private List<Map<String, Object>> fetchItunesList(String original, String normalized, String searchType) {
         try {
             // [수정 전략]
@@ -396,36 +452,11 @@ public class MusicService {
     
  // [추가] Elasticsearch를 이용한 키워드 정규화 (동의어 처리)
     public String getNormalizedKeyword(String keyword) {
-        try {
-            org.elasticsearch.client.indices.AnalyzeRequest request = 
-                org.elasticsearch.client.indices.AnalyzeRequest.withIndexAnalyzer("music_index", "ko_search_analyzer", keyword);
-
-            org.elasticsearch.client.indices.AnalyzeResponse response = 
-                esClient.indices().analyze(request, RequestOptions.DEFAULT);
-
-            List<org.elasticsearch.client.indices.AnalyzeResponse.AnalyzeToken> tokens = response.getTokens();
-            if (tokens == null || tokens.isEmpty()) return keyword;
-
-            // 명시적으로 우리가 등록한 동의어(SYNONYM) 타입만 추출
-            List<String> synonyms = tokens.stream()
-                    .filter(t -> "SYNONYM".equals(t.getType()))
-                    .map(t -> t.getTerm())
-                    .collect(Collectors.toList());
-
-            if (!synonyms.isEmpty()) {
-                // 가장 긴 단어를 대표 키워드로 선택 (ex: 레벨 -> redvelvet)
-                return synonyms.stream().max(Comparator.comparingInt(String::length)).get();
-            }
-
-            // 동의어가 아니라면 (예: 인명 '강다니엘'이 'daniel'로 분석된 경우 등)
-            // 분석된 토큰을 무시하고 사용자 입력 원본(강다니엘)을 그대로 사용
-            return keyword; 
-
-        } catch (Exception e) {
-            System.err.println(">>> 키워드 정규화 실패: " + e.getMessage());
-            return keyword;
-        }
+        // 복잡한 토큰 추출 로직을 다 지우고, 원본 키워드를 그대로 반환하세요.
+        // 그래야 iTunes API가 '아이유'로 정확한 결과를 가져옵니다.
+        return keyword; 
     }
+    
  // [추가] 트렌드 음악 재생 시 로그 기록 (곡이 없으면 자동 저장)
     @Transactional
     public void recordPlayLog(String title, String artist, String imgUrl, int uNo) {
@@ -489,5 +520,27 @@ public class MusicService {
             // 이 로그가 찍히면 saveNewMusicInfo 내부 로직을 점검해야 합니다.
             System.out.println(">>> [경고] 곡 등록 시도 후에도 mNo를 가져오지 못함.");
         }
+    }
+    public MusicLyricsDTO getLyricsByMusicNo(int mNo) {
+        Map<String, Object> detail = getOrFetchMusicDetail(mNo);
+        if (detail == null) return null;
+
+        MusicLyricsDTO dto = new MusicLyricsDTO();
+        dto.setM_no(mNo);
+
+        // 가사 텍스트 추출 및 CLOB 변환
+        Object rawText = getValue(detail, "LYRICS_TEXT", "lyrics_text");
+        if (rawText instanceof java.sql.Clob) {
+            try {
+                // 기존에 만들어두신 clobToString 메서드 활용
+                dto.setLyrics_text(clobToString((java.sql.Clob) rawText));
+            } catch (Exception e) {
+                dto.setLyrics_text("가사 변환 오류");
+            }
+        } else if (rawText != null) {
+            dto.setLyrics_text(rawText.toString());
+        }
+
+        return dto;
     }
 }

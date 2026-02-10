@@ -136,7 +136,8 @@
             albumImg = albumImg.replace('100x100bb', '600x600bb').replace('100x100', '600x600');
         }
 
-        const isLiked = (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
+     // uNo가 0보다 크고(로그인 상태), 데이터상 좋아요(Y 또는 1 이상)인 경우에만 true
+        const isLiked = (uNo > 0) && (item.isLiked === 'Y' || (item.MY_LIKE && item.MY_LIKE > 0));
 
         return '<tr onclick="MusicApp.playLatestYouTube(\'' + titleForJS + '\', \'' + artistForJS + '\', \'' + albumImg + '\');" ' +
                'style="border-bottom: 1px solid #111; cursor: pointer; transition: 0.2s;">' +

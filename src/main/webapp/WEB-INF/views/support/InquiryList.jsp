@@ -195,7 +195,7 @@ body {
                   <c:if test="${isMyPost}">
                         <span class="badge-my">MY</span>
                     </c:if>
-                    <c:if test="${inq.IIsSecret == 'Y'}">🔒 </c:if>${inq.ITitle}
+                    <c:if test="${inq.IIsSecret == 'Y'}"><c:if test="${inq.IIsSecret == 'Y'}">&#128274; </c:if>${inq.ITitle} </c:if>${inq.ITitle}
                 </c:otherwise>
             </c:choose>
         </td>

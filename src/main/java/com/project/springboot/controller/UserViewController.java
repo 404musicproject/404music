@@ -3,6 +3,7 @@ package com.project.springboot.controller;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.project.springboot.dao.IUserDAO;
 import com.project.springboot.dto.UserDTO;
@@ -108,6 +111,18 @@ public class UserViewController {
     @RequestMapping("/user/Kibana")
     public String Kibana() {
     	return "user/Kibana";
+    }
+ // 비밀번호 찾기 (이메일 입력창) 열기
+    @GetMapping("/find-password")
+    public String showFindPasswordForm() {
+        return "common/Find-password"; // Find-password.jsp 열기
+    }
+
+    // 메일 링크 클릭 시 새 비밀번호 입력창 열기
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam("token") String token, Model model) {
+        model.addAttribute("token", token);
+        return "common/reset-password-form"; // reset-password-form.jsp 열기
     }
   
 }

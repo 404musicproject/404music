@@ -4,7 +4,7 @@
 <head>
 <title>404Music Admin | 새공지</title>
 <meta http-equiv="Content-Security-Policy" content="img-src 'self' * data:;">
-
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.css">
 <style>
 /* =========================
    기본 레이아웃
@@ -218,8 +218,10 @@ body {
     </form>
 </div>
 
-<script src="https://cdn.ckeditor.com/ckeditor5/47.4.0/ckeditor5.umd.js" crossorigin></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/47.4.0/translations/ko.umd.js" crossorigin></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/super-build/ckeditor.js"></script>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/translations/ko.js"></script>
+
 <script src="/ckeditor5/main.js"></script>
 
 <script>

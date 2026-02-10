@@ -18,6 +18,11 @@ public class WebSecurtyConfig {
 	@Autowired
     private com.project.springboot.service.CustomOAuth2UserService customOAuth2UserService;
 	
+	// ✅ 이 부분을 추가하세요!
+    @Autowired
+    private com.project.springboot.service.MyLoginSuccessHandler myLoginSuccessHandler;
+	
+	
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 	    return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
@@ -40,6 +45,8 @@ public class WebSecurtyConfig {
             	    .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll() 
                 .requestMatchers("/signup/**", "/api/user/guest/**", "/api/user/login", "/api/auth/**", "/verify-email").permitAll()
+                .requestMatchers("/find-password", "/reset-password").permitAll() // 화면 접근 허용
+                .requestMatchers("/api/user/find-password", "/api/user/reset-password").permitAll() // API 접근 허용
                 .requestMatchers("/", "/home","/common/**", "/guest/**","/api/music/**","/support/**","/music/**", "/artist/**", "/album/**").permitAll()
                 // ✅ 검색 결과 페이지 경로 추가
                 .requestMatchers("/musicSearch").permitAll() 
@@ -47,7 +54,8 @@ public class WebSecurtyConfig {
                 .requestMatchers("/css/**", "/js/**", "/img/**", "/img/Location/**", "/img/Tag/**", "/favicon.ico", "/ckeditor5/**", "/error").permitAll()
                 .requestMatchers("/user/**", "/api/user/update", "/api/user/update-pw", "/user/subscription").authenticated()
                 .requestMatchers("/user/mypage").hasAnyRole("USER")
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+             // authorizeHttpRequests 설정 부분 수정
+                .requestMatchers("/admin/**").hasAuthority("ADMIN") // hasRole 대신 hasAuthority 사용
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -57,6 +65,7 @@ public class WebSecurtyConfig {
                 .passwordParameter("password")
                 .defaultSuccessUrl("/", true)
                 .failureUrl("/home?loginError=true")
+                .successHandler(myLoginSuccessHandler) // ✅ 여기에 등록!
                 .permitAll()
             )
 
@@ -71,7 +80,7 @@ public class WebSecurtyConfig {
                                 HttpSession session = request.getSession(true);
                                 // SecurityContext 보관
                                 session.setAttribute("SPRING_SECURITY_CONTEXT", org.springframework.security.core.context.SecurityContextHolder.getContext());
-                                session.setMaxInactiveInterval(Integer.valueOf(0));
+                                session.setMaxInactiveInterval(Integer.valueOf(3600));
 
                                 Boolean isUpdateMode = (Boolean) session.getAttribute("isUpdateMode");
                                 if (Boolean.TRUE.equals(isUpdateMode)) {

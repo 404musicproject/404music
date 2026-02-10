@@ -1,5 +1,4 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" buffer="16kb" autoFlush="true" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,7 +65,7 @@
     /* iframe 설정 */
     .kibana-iframe {
         width: 100%;
-        height:2150px; 
+        height: 2500px; 
         border: none;
         border-radius: 10px;
         background-color: #1a1b1e; 
@@ -79,32 +78,18 @@
 
 <main>
     <div class="kibana-wrapper">
-        <a href="${pageContext.request.contextPath}/" class="back-button">
-             <i class="fas fa-arrow-left"></i> BACK TO ARCHIVE
-        </a>
 
-       <%-- 기존 코드를 아래와 같이 수정하여 값이 없는 경우 0으로 명확히 처리 --%>
-<c:set var="uNo" value="${(not empty loginUser and not empty loginUser.uNo) ? loginUser.uNo : 0}" />
-        <c:set var="kibanaBase" value="http://192.168.10.46:5601/app/dashboards#/view/1ca29f40-0415-11f1-bc41-9b080519635a?embed=true&_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-7d,to:now))" />
+		<a href="${pageContext.request.contextPath}/" class="back-button">
+		    <i class="fas fa-arrow-left"></i> BACK TO HOME
+		</a>
 
-       <%-- 현재 시간을 밀리초 단위로 가져옵니다 --%>
-		<c:set var="now" value="<%= System.currentTimeMillis() %>" />
-		
-		<c:choose>
-		    <c:when test="${uNo != 0}">
-		        <%-- 필터 뒤에 &cache=${now} 를 추가하여 매번 고유한 URL을 생성합니다 --%>
-		        <c:set var="filter" value="&_a=(query:(match_phrase:(u_no:${uNo})))&cache=${now}" />
-		        <c:set var="finalSrc" value="${kibanaBase}${filter}" />
-		    </c:when>
-		    <c:otherwise>
-		        <c:set var="finalSrc" value="${kibanaBase}&cache=${now}" />
-		    </c:otherwise>
-		</c:choose>
-        <iframe id="personalKibana" class="kibana-iframe" src="${finalSrc}"></iframe>
+		    <iframe 
+		    class="kibana-iframe"
+		    src="http://192.168.10.46:5601/app/dashboards#/view/45e96950-018c-11f1-9d3e-5fb803ff8476?embed=true&_g=(filters%3A!()%2CrefreshInterval%3A(pause%3A!t%2Cvalue%3A0)%2Ctime%3A(from%3Anow-7d%2Cto%3Anow))">
+		</iframe>
     </div>
 </main>
 
-<%-- 하단의 <script> block은 이제 필요 없으므로 삭제하세요! --%>
 <footer><jsp:include page="/WEB-INF/views/common/Footer.jsp" /></footer>
 
 </html>

@@ -59,4 +59,11 @@
         WHERE u_no = #{param1}
           AND s_cancel_reserved = 'T'
     </update>
+    <select id="checkActiveSubscription" resultType="int">
+	    SELECT COUNT(*) 
+	    FROM subscriptions 
+	    WHERE u_no = #{uNo} 
+	      AND s_status = 'ACTIVE' 
+	      AND s_end_date > SYSDATE
+	</select>
 </mapper>

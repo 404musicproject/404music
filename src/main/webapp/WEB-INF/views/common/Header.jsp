@@ -6,9 +6,9 @@
 <head>
 <meta charset="UTF-8">
 <title>404Music | Header</title>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/ToastMessage.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="/js/validateForm.js"></script>
 <style type="text/css">
 /* =========================
    HEADER 기본 레이아웃
@@ -25,7 +25,9 @@
     position: sticky;
     top: 0;
     z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
     border-bottom: 1px solid #2a2a2a;
+    transition: all 0.3s ease-in-out;
 }
 
 /* =========================
@@ -41,6 +43,7 @@
     height: 55px;
     width: auto;
     transition: all 0.3s ease;
+    transition: height 0.3s ease-in-out;
 }
 .header-logo:hover {
     transform: scale(1.05);
@@ -59,6 +62,20 @@
 
 /* ✅ [추가] 자동완성 박스 absolute 기준점 (기존 CSS 안 건드리고, 여기만 "추가") */
 .header-center { position: relative; }
+
+/* 스크롤 시 적용될 스타일 */
+.main-header.scrolled {
+    height: 60px; /* 70px에서 60px로 축소 */
+    background-color: rgba(5, 5, 5, 0.95); /* 더 어둡게 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+}
+
+.main-header.scrolled #headerSuggestBox {
+    top: 50px; /* 헤더가 10px 줄어들었으니 위치도 살짝 위로 */
+}
+.main-header.scrolled .header-logo {
+    height: 45px; /* 로고 크기도 같이 축소 */
+}
 
 .search-form {
     display: flex;
@@ -215,7 +232,7 @@
     z-index: 99999;
     display: none;
     overflow: hidden;
-    max-height: 260px;
+    max-height: 300px;
 }
 
 #headerSuggestBox .suggest-item{
@@ -260,7 +277,7 @@
 
 <!--검색차아아아아아아아아아앙  -->
     <div class="header-center">
-        <form action="${pageContext.request.contextPath}/musicSearch" method="get" class="search-form" id="headerSearchForm">
+        <form action="${pageContext.request.contextPath}/musicSearch" method="get" class="search-form" id="headerSearchForm" onsubmit="return validateAll()">
             <select name="searchType" class="search-select" id="headerSearchType">
                 <option value="TITLE" ${param.searchType == 'TITLE' ? 'selected' : ''}>제목</option>
                 <option value="ARTIST" ${param.searchType == 'ARTIST' ? 'selected' : ''}>아티스트</option>
@@ -410,11 +427,26 @@ document.addEventListener('DOMContentLoaded', function () {
     box.addEventListener('click', function (e) {
         const item = e.target.closest('.suggest-item');
         if (!item) return;
+        
         input.value = item.getAttribute('data-value') || '';
-        hideSuggest(); form.submit();
+        hideSuggest();
+        
+        // 그냥 submit() 하지 말고 validateAll() 체크 후 진행
+        if (validateAll()) {
+            form.submit();
+        }
     });
     document.addEventListener('click', function (e) {
         if (e.target !== input && !box.contains(e.target)) hideSuggest();
+    });
+	const header = document.querySelector('.main-header');
+    
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) { // 50px 이상 스크롤 시
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
     });
 });
 </script>

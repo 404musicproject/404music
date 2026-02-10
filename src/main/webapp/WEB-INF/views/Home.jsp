@@ -1,5 +1,6 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" buffer="16kb" autoFlush="true" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" buffer="128kb" autoFlush="true" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,15 +29,11 @@
 		    padding: 10px; 
 		}
 		/* 중요: 2열 배치를 위한 그리드 설정 */
-		.top10-list { 
-		    display: grid; 
-		    /* 열을 2개로 고정 */
-		    grid-template-columns: 1fr 1fr; 
-		    /* 행을 5개로 고정 (반드시 지정해야 세로로 흐름) */
-		    grid-template-rows: repeat(5, auto); 
-		    /* 데이터가 위에서 아래로(세로) 먼저 채워지도록 설정 */
-		    grid-auto-flow: column; 
-		    gap: 10px 20px; 
+		.top10-list {
+		    display: grid;
+		    /* 1fr 1fr 대신 아래처럼 사용하면 각 열이 동일한 너비를 강제로 유지합니다 */
+		    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+		    gap: 10px 20px;
 		}
 		
 		.top10-item { 
@@ -60,9 +57,56 @@
 		    margin-right: 15px;
 		}
 		.top10-img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 15px; }
-		.top10-info { flex-grow: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;}
-		.top10-title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-		.top10-artist { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+		/* 1. 리스트 전체 컨테이너: 2열 5행 세로 배치 설정 */
+		.top10-list {
+		    display: grid !important;
+		    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2열 동일 너비 */
+		    grid-template-rows: repeat(5, auto);             /* 5행으로 제한 */
+		    grid-auto-flow: column;                          /* 위에서 아래로 먼저 채우기 (핵심!) */
+		    gap: 10px 20px;
+		}
+		
+		/* 2. 각 아이템 스타일 */
+		.top10-item { 
+		    display: flex; 
+		    align-items: center; 
+		    padding: 10px; 
+		    border-radius: 8px; 
+		    transition: 0.2s; 
+		    cursor: pointer;
+		    background: rgba(255, 255, 255, 0.03);
+		    min-width: 0; /* 내부 텍스트 생략 처리를 위해 필수 */
+		}
+		
+		/* 3. 텍스트 정보 영역 (기존의 잘못된 grid 속성 제거) */
+		.top10-info {
+		    flex: 1;
+		    min-width: 0;
+		    display: flex;
+		    flex-direction: column;
+		    justify-content: center;
+		    overflow: hidden;
+		}
+		
+		/* 4. 제목 스타일 (말줄임표 처리) */
+		.top10-title {
+		    font-weight: bold;
+		    font-size: 1rem;
+		    white-space: nowrap;
+		    overflow: hidden;
+		    text-overflow: ellipsis;
+		    width: 100%; /* 부모 너비에 맞춤 */
+		}
+		
+		/* 5. 아티스트 스타일 (말줄임표 처리) */
+		.top10-artist {
+		    font-size: 0.8rem;
+		    color: #888;
+		    white-space: nowrap;
+		    overflow: hidden;
+		    text-overflow: ellipsis;
+		    width: 100%;
+		}
 		.top10-play { color: #ff0055; font-size: 1.2rem; padding: 0 10px; }
 
         /* 2. 메뉴 그리드 */
@@ -86,11 +130,11 @@
         .location-card:hover { border-color: #ff0055; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(255,0,85,0.3); }
         .location-card > * { position: relative; z-index: 2; }
         
-        .card-seoul { background-image: url('${pageContext.request.contextPath}/img/location/seoul.jpg'); }
-        .card-busan { background-image: url('${pageContext.request.contextPath}/img/location/busan.jpg'); }
-        .card-daegu { background-image: url('${pageContext.request.contextPath}/img/location/daegu.jpg'); }
-        .card-daejeon { background-image: url('${pageContext.request.contextPath}/img/location/daejeon.jpg'); }
-        .card-jeju { background-image: url('${pageContext.request.contextPath}/img/location/jeju.jpg'); }
+        .card-seoul { background-image: url('${pageContext.request.contextPath}/img/Location/seoul.jpg'); }
+        .card-busan { background-image: url('${pageContext.request.contextPath}/img/Location/busan.jpg'); }
+        .card-daegu { background-image: url('${pageContext.request.contextPath}/img/Location/daegu.jpg'); }
+        .card-daejeon { background-image: url('${pageContext.request.contextPath}/img/Location/daejeon.jpg'); }
+        .card-jeju { background-image: url('${pageContext.request.contextPath}/img/Location/jeju.jpg'); }
 
         .city-name { font-size: 0.8rem; color: #00f2ff; font-weight: bold; margin-bottom: 8px; display: block; }
         .city-top-song { font-size: 0.9rem; font-weight: bold; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -159,78 +203,111 @@
 		    padding: 5px 15px; cursor: pointer; border-radius: 4px;
 		}
 		
-		
-/* 5. Kibana 프로모션 섹션 스타일 (바이올렛 & 핑크 테마) */
+		/* 로그인 안했을 때/미구독 시 보이는 배너 스타일 */
 .Kibana {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1000px;
-    margin: 80px auto; /* 간격 살짝 넓힘 */
-    padding: 40px;
-    /* 세련된 보라색에서 핑크로 이어지는 그라데이션 */
-    background: linear-gradient(135deg, #6e00ff 0%, #ff0055 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #333 100%) !important;
     border-radius: 20px;
-    text-decoration: none;
-    color: #fff; /* 밝은 배경이 아니므로 글자를 흰색으로 변경 */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(110, 0, 255, 0.3);
-}
-
-.Kibana:hover {
-    transform: translateY(-5px) scale(1.01);
-    box-shadow: 0 20px 40px rgba(255, 0, 85, 0.4);
-}
-
-/* 내부 광택 효과 */
-.Kibana::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -20%;
-    width: 140%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
-    pointer-events: none;
+    border: 1px solid #444;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .Kibana h4 {
     margin: 0;
-    font-size: 1.8rem;
-    font-weight: 900;
-    letter-spacing: -1px;
+    font-size: 1.5rem;
     color: #fff;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    font-weight: bold;
 }
 
 .Kibana p {
     margin: 10px 0 0 0;
-    opacity: 0.9;
-    font-size: 1.1rem;
-    font-weight: 400;
-    color: rgba(255, 255, 255, 0.8);
+    color: #bbb;
+    font-size: 1rem;
 }
 
-.Kibana span {
-    background: rgba(0, 0, 0, 0.3); /* 반투명 블랙으로 고급스럽게 */
+/* "지금 구독하기" 버튼 스타일 */
+.Kibana a {
+    text-decoration: none;
+    transition: transform 0.3s, filter 0.3s;
+}
+
+.Kibana a span {
+    display: inline-block;
+    background: #ff0055;
     color: #fff;
     padding: 15px 35px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 40px;
-    font-size: 1rem;
+    border-radius: 50px;
     font-weight: bold;
-    transition: 0.3s;
-    white-space: nowrap;
-    backdrop-filter: blur(5px); /* 배경 흐림 효과 추가 */
+    box-shadow: 0 4px 15px rgba(255, 0, 85, 0.4);
 }
 
-.Kibana:hover span {
-    background: #fff;
-    color: #ff0055;
-    border-color: #fff;
+.Kibana a:hover {
+    transform: scale(1.05);
+    filter: brightness(1.2);
 }
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+    .Kibana {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+        margin: 20px;
+        padding: 30px 20px;
+    }
+}
+		
+		
+/* 프리미엄 컨테이너: 테두리 없이 배경만으로 구분 */
+.premium-container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 50px 30px;
+    /* 상단은 약간 밝은 그레이-바이올렛, 하단은 다시 어두워지는 고급스러운 그라데이션 */
+    background: linear-gradient(180deg, #1a1a1c 0%, #111112 100%);
+    border-radius: 40px;
+    /* 테두리 대신 그림자로 경계를 만듭니다 */
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+}
+
+.premium-header { text-align: center; margin-bottom: 30px; }
+.premium-badge {
+    color: #ffd700;
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border: 1px solid #ffd700;
+    padding: 5px 15px;
+    border-radius: 50px;
+}
+
+/* 분석 데스크를 가로로 긴 '슬림 배너'로 변경 */
+.Kibana-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 20px 30px;
+    border-radius: 15px;
+    text-decoration: none;
+    margin-bottom: 40px;
+    border: 1px solid rgba(255, 0, 85, 0.3);
+    transition: 0.3s;
+}
+
+.Kibana-mini:hover {
+    background: rgba(255, 0, 85, 0.1);
+    border-color: #ff0055;
+}
+
+.kibana-text h4 { margin: 0; color: #fff; font-size: 1.2rem; }
+.kibana-text p { margin: 5px 0 0; color: #888; font-size: 0.9rem; }
+.kibana-btn { color: #ff0055; font-weight: bold; font-size: 0.9rem; }
 
 /* 모바일 대응 */
 @media (max-width: 768px) {
@@ -242,6 +319,83 @@
         margin: 40px 20px;
     }
 }
+
+/* 관리자 배지 컨테이너 */
+/* 관리자 배지를 상단 헤더 영역 근처로 강제 이동 */
+.admin-badge-container {
+    position: absolute; /* 절대 위치 설정 */
+    top: 170px;          /* 헤더 영역 높이에 맞게 조절 */
+    right: 40px;       /* 라이브러리 버튼 왼쪽 근처로 배치 */
+    z-index: 9999;      /* 최상단으로 올림 */
+    margin: 0;
+    padding: 0;
+}
+
+.admin-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 0, 85, 0.15); /* 배경 투명도 조절 */
+    border: 1px solid #ff0055;
+    color: #ff0055;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem; /* 크기를 살짝 줄임 */
+    text-decoration: none;
+    font-weight: bold;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s;
+}
+
+/* 겹침의 원인이었던 menu-grid 마진 복구 */
+.menu-grid {
+    max-width: 1000px;
+    margin: -50px auto 50px; /* 원래의 겹침 디자인 유지 */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+}
+
+/* 호버 효과: 네온 핑크로 발광 */
+.admin-badge:hover {
+    background: #ff0055;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+    transform: translateY(-2px);
+}
+
+/* 깜빡이는 포인트 점 (Live 느낌) */
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #ff0055;
+    border-radius: 50%;
+    position: relative;
+}
+
+.admin-badge:hover .pulse-dot {
+    background-color: #fff;
+}
+
+.pulse-dot::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+
     </style>
 </head>
 <body>
@@ -258,7 +412,19 @@
 		</div>
     </section>
     
-	
+
+<c:set var="userAuth" value="${loginUser.uAuth}" /> <%-- 먼저 변수에 담아보기 --%>
+
+<%-- 안전한 대괄호 연산자 사용 및 대소문자 방어 코드 --%>
+<c:if test="${not empty loginUser and (loginUser['uAuth'] == 'ADMIN' or loginUser['uauth'] == 'ADMIN')}">
+    <div class="admin-badge-container">
+        <a href="${pageContext.request.contextPath}/support/KibanaAdmin" class="admin-badge">
+            <span class="pulse-dot"></span>
+            <i class="fa-solid fa-chart-line"></i> 관리자 분석 모드 활성화됨
+        </a>
+    </div>
+</c:if>
+				
 	<section class="menu-grid">
         <a href="${pageContext.request.contextPath}/music/Index?type=top100" class="menu-card">
             <span style="font-size: 0.7rem; opacity: 0.7;">REAL-TIME</span>
@@ -286,22 +452,50 @@
 	    </div>
 	</section>
 	
-	
-	    <c:if test="${not empty loginUser}">
-<section class="location-section">
-    <div class="section-title">📍 NOW & HERE</div>
-    <div class="location-grid" id="context-list">
+<%-- 기존 배너 부분 --%>
+<c:if test="${empty loginUser or !isSubscribed}">
+    <section class="Kibana" style="background: linear-gradient(135deg, #333 0%, #555 100%);">
+        <div>
+            <h4 style="margin: 0; font-size: 1.6rem;">프리미엄 혜택을 누리세요 💎</h4>
+            <p style="margin: 10px 0 0 0; opacity: 0.8;">구독 시 맞춤 분석과 위치 기반 추천 시스템을 이용할 수 있습니다.</p>
         </div>
-</section>
-    
+        <%-- 단순 링크 대신 함수를 호출하도록 변경 가능 --%>
+        <a href="javascript:void(0);" onclick="checkPremiumAccess(event)" style="text-decoration:none;">
+		    <span style="background: #ff0055; color: #fff; padding: 15px 30px; border-radius: 40px;">
+		        지금 구독하기 >
+		    </span>
+		</a>
+    </section>
 </c:if>
 
-<c:if test="${not empty loginUser}">
-<section class="location-section">
-    <div class="section-title">✨ FOR YOUR MOOD</div>
-    <div class="location-grid" id="personalized-list">
+<%-- 2. 오직 구독 중인 회원에게만 보이는 핵심 기능 --%>
+<%-- 2. 오직 구독 중인 회원에게만 보이는 프리미엄 존 --%>
+<c:if test="${isSubscribed}">
+    <div class="premium-container">
+        <div class="premium-header">
+            <span class="premium-badge"><i class="fa-solid fa-crown"></i> 404 PREMIUM LOUNGE</span>
         </div>
-</section>
+
+        <section class="premium-item">
+            <a href="${pageContext.request.contextPath}/user/Kibana" class="Kibana-mini">
+                <div class="kibana-text">
+                    <h4>404 분석 데스크</h4>
+                    <p>데이터로 기록된 당신의 음악 여정(최소 5분간의 음악 기록이 필요합니다.)</p>
+                </div>
+                <span class="kibana-btn">분석 리포트 <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+        </section>
+        
+        <section class="location-section">
+            <div class="section-title">📍 NOW & HERE</div>
+            <div class="location-grid" id="context-list"></div>
+        </section>
+
+        <section class="location-section">
+            <div class="section-title">✨ FOR YOUR MOOD</div>
+            <div class="location-grid" id="personalized-list"></div>
+        </section>
+    </div>
 </c:if>
 
     <section class="container">
@@ -314,19 +508,6 @@
         </div>
         <div id="itunes-list"></div>
     </section>    
-
-<section>
-	    <a href="${pageContext.request.contextPath}/user/Kibana" class="Kibana">
-        <div>
-            <h4 style="margin: 0; font-size: 1.6rem; letter-spacing: -1px;">404 분석 데스크🤔</h4>
-            <p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 1.1rem;">404 Found</p>
-        </div>
-        <span style="background: #000; color: #fff; padding: 15px 30px; border-radius: 40px; font-size: 1rem;">
-            분석 차트 보러가기 >
-        </span>
-    </a>
-</section>
-
 
     <section class="location-section">
         <div class="section-title">Regional Top Hits</div>
@@ -383,11 +564,7 @@ function toHighResArtwork(url) {
     return String(url).replace(/100x100bb/g, '600x600bb').replace(/100x100/g, '600x600');
 }
 
-function goTag(tagName) {
-    if(!tagName || tagName === '-') return;
-    const cleanTagName = tagName.replace(' 스타일', '').trim();
-    location.href = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(cleanTagName);
-}
+
 
 function goRegional(city) { 
     location.href = contextPath + '/music/regional?city=' + city; 
@@ -451,19 +628,27 @@ function loadTop10() {
     var $listContainer = $('#top10-list');
 
     $.get(contextPath + '/api/music/top100', { u_no: userNo, _t: Date.now() }, function(res) {
-        let list = Array.isArray(res) ? res : (res.list || res.data || []);
-        
-        if (list.length === 0) {
-            $listContainer.html('<p style="grid-column:1/-1; text-align:center;">데이터가 없습니다.</p>');
+        // [수정] res가 배열인지 아주 꼼꼼하게 확인합니다.
+        let list = [];
+        if (res && Array.isArray(res)) {
+            list = res;
+        } else if (res && res.list && Array.isArray(res.list)) {
+            list = res.list;
+        }
+
+        // list가 배열이 아니거나 비어있다면 안내 문구만 띄우고 종료 (forEach 실행 안 함)
+        if (!list || list.length === 0) {
+            $listContainer.html('<p style="grid-column:1/-1; text-align:center; padding:20px; color:#888;">'
+                               + '<i class="fa-solid fa-clock-rotate-left"></i> 현재 실시간 차트를 집계 중입니다.</p>');
             return;
         }
 
         let html = '';
         list.forEach(function(item, i) {
-            if (i >= 10) return;
+            if (i >= 10 || !item) return;
 
-            var title = (item.TITLE || item.m_title || 'Unknown');
-            var artist = (item.ARTIST || item.a_name || 'Unknown');
+            var title = item.TITLE || item.m_title || 'Unknown';
+            var artist = item.ARTIST || item.a_name || 'Unknown';
             var rawImg = item.ALBUM_IMG || item.b_image || FALLBACK_IMG;
             var img = toHighResArtwork(rawImg);
             var rank = i + 1;
@@ -491,6 +676,8 @@ function loadTop10() {
         });
         
         $listContainer.html(html);
+    }).fail(function() {
+        $listContainer.html('<p style="grid-column:1/-1; text-align:center; padding:20px; color:#888;">데이터를 불러올 수 없습니다.</p>');
     });
 }
 
@@ -498,10 +685,13 @@ function loadRegionalPreviews() {
     const cities = ['SEOUL', 'BUSAN', 'DAEGU', 'DAEJEON', 'JEJU'];
     cities.forEach(city => {
         $.get(contextPath + '/api/music/regional', { city: city }, function(data) {
-            if (data && data.length > 0) {
+            // [수정] data가 배열이고 내용이 있는지 확인
+            if (data && Array.isArray(data) && data.length > 0) {
                 const idPrefix = city.toLowerCase();
-                $('#' + idPrefix + '-title').text(data[0].TITLE || data[0].m_title || '-');
-                $('#' + idPrefix + '-artist').text(data[0].ARTIST || data[0].a_name || '-');
+                const topSong = data[0].TITLE || data[0].m_title || '-';
+                const topArtist = data[0].ARTIST || data[0].a_name || '-';
+                $('#' + idPrefix + '-title').text(topSong);
+                $('#' + idPrefix + '-artist').text(topArtist);
             }
         });
     });
@@ -509,37 +699,51 @@ function loadRegionalPreviews() {
 
 function loadItunesMusic() {
     $.get(contextPath + "/api/music/rss/most-played", { limit: 8 }, function(data) {
+        // [수정] data가 배열인지 확인
+        if (!data || !Array.isArray(data)) {
+            $('#itunes-list').html('<p style="grid-column:1/-1; text-align:center; color:#888;">트렌드 데이터를 불러올 수 없습니다.</p>');
+            return;
+        }
+
         let html = '';
         data.forEach(function(m) {
+            if (!m) return;
             const t = (m.TITLE || 'Unknown').replace(/'/g, "\\'");
             const a = (m.ARTIST || 'Unknown').replace(/'/g, "\\'");
             const img = m.ALBUM_IMG || FALLBACK_IMG;
             html += '<div class="itunes-card" onclick="changeHeroAndPlay(\'' + t + '\', \'' + a + '\', \'' + img + '\')">'
                 + '  <img src="' + toHighResArtwork(img) + '" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;">'
-                + '  <div class="city-top-song" style="margin-top:10px;">' + m.TITLE + '</div>'
-                + '  <div class="city-top-artist" style="color:#00f2ff;">' + m.ARTIST + '</div>'
+                + '  <div class="city-top-song" style="margin-top:10px;">' + (m.TITLE || 'Unknown') + '</div>'
+                + '  <div class="city-top-artist" style="color:#00f2ff;">' + (m.ARTIST || 'Unknown') + '</div>'
                 + '</div>';
         });
         $('#itunes-list').html(html);
     });
 }
 
+
+
+
+/* --- 메인 기능: 태그 그리기 --- */
 function drawTagCards() {
     const rawContextTags = [];
     <c:forEach var="ct" items="${homeContextTags}">rawContextTags.push("${ct}");</c:forEach>
-    const locationTags = ["바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉"];
     
-    let contextHtml = '<div id="geo-weather-card" class="location-card" style="background-image:url(\'${pageContext.request.contextPath}/img/Location/seoul.jpg\')">'
+    const locationTags = ["바다", "산/등산", "카페/작업", "헬스장", "공원/피크닉"];
+    const weatherTags = ["더운 여름", "비 오는 날", "맑음", "흐림", "눈 오는 날"];
+    
+    // NOW & HERE 섹션
+    let contextHtml = '<div id="geo-weather-card" class="location-card" style="display:none;">'
                     + '  <span class="city-name" id="geo-city">LOCATION</span>'
                     + '  <div class="city-top-song" id="geo-weather-title">날씨 확인 중...</div>'
                     + '  <div class="city-top-artist" id="geo-weather-desc">위치 정보를 불러오는 중</div>'
                     + '</div>';
     
     let addedCount = 0;
-    rawContextTags.forEach(name => {
+    rawContextTags.forEach(function(name) {
         if (locationTags.indexOf(name) !== -1 && addedCount < 4) {
             const no = tagNoMap[name] || 19;
-            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\', event)">'
                          + '  <span class="city-name">NEARBY PLACE</span>'
                          + '  <div class="city-top-song">' + name + '</div>'
                          + '  <div class="city-top-artist">지금 위치와 어울리는 추천</div>'
@@ -547,23 +751,59 @@ function drawTagCards() {
             addedCount++;
         }
     });
+
+    /* --- 수정된 drawTagCards 함수 일부 --- */
+/* --- drawTagCards 함수 내부의 해당 구간을 이 코드로 통째로 바꾸세요 --- */
+if (addedCount < 4) {
+    locationTags.forEach(function(fallbackName) { // 루프 변수명이 fallbackName입니다.
+    	console.log("현재 추가 시도 중인 fallbackName:", fallbackName);
+        if (rawContextTags.indexOf(fallbackName) === -1 && addedCount < 4) {
+            const no = tagNoMap[fallbackName] || 19;
+            
+            // [주의] 아래 'goTag'의 인자가 반드시 'fallbackName'이어야 합니다.
+            // 만약 'name'이라고 적혀있다면, 위에서 쓴 변수가 아니므로 빈 값('')이 들어갑니다.
+            contextHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + fallbackName + '\', event)">' 
+                         + '  <span class="city-name">RECOMMENDED PLACE</span>'
+                         + '  <div class="city-top-song">' + fallbackName + '</div>'
+                         + '  <div class="city-top-artist">이런 장소는 어떠세요?</div>'
+                         + '</div>';
+            addedCount++;
+        }
+    });
+}
     $('#context-list').html(contextHtml);
 
+    // FOR YOUR MOOD 섹션
     const moodTags = [];
     <c:forEach var="mt" items="${homeMoodTags}">moodTags.push("${mt}");</c:forEach>
+    
+ // [수정 포인트] 필터링을 먼저 거친 후, 최종적으로 5개만 추출합니다.
+    const filteredMoods = moodTags.filter(function(name) {
+        // 날씨와 장소 태그가 아닌 것만 남김
+        return weatherTags.indexOf(name) === -1 && locationTags.indexOf(name) === -1;
+    });
+    
     let personalHtml = '';
-    moodTags.forEach((name, idx) => {
+    filteredMoods.forEach(function(name, idx) {
         if (idx < 5) {
             const no = tagNoMap[name] || 9;
-            personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\')">'
+            personalHtml += '<div class="location-card tag-' + no + '" onclick="goTag(\'' + name + '\', event)">' // event 추가
                           + '  <span class="city-name">MY MOOD #' + (idx + 1) + '</span>'
                           + '  <div class="city-top-song">' + name + '</div>'
                           + '  <div class="city-top-artist">당신을 위한 맞춤 추천</div>'
                           + '</div>';
         }
     });
+    
+ // 만약 필터링 후 개수가 너무 적다면? (방어 코드: 기본 무드 태그 추가 가능)
+    if (filteredMoods.length === 0) {
+        personalHtml = '<p style="color:#888; text-align:center; width:100%;">맞춤 추천 테마를 불러오는 중입니다.</p>';
+    }
+    
     $('#personalized-list').html(personalHtml);
     renderContextWeather();
+    
+    console.log("카드 그리기 완료, 날씨 렌더링 시작");
 }
 
 function renderContextWeather() {
@@ -572,124 +812,181 @@ function renderContextWeather() {
         if (!data) return;
         const city = data.name.toUpperCase();
         const weatherId = data.weather[0].id;
-        let tagName = "맑음";
-        let bgImg = "${pageContext.request.contextPath}/img/Tag/14.png";
-        if (weatherId < 600) { tagName = "비 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/8.png"; }
-        else if (weatherId < 700) { tagName = "눈 오는 날"; bgImg = "${pageContext.request.contextPath}/img/Tag/16.png"; }
-        else if (weatherId > 800) { tagName = "흐림"; bgImg = "${pageContext.request.contextPath}/img/Tag/15.png"; }
+        const temp = data.main.temp;
+        let tagName = "맑음"; let bgImgNo = 14;
+
+        if (temp > 30) { tagName = "더운 여름"; bgImgNo = 3; }
+        else if (weatherId < 600) { tagName = "비 오는 날"; bgImgNo = 8; }
+        else if (weatherId < 700) { tagName = "눈 오는 날"; bgImgNo = 16; }
+        else if (weatherId > 800) { tagName = "흐림"; bgImgNo = 15; }
+
         $('#geo-city').text(city);
         $('#geo-weather-title').text(tagName);
-        $('#geo-weather-desc').text(Math.round(data.main.temp) + "°C, 현재 날씨 맞춤형");
-        $('#geo-weather-card').css('background-image', 'url(' + bgImg + ')').attr('onclick', "goTag('" + tagName + "')");
+        $('#geo-weather-desc').text(Math.round(temp) + "°C, 실시간 날씨 맞춤");
+        $('#geo-weather-card').css({'background-image': 'url(${pageContext.request.contextPath}/img/Tag/' + bgImgNo + '.png)', 'display': 'block'})
+                             .attr('onclick', "goTag('" + tagName + "', event)");
     });
 }
 
+/* --- 실행 및 이벤트 핸들러 --- */
+/* --- 실행 및 이벤트 핸들러 --- */
 $(document).ready(function() {
-    // 1. [중요] 서버에서 팝업 목록 가져오기 로직 추가
+    // [수정] 팝업 로드 로직을 안전하게 변경
     $.get(contextPath + '/api/getPopups', function(list) {
-        console.log("받아온 팝업 목록:", list);
-        if (list && list.length > 0) {
+        // list가 존재하고 배열인 경우에만 forEach 실행
+        if (list && Array.isArray(list) && list.length > 0) {
             list.forEach(function(popup) {
-                // noticeNo 필드를 사용하여 쿠키 체크
+                if (!popup) return;
                 const no = popup.noticeNo || popup.noticeno || 1;
-                const cookieKey = 'hide_popup_' + no;
-                
-                if (!getCookie(cookieKey)) {
-                    showLayerPopup(popup);
-                }
+                if (!getCookie('hide_popup_' + no)) showLayerPopup(popup);
             });
         }
+    }).fail(function() {
+        console.log("팝업 데이터를 불러오는 데 실패했습니다.");
     });
 
-    // 2. 메뉴 카드 클릭 시 강제 이동
-    $('.menu-grid').on('click', '.menu-card', function(e) {
-        var href = $(this).attr('href');
-        if(href) location.href = href;
-    });
-
-    // 3. MusicApp 초기화 및 데이터 로드
     if (window.MusicApp) window.MusicApp.init("${loginUser.UNo}" || 0);
     
-    loadRegionalPreviews();
+    // 필수 호출 함수들
+    loadTop10();           
+    loadRegionalPreviews(); 
+    loadItunesMusic();     
     drawTagCards();
-    loadItunesMusic();
-    setTimeout(loadTop10, 300);
 });
+
 
 // --- 추가 함수: 팝업 생성 ---
 // 팝업 생성 함수: 데이터 필드명을 더 꼼꼼하게 체크합니다.
 // 1. 팝업 생성 함수
 // 1. 팝업 생성 함수
 // --- 팝업 관련 최종 통합 함수 (중복 제거용) ---
+// 전역 변수로 팝업 개수 추적 (계단식 배치를 위해)
+let popupCount = 0; // 팝업 개수 추적용 변수
 
 function showLayerPopup(popup) {
     const title = popup.ntitle || popup.nTitle || "공지사항"; 
     const content = popup.ncontent || popup.nContent || "내용이 없습니다.";
     const no = popup.noticeNo || popup.noticeno || 1;
 
+    // ✅ 계단식 좌표 계산 (30px씩 어긋나게)
+    const offset = popupCount * 35; 
+    const topPos = 120 + offset;
+    const leftPos = 80 + offset;
+    popupCount++;
+
     const modalHtml = `
-        <div id="popup-modal-\${no}" class="custom-popup-sticker" 
+        <div id="popup-modal-\${no}" class="custom-popup-sticker draggable-popup" 
              style="position: fixed; 
-                    top: 150px;   /* 화면 상단에서 20px */
-                    left: 120px;  /* 화면 왼쪽에서 20px */
-                    width: 320px; 
-                    background: #1a1a1a; 
-                    border: 2px solid #ff0055; 
-                    border-radius: 12px; 
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.7); 
-                    z-index: 100002; /* 헤더보다 위에 오도록 설정 */
-                    color: #fff;
-                    overflow: hidden;
-                    pointer-events: auto; /* 팝업 자체는 클릭 가능 */
-             ">
+                    top: \${topPos}px; left: \${leftPos}px; 
+                    width: 350px; background: #1a1a1a; 
+                    border: 2px solid #ff0055; border-radius: 12px; 
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.8); 
+                    z-index: \${100002 + popupCount}; color: #fff; overflow: hidden;">
             
-            <div style="padding: 12px 15px; background: #222; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;">
-                <strong style="color: #ff0055; font-size: 0.9rem;">\${title}</strong>
-                <span onclick="closePopup(\${no})" style="cursor:pointer; color:#888; font-size: 1.2rem;">&times;</span>
+            <div class="popup-handle" style="padding: 12px 15px; background: #222; cursor: move; display: flex; justify-content: space-between; align-items: center; user-select: none;">
+                <strong style="color: #ff0055; font-size: 0.9rem;"><i class="fa-solid fa-grip-lines-vertical" style="margin-right:8px; opacity:0.5;"></i> \${title}</strong>
+                <span onclick="closePopup(\${no})" style="cursor:pointer; color:#888; font-size: 1.5rem; line-height:1;">&times;</span>
             </div>
 
-            <div style="padding: 15px; min-height: 60px; font-size: 0.9rem; line-height: 1.4; color: #eee;">
+            <div class="popup-body-content" style="padding: 20px; max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; color: #eee;">
                 \${content}
             </div>
 
-            <div style="padding: 10px 15px; background: #1a1a1a; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333;">
+            <div style="padding: 12px 15px; background: #111; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333;">
                 <label style="font-size: 11px; color: #bbb; cursor: pointer; display: flex; align-items: center;">
-                    <input type="checkbox" id="no-more-\${no}" style="margin-right: 5px;"> 오늘 하루 보지 않기
+                    <input type="checkbox" id="no-more-\${no}" style="margin-right: 6px;"> 오늘 하루 보지 않기
                 </label>
                 <button onclick="closePopup(\${no})" 
-                        style="background: #ff0055; border: none; color: #fff; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">
+                        style="background: #ff0055; border: none; color: #fff; padding: 5px 15px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">
                     닫기
                 </button>
             </div>
         </div>
+
+        <style>
+            /* 사진 크기 자동 조절 */
+            #popup-modal-\${no} .popup-body-content img {
+                max-width: 100% !important;
+                height: auto !important;
+                display: block;
+                margin: 10px 0;
+            }
+        </style>
     `;
     
     $('body').append(modalHtml);
+    makeDraggable(document.getElementById(`popup-modal-\${no}`));
+}
+
+function makeDraggable(el) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const handle = el.querySelector(".popup-handle");
+
+    if (handle) {
+        handle.onmousedown = dragMouseDown;
+    }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // 버튼이나 체크박스 클릭 시에는 드래그 막기
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        
+        // 클릭한 팝업을 가장 위로 올림 (하이픈 제거: zIndex)
+        $(".custom-popup-sticker").css("z-index", 100002);
+        el.style.zIndex = "100099"; 
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        
+        // 팝업 위치 갱신
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
 }
 
 function closePopup(no) {
-    console.log("닫기 실행 시도 - 번호:", no);
-    
-    // 1. 오늘 하루 보지 않기 체크 여부 확인
+    console.log("닫기 시도 번호:", no); // 브라우저 콘솔(F12)에서 확인용
+
+    // 1. 쿠키 저장 (체크박스 확인)
     if ($('#no-more-' + no).is(':checked')) {
         setCookie('hide_popup_' + no, 'true', 1);
-        console.log("쿠키 저장 완료: hide_popup_" + no);
     }
 
-    // 2. 팝업 제거 (두 가지 방법 병행)
-    // 방법 A: ID로 정확히 타격
-    const targetModal = $('#popup-modal-' + no);
-    
-    if (targetModal.length > 0) {
-        targetModal.remove();
-        console.log("ID 기반 삭제 성공");
+    // 2. 팝업 제거 (ID로 찾기 + 못 찾을 경우를 대비한 클래스 기반 탐색)
+    const target = document.getElementById("popup-modal-" + no);
+    if (target) {
+        target.remove();
     } else {
-        // 방법 B: ID 매칭 실패 시, 현재 클릭된 버튼에서 가장 가까운 오버레이 제거
-        $('.custom-popup-overlay').has('#no-more-' + no).remove();
-        console.log("근접 요소 탐색으로 삭제 성공");
+        // ID로 못 찾으면 클래스와 data 속성 등으로 강제 제거
+        $(`.custom-popup-sticker`).each(function() {
+            if($(this).attr('id').indexOf(no) !== -1) {
+                $(this).remove();
+            }
+        });
+    }
+
+    // 3. 카운트 리셋
+    if ($('.custom-popup-sticker').length === 0) {
+        popupCount = 0;
     }
 }
-
 // --- 추가 함수: 쿠키 유틸리티 ---
 function setCookie(name, value, days) {
     let date = new Date();
@@ -701,6 +998,54 @@ function getCookie(name) {
     let value = "; " + document.cookie;
     let parts = value.split("; " + name + "=");
     if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+//1. 권한 체크 함수 (통합 및 최적화)
+function checkPremiumAccess(e) {
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    const isSubscribed = "${isSubscribed}"; 
+    const loginUser = "${loginUser.UNo}"; // UNo가 있으면 로그인 된 것으로 간주
+
+    // 로그인 여부 확인
+    if (!loginUser || loginUser === "0" || loginUser === "") {
+        alert("로그인이 필요한 서비스입니다.");
+        if(typeof openLoginModal === 'function') openLoginModal();
+        return false;
+    }
+
+    // 구독 여부 확인
+    if (isSubscribed === "false" || isSubscribed === "" || isSubscribed === "null") {
+        if (confirm("이 기능은 프리미엄 구독 회원 전용입니다.\n구독 페이지로 이동하시겠습니까?")) {
+            location.href = contextPath + "/user/subscription";
+        }
+        return false;
+    }
+
+    return true; 
+}
+
+// 2. 태그 이동 함수 (통합)
+function goTag(tagName, e) {
+    console.log("클릭된 태그:", tagName);
+    
+    // 권한 체크 먼저 수행
+    if (!checkPremiumAccess(e)) {
+        return; 
+    }
+
+    if(!tagName || tagName === '-') {
+        console.log("태그 이름이 유효하지 않음");
+        return;
+    }
+
+    const cleanTagName = tagName.replace(' 스타일', '').trim();
+    const url = contextPath + "/music/recommendationList?tagName=" + encodeURIComponent(cleanTagName);
+    console.log("이동 시도:", url);
+    location.href = url;
 }
 </script>
 </body>

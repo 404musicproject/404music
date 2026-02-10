@@ -12,6 +12,7 @@ public interface IUserDAO {
     int updateEmailVerification(@Param("uId") String uId);
     int countByNick(@Param("uNick") String uNick);
     int updatePassword(@Param("uId") String uId, @Param("uPassword") String uPassword);
+    int transferToGuest(@Param("uId") String uId);
     int deleteUser(@Param("uId") String uId);
     int updateProfileImage(@Param("uId") String uId, @Param("uProfileImg") String uProfileImg);
     UserDTO findBySocialInfo(@Param("uSocialType") String uSocialType, @Param("uSocialId") String uSocialId);

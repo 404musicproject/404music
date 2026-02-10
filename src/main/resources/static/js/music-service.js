@@ -12,30 +12,37 @@ window.MusicApp = {
 	lastWeatherData : null,
 	lastWeatherId : 800,
 	
-	// 날씨 정보를 가져오는 함수
-	getWeatherData: function(callback) {
-	        if (navigator.geolocation) {
-	            navigator.geolocation.getCurrentPosition((pos) => {
-	                const lat = pos.coords.latitude;
-	                const lon = pos.coords.longitude;
-	                
-	                // 서버의 날씨 API 호출
-	                $.get(this.basePath + '/api/music/weather', { lat: lat, lon: lon }, (data) => {
-	                    this.lastWeatherData = data;
-	                    this.lastWeatherId = data.weather[0].id;
-
-	                    // [추가] 화면 텍스트 업데이트 로직
-	                    this.updateWeatherDisplay(data);
-
-	                    if(callback) callback(data);
-	                });
-	            }, (err) => {
-	                console.error("위치 정보 권한 거부", err);
-	                $('#geo-weather-title').text("위치 비활성");
-	                $('#geo-weather-desc').text("권한을 허용해주세요");
-	            });
-	        }
-	    },
+	// 1. 날씨 정보를 가져오는 함수 수정
+		getWeatherData: function(callback) {
+		        if (navigator.geolocation) {
+		            navigator.geolocation.getCurrentPosition((pos) => {
+		                const lat = pos.coords.latitude;
+		                const lon = pos.coords.longitude;
+		                
+		                $.get(this.basePath + '/api/music/weather', { lat: lat, lon: lon }, (data) => {
+		                    this.lastWeatherData = data;
+		                    this.lastWeatherId = data.weather[0].id;
+		                    this.updateWeatherDisplay(data);
+		                    if(callback) callback(data);
+		                });
+		            }, (err) => {
+		                // [수정] 위치 권한 거부 시 부산(Busan) 좌표로 강제 호출
+		                console.warn("위치 정보 권한 거부 혹은 HTTP 환경: 기본 위치(부산)를 사용합니다.", err);
+		                
+		                const defaultLat = 35.1796; // 부산 시청 위도
+		                const defaultLon = 129.0756; // 부산 시청 경도
+		                
+		                $.get(this.basePath + '/api/music/weather', { lat: defaultLat, lon: defaultLon }, (data) => {
+		                    this.lastWeatherData = data;
+		                    this.lastWeatherId = data.weather[0].id;
+		                    this.updateWeatherDisplay(data); // 화면에 "BUSAN"과 부산 날씨 출력
+		                    if(callback) callback(data);
+		                });
+		            });
+		        } else {
+		            console.error("이 브라우저는 Geolocation을 지원하지 않습니다.");
+		        }
+		    },
 
 	    // [신규] 실제로 HTML 텍스트를 갈아끼우는 함수
 	    updateWeatherDisplay: function(data) {
@@ -253,10 +260,10 @@ window.MusicApp = {
 			title: title,    // [추가]
 			artist: artist,  // [추가]
 			imgUrl: imgUrl,  // [추가]
-	        h_lat: 0, 
-	        h_lon: 0,
+	        h_lat: 35.1796, 
+	        h_lon: 129.0756,
 	        h_weather: 800, // 기본값 설정
-	        h_location: 'Unknown'
+	        h_location: 'Busan'
 	    };
 
 	    const getPosition = () => {

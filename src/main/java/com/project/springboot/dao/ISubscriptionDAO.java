@@ -21,4 +21,6 @@ public interface ISubscriptionDAO {
     
  // 5. 구독 해지 예약 철회 (F로 변경)
     int updateCancelStatusReverse(int uNo);
+ // 반환값이 0보다 크면 구독 중인 사용자
+    int checkActiveSubscription(int uNo);
 }

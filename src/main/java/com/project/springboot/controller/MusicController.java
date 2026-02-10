@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import com.project.springboot.dao.IMusicDAO;
 import com.project.springboot.dto.HistoryDTO;
 import com.project.springboot.dto.MusicDTO;
+import com.project.springboot.dto.MusicLyricsDTO;
 import com.project.springboot.dto.UserDTO;
 import com.project.springboot.service.MusicService;
 import com.project.springboot.service.YouTubeApiService;
@@ -423,6 +424,16 @@ public class MusicController {
         
         int count = musicDAO.checkLike(user.getUNo(), mNo);
         return ResponseEntity.ok(count > 0);
+    }
+    @GetMapping("/lyrics")
+    public ResponseEntity<?> getLyrics(@RequestParam("m_no") int mNo) {
+        MusicLyricsDTO lyrics = musicService.getLyricsByMusicNo(mNo);
+        
+        if (lyrics != null) {
+            return ResponseEntity.ok(lyrics);
+        }
+        // 가사가 아예 없는 경우
+        return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND).build();
     }
     
 }
